@@ -94,6 +94,8 @@ class ConnectionTests(unittest.TestCase):
     def test_challenge_is_not_missing_support(self):
         error = HTTPError("https://store.example/.well-known/ucp", 403, "Forbidden", {}, None)
         self.assertEqual(check("store.example", opener=Opener(error=error))["state"], "blocked")
+        outage = HTTPError("https://store.example/.well-known/ucp", 503, "Unavailable", {}, None)
+        self.assertEqual(check("store.example", opener=Opener(error=outage))["state"], "unavailable")
 
     def test_domain_input_cannot_redirect_probe(self):
         for value in ["https://store.example", "store.example:8443", "store.example/path", "a@store.example", "localhost"]:

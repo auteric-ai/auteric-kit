@@ -49,7 +49,7 @@ def fetch_profile(domain, *, opener=None, timeout=10):
             content_type = response.headers.get("Content-Type", "").split(";", 1)[0].strip().lower()
             body = response.read(MAX_PROFILE_BYTES + 1)
     except HTTPError as exc:
-        return {"url": url, "http_status": exc.code, "state": "blocked" if exc.code in {403, 429, 503} else "unavailable", "reason": f"HTTP {exc.code}"}
+        return {"url": url, "http_status": exc.code, "state": "blocked" if exc.code in {403, 429} else "unavailable", "reason": f"HTTP {exc.code}"}
     except (URLError, TimeoutError, OSError) as exc:
         return {"url": url, "http_status": None, "state": "unavailable", "reason": str(exc)}
     if status != 200:

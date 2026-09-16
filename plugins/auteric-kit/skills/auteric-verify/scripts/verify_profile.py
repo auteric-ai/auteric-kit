@@ -31,7 +31,12 @@ def verify(profile, domain, trusted_key=None, expected_kid=None):
     if payload.get("kind") != "auteric.ucp.exposure.v1" or payload.get("domain") != domain:
         return "invalid", "Signature payload kind or domain mismatch"
     endpoint = payload.get("endpoint") or ""
-    parsed = urlsplit(endpoint)
+    if not isinstance(endpoint, str):
+        return "invalid", "Signed endpoint must be absolute HTTPS"
+    try:
+        parsed = urlsplit(endpoint)
+    except ValueError:
+        return "invalid", "Signed endpoint must be absolute HTTPS"
     if parsed.scheme != "https" or not parsed.hostname or parsed.username or parsed.password or parsed.query or parsed.fragment:
         return "invalid", "Signed endpoint must be absolute HTTPS"
     services = declared.get("services") or {}
