@@ -14,6 +14,15 @@ Open your own storefront repository in the coding agent, then install:
 
 Alternatively download `auteric-kit.zip` from [Scanner onboarding](https://scanner.auteric.com/onboarding/), extract it in or beside your store project, and replace `auteric-ai/auteric-kit` in the command with the extracted `./auteric-kit` folder. Install only in a repository you trust; inspect the instructions before applying changes.
 
+## Update an installed Codex plugin
+
+Codex keeps a local marketplace snapshot. To receive a newer Auteric Kit release, refresh that snapshot before installing again:
+
+```sh
+codex plugin marketplace upgrade auteric
+codex plugin add auteric-kit@auteric
+```
+
 ## What happens after installation
 
 Open Codex in the storefront repository. Auteric Kit surfaces the starter action **“Prepare this storefront for shopping agents with Auteric.”** Choose it to begin. You can also ask naturally, for example: “Prepare this store for shopping agents” or “Review this ecommerce site for AI shopping.” There is no magic skill name to learn.
