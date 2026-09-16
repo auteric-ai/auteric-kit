@@ -1,0 +1,6 @@
+{
+  "name": "auteric-kit",
+  "version": "0.1.0",
+  "description": "Prepare and verify custom storefront connections to Auteric.",
+  "author": {"name": "Auteric"}
+}

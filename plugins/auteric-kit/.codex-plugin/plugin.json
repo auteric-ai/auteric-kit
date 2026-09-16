@@ -1,0 +1,18 @@
+{
+  "name": "auteric-kit",
+  "version": "0.1.0",
+  "description": "Connect custom storefronts to Auteric catalog discovery and verified commerce controls.",
+  "author": {
+    "name": "Auteric"
+  },
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Auteric Kit",
+    "shortDescription": "Prepare and verify an Auteric storefront connection.",
+    "longDescription": "Implement catalog adapters and service-issued UCP discovery, then verify exposure without claiming unproven runtime protection.",
+    "developerName": "Auteric",
+    "category": "Productivity",
+    "capabilities": [],
+    "defaultPrompt": ["Use auteric-connect to prepare this storefront for Auteric."]
+  }
+}

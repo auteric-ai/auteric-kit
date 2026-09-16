@@ -1,0 +1,5 @@
+{
+  "name": "auteric",
+  "owner": {"name": "Auteric"},
+  "plugins": [{"name": "auteric-kit", "source": "./plugins/auteric-kit", "description": "Prepare and verify custom storefront connections to Auteric."}]
+}
