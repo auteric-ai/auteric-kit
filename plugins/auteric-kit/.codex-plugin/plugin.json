@@ -1,18 +1,22 @@
 {
   "name": "auteric-kit",
-  "version": "0.1.0",
-  "description": "Connect custom storefronts to Auteric catalog discovery and verified commerce controls.",
+  "version": "0.2.0",
+  "description": "Guide ecommerce teams from storefront inspection through an approved Auteric shopping-agent integration and verification.",
   "author": {
     "name": "Auteric"
   },
   "skills": "./skills/",
   "interface": {
     "displayName": "Auteric Kit",
-    "shortDescription": "Prepare and verify an Auteric storefront connection.",
-    "longDescription": "Implement catalog adapters and service-issued UCP discovery, then verify exposure without claiming unproven runtime protection.",
+    "shortDescription": "Prepare your storefront for shopping agents.",
+    "longDescription": "A guided Auteric workflow that inspects the existing storefront, presents a reviewable integration plan, makes approved local changes, and verifies the result without claiming unproven protection.",
     "developerName": "Auteric",
-    "category": "Productivity",
-    "capabilities": [],
-    "defaultPrompt": ["Use auteric-connect to prepare this storefront for Auteric."]
+    "category": "Developer Tools",
+    "capabilities": ["Inspect storefront architecture", "Plan a safe agent-commerce integration", "Implement approved catalog and discovery changes", "Verify public exposure"],
+    "defaultPrompt": [
+      "Prepare this storefront for shopping agents with Auteric.",
+      "Review this ecommerce site for safe AI shopping readiness.",
+      "Set up this store for agentic commerce with a reviewable plan."
+    ]
   }
 }

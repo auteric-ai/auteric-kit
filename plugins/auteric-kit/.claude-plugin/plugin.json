@@ -1,6 +1,6 @@
 {
   "name": "auteric-kit",
-  "version": "0.1.0",
-  "description": "Prepare and verify custom storefront connections to Auteric.",
+  "version": "0.2.0",
+  "description": "Guide custom storefronts through approved Auteric shopping-agent preparation and verification.",
   "author": {"name": "Auteric"}
 }

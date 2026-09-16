@@ -8,15 +8,19 @@ Open your own storefront repository in the coding agent, then install:
 
 | Agent | Command |
 | --- | --- |
-| Codex | `codex plugin marketplace add auteric-ai/auteric-kit && codex plugin add auteric-kit` |
+| Codex | `codex plugin marketplace add auteric-ai/auteric-kit && codex plugin add auteric-kit@auteric` |
 | Claude Code | `claude plugin marketplace add auteric-ai/auteric-kit && claude plugin install auteric-kit@auteric` |
 | Cursor | `npx skills add auteric-ai/auteric-kit --skill '*' --agent cursor` |
 
 Alternatively download `auteric-kit.zip` from [Scanner onboarding](https://scanner.auteric.com/onboarding/), extract it in or beside your store project, and replace `auteric-ai/auteric-kit` in the command with the extracted `./auteric-kit` folder. Install only in a repository you trust; inspect the instructions before applying changes.
 
-Ask the agent:
+## What happens after installation
 
-> Use `auteric-connect` to prepare this custom storefront for Auteric. Inspect the existing product, inventory, cart, and checkout code. Plan the smallest changes, implement accurate catalog discovery using the store's own data, and show the tests and publication steps. Do not claim Auteric protection until the connected runtime check passes.
+Open Codex in the storefront repository. Auteric Kit surfaces the starter action **“Prepare this storefront for shopping agents with Auteric.”** Choose it to begin. You can also ask naturally, for example: “Prepare this store for shopping agents” or “Review this ecommerce site for AI shopping.” There is no magic skill name to learn.
+
+Codex first inspects the repository and explains the smallest safe plan: catalog data, cart and checkout boundaries, likely files and routes, dependencies, validation, and any Auteric service requirement. It waits for your normal approval before modifying application files. After approval, it makes only the locally supportable changes, runs relevant checks, and reports exactly what still needs a merchant or Auteric operator.
+
+Installing the plugin adds the capability only. It never changes storefront code, installs dependencies, creates credentials, or contacts an Auteric service by itself.
 
 ## What the merchant does
 
@@ -25,7 +29,7 @@ Ask the agent:
 3. **Publish:** The merchant publishes the exact current service-issued JSON at `https://STORE/.well-known/ucp` on its own hostname. Existing UCP profiles must be reconciled; do not overwrite them blindly.
 4. **Verify:** Run the read-only checker below, then [Scanner onboarding](https://scanner.auteric.com/onboarding/) → **Check my store**. A signed public declaration proves exposure only. Auteric protection additionally requires current, trusted Gateway and policy-enforcement evidence.
 
-The [connection contract](plugins/auteric-kit/skills/auteric-connect/references/contract.md) details canonical catalog fields, signed exposure, and the separation between discovery and runtime protection. The [implementation workflow](plugins/auteric-kit/skills/auteric-connect/references/workflow.md) gives the agent review and acceptance gates.
+The [connection contract](plugins/auteric-kit/skills/auteric-connect/references/contract.md) details canonical catalog fields, signed exposure, and the separation between discovery and runtime protection. The [implementation workflow](plugins/auteric-kit/skills/auteric-connect/references/workflow.md) and [guided implementation](plugins/auteric-kit/skills/auteric-connect/references/implementation.md) define the review and approval gates.
 
 ## Read-only connection check
 
