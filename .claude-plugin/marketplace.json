@@ -1,5 +1,22 @@
 {
+  "$schema": "https://json.schemastore.org/claude-code-marketplace.json",
   "name": "auteric",
-  "owner": {"name": "Auteric"},
-  "plugins": [{"name": "auteric-kit", "source": "./plugins/auteric-kit", "description": "Prepare and verify custom storefront connections to Auteric."}]
+  "description": "Auteric storefront plugins for shopping-agent preparation.",
+  "owner": {"name": "Auteric", "url": "https://github.com/auteric-ai"},
+  "metadata": {
+    "homepage": "https://github.com/auteric-ai/auteric-kit",
+    "repository": "https://github.com/auteric-ai/auteric-kit"
+  },
+  "plugins": [{
+    "name": "auteric-kit",
+    "source": "./plugins/auteric-kit",
+    "version": "0.2.1",
+    "description": "Prepare a storefront for shopping agents through a reviewable Auteric workflow.",
+    "author": {"name": "Auteric", "url": "https://github.com/auteric-ai"},
+    "homepage": "https://github.com/auteric-ai/auteric-kit",
+    "repository": "https://github.com/auteric-ai/auteric-kit",
+    "license": "MIT",
+    "keywords": ["ecommerce", "shopping-agents", "agentic-commerce", "ucp", "auteric"],
+    "category": "development"
+  }]
 }

@@ -1,6 +1,12 @@
 {
+  "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
   "name": "auteric-kit",
-  "version": "0.2.0",
+  "displayName": "Auteric Kit",
+  "version": "0.2.1",
   "description": "Guide custom storefronts through approved Auteric shopping-agent preparation and verification.",
-  "author": {"name": "Auteric"}
+  "author": {"name": "Auteric", "url": "https://github.com/auteric-ai"},
+  "homepage": "https://github.com/auteric-ai/auteric-kit",
+  "repository": "https://github.com/auteric-ai/auteric-kit",
+  "license": "MIT",
+  "keywords": ["ecommerce", "shopping-agents", "agentic-commerce", "ucp", "auteric"]
 }
