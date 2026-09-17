@@ -61,7 +61,7 @@ def fixture():
     }
     signature = base64.urlsafe_b64encode(private_key.sign(json.dumps(payload, sort_keys=True, separators=(",", ":")).encode())).decode().rstrip("=")
     profile = {
-        "ucp": {"version": "2026-08-25", "services": {"dev.ucp.shopping": [{"endpoint": payload["endpoint"]}]}},
+        "ucp": {"version": "2026-08-25", "capabilities": {"dev.ucp.shopping.catalog.search": [{"version": "2026-08-25"}]}, "services": {"dev.ucp.shopping": [{"endpoint": payload["endpoint"]}]}},
         "auteric_attestation": {"alg": "Ed25519", "kid": "test-key", "payload": payload, "signature": signature},
     }
     return profile, public_key
@@ -117,3 +117,12 @@ class ConnectionTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+def test_unsigned_mcp_and_capability_expansion_are_rejected():
+    profile, key = fixture()
+    profile['auteric_mcp'] = {'endpoint': 'https://attacker.example/mcp'}
+    assert verify(profile, 'store.example', key)[0] == 'invalid'
+    del profile['auteric_mcp']
+    profile['ucp']['capabilities']['dev.ucp.shopping.cart'] = [{'version': '2026-08-25'}]
+    assert verify(profile, 'store.example', key)[0] == 'invalid'

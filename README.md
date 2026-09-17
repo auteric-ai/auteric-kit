@@ -1,3 +1,26 @@
+# Auteric Kit 0.4.0 — local release candidate
+
+This revision is prepared locally; it has not been pushed or published.
+
+`connect` starts at the repository root, detects the storefront and the authoritative
+backend, then installs the bundled Python SDK and project skill, scans every canonical
+operation, installs a static catalog adapter when supported, pairs with the account
+owner in the browser, and runs sandbox mapping and Gateway/MCP checks. It writes
+capability and validation reports in `.auteric/`. Keep `auteric connector` running
+for continued access. Runtime credentials stay outside the merchant repository.
+
+The plugin carries its CLI at `skills/auteric-connect/scripts/cli/bin/auteric.js`.
+The skill invokes that actual installed path; npm publication is not required.
+Node 20+ and Python 3.11+ with venv are required; first runtime installation fetches
+httpx and pydantic dependencies into a private virtual environment.
+
+Factory and REST integrations use an explicit `.auteric/connector.json` with
+supported operations and sandbox `test_inputs`. Route-name matches are candidates;
+the coding skill must trace and implement the adapter before they become tools.
+Payment capture, orders and refunds are outside this runtime's supported operations.
+Production stores are prepared only; activation and deployment require publication
+approval and independent production checks.
+
 <p align="center">
   <img src="https://scanner.auteric.com/static/brand/logo_evergreen_auteric-symbol_20260906_transparent.png" width="76" alt="Auteric mark" />
 </p>
@@ -39,7 +62,7 @@ short-lived session token is stored in the storefront repository. It writes
 
 When the authenticated Commerce API returns a signed UCP document, the CLI prepares
 `/.well-known/ucp` automatically in the correct static/public directory.
-It refuses to replace an existing, different profile. For a plain static site
+It refuses to replace an unrelated or manually modified profile; a previously generated profile can be refreshed only when its saved content digest still matches. For a plain static site
 served from the project root, that file is `.well-known/ucp`; for Next.js it is
 `public/.well-known/ucp`. The result must be reviewed and published by the
 merchant. In local development only, the API can issue a profile pointing to an
@@ -52,15 +75,12 @@ key is not a production trust anchor. Local verification never marks the
 public domain as owned or enables production routing. Outside local
 development, HTTPS and independent public-domain verification are required.
 
-This is an **incomplete vertical slice**: the CLI identifies available agents
-but does not install or invoke them, map or test commerce capabilities, provision
-MCP, or enable runtime protection. `disconnect` fails explicitly until revocation
-is implemented. The local Commerce API requires the separate
-`auteric-commerce-starter/src` and `auteric-commerce-sdk/src` packages on
-`PYTHONPATH` (or installed in the server virtual environment). Do not advertise `npx @auteric/cli`
-until the package and corresponding API are published and validated together.
+The CLI prepares and tests supported local connectors, but it does not publish a
+merchant site, issue production credentials, or enable production traffic. The local
+Commerce API must be running separately. Do not advertise `npx @auteric/cli` until
+the package and corresponding API are published and validated together.
 
-Auteric Kit is a coding-agent plugin for **custom commerce sites**. It helps a store team map its real catalog, prepare merchant-controlled UCP discovery, and check public exposure without moving checkout or payment away from the store. The kit contains instructions and read-only verification tools. It does **not** contain a hosted Auteric Gateway, merchant account, signing key, or automatic runtime protection.
+Auteric Kit is a coding-agent plugin for **custom commerce sites**. It helps a store team map its real catalog, prepare merchant-controlled UCP discovery, and check public exposure without moving checkout or payment away from the store. The kit contains skills, the executable connect CLI, the bundled connector SDK and read-only public verification tools. It does **not** contain a hosted Auteric Gateway, merchant account, signing key, or automatic runtime protection.
 
 ## Install in your store repository
 
@@ -87,9 +107,27 @@ codex plugin add auteric-kit@auteric
 
 Open Codex in the storefront repository. Auteric Kit surfaces the starter action **“Prepare this storefront for shopping agents with Auteric.”** Choose it to begin. You can also ask naturally, for example: “Prepare this store for shopping agents” or “Review this ecommerce site for AI shopping.” There is no magic skill name to learn.
 
-Codex first inspects the repository and explains the smallest safe plan: catalog data, cart and checkout boundaries, likely files and routes, dependencies, validation, and any Auteric service requirement. It waits for your normal approval before modifying application files. After approval, it makes only the locally supportable changes, runs relevant checks, and reports exactly what still needs a merchant or Auteric operator.
+Codex first inspects the repository and explains the smallest safe plan: catalog data, cart and checkout boundaries, likely files and routes, dependencies, validation, and any Auteric service requirement. Your connect request authorizes local installation, sign-in, adapters and sandbox tests. Approval is requested before push/publication/deployment. It makes the locally supportable changes, runs relevant checks, and reports exactly what still needs a merchant or Auteric operator.
 
 Installing the plugin adds the capability only. It never changes storefront code, installs dependencies, creates credentials, or contacts an Auteric service by itself.
+
+## Where a merchant runs Connect
+
+Run the command from the repository root whenever possible. The CLI looks up to four
+levels below it for a storefront and API service. With one candidate of each type it
+chooses them automatically: the backend receives the connector and capability reports;
+the frontend receives the prepared `/.well-known/ucp` document. If there are multiple
+backend services, it stops before authentication and prints the candidates. Choose the
+authoritative commerce service explicitly:
+
+```sh
+node /path/to/auteric-kit/bin/auteric.js connect \
+  --localhost --store-url http://127.0.0.1:5500 \
+  --backend services/commerce-api --frontend apps/storefront
+```
+
+The connector only maps APIs that it can trace and test. A route-name match, a button,
+or browser `localStorage` is never enough to activate a merchant capability.
 
 Codex, Claude Code, Cursor, and other Skills-compatible agents use the same inspected-and-approved workflow. Their buttons and commands differ by host; see [supported coding agents](COMPATIBILITY.md) for the matching entry point.
 

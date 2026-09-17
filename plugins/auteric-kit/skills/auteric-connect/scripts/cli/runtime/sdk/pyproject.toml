@@ -1,0 +1,26 @@
+[build-system]
+requires = ["setuptools>=75"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "auteric-commerce-sdk"
+version = "0.1.0"
+description = "Customer-side canonical commerce connector for Auteric"
+requires-python = ">=3.11"
+dependencies = ["httpx>=0.28,<1", "pydantic>=2.9,<3"]
+
+[project.optional-dependencies]
+test = ["pytest>=8,<10", "build>=1,<2"]
+
+[project.scripts]
+auteric-commerce = "auteric_edge.cli:main"
+auteric = "auteric_edge.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+auteric_edge = ["agent_skill/*.md"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

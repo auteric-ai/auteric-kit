@@ -2,6 +2,16 @@
 
 Follow these steps in the merchant's repository. Keep source review local. Never send application code, customer data, or secrets to a public scan.
 
+## 0. Find the merchant services
+
+Begin at the repository root. Identify the frontend that owns the public domain
+and the backend that is authoritative for commerce. If there is one candidate of
+each, use them. If several services appear to own cart, checkout, catalog or
+inventory, stop before authentication and require the merchant to choose the
+authoritative one. Record both selected paths: connector configuration and
+capability reports go in the backend; the prepared UCP document goes in the
+frontend deployment project.
+
 ## 1. Inventory and plan
 
 Identify the actual framework, deployment method, product source, inventory authority, cart state, checkout handoff, authentication and existing UCP/WebMCP interfaces. Record exact files and routes. Propose a small implementation table with each intended capability, its backing store function, side effects, auth boundary, proposed files and proof test. Mark unknown data as unknown. Do not infer that an existing button provides a safe agent API.
@@ -16,7 +26,7 @@ Test at least: representative in-stock product, out-of-stock variant, pagination
 
 ## 3. Connect to the service
 
-Only a configured HTTPS Auteric Commerce service can create an authenticated Store, connector credential, Gateway route and signed discovery document. The authorized merchant/operator provisions it; do not bootstrap from a guessed URL or a key embedded in public JSON. For current service contracts, see `contract.md`. Keep one-time connector credentials in the store's secret manager, never in source control or agent-visible output. The connection needs a current connector heartbeat, tested mappings, enabled capabilities, policy and merchant-domain binding before production agent traffic is considered ready.
+Only a configured HTTPS Auteric Commerce service can create an authenticated Store, connector credential, Gateway route and signed discovery document. The connect CLI provisions the browser-authorized store and sandbox connector; do not bootstrap from a guessed URL or a key embedded in public JSON. For current service contracts, see `contract.md`. Keep one-time connector credentials in the store's secret manager, never in source control or agent-visible output. The connection needs a current connector heartbeat, tested mappings, enabled capabilities, policy and merchant-domain binding before production agent traffic is considered ready.
 
 If no live service or merchant account is available, stop at prepared local code. State the exact blocker and do not produce a fake UCP signature or protected badge.
 

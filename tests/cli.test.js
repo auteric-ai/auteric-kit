@@ -1,9 +1,9 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtempSync, readFileSync, symlinkSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, realpathSync, readFileSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { apiUrl, inspect, localStoreUrl, localTestDomain, prepareDiscovery, run } from '../src/cli.js';
+import { apiUrl, inspect, localStoreUrl, localTestDomain, prepareDiscovery, resolveProjectLayout, run } from '../src/cli.js';
 
 test('localhost mode permits loopback only and cloud requires HTTPS', () => {
   assert.equal(apiUrl({ localhost: true }), 'http://127.0.0.1:8100');
@@ -16,15 +16,41 @@ test('localhost mode permits loopback only and cloud requires HTTPS', () => {
 });
 
 test('local store has a stable non-public test identifier without a domain', async () => {
-  const root = mkdtempSync(join(tmpdir(), 'auteric-local-store-'));
+  const root = mkdtempSync(join(realpathSync(tmpdir()), 'auteric-local-store-'));
   const domain = localTestDomain(root);
   assert.match(domain, /^local-[a-f0-9]{12}\.auteric\.test$/);
   assert.equal(localTestDomain(root), domain);
   await run(['connect', '--localhost', '--dry-run', '--store-url', 'http://127.0.0.1:5500'], root);
 });
 
+test('project root selects one backend and frontend automatically', () => {
+  const root = mkdtempSync(join(realpathSync(tmpdir()), 'auteric-layout-'));
+  const api = join(root, 'services', 'api');
+  const web = join(root, 'apps', 'web');
+  mkdirSync(api, { recursive: true });
+  mkdirSync(web, { recursive: true });
+  writeFileSync(join(api, 'package.json'), JSON.stringify({ dependencies: { express: '5.0.0' } }));
+  writeFileSync(join(web, 'package.json'), JSON.stringify({ dependencies: { next: '15.0.0' } }));
+  const layout = resolveProjectLayout(root);
+  assert.equal(layout.backend, api);
+  assert.equal(layout.frontend, web);
+  assert.equal(layout.backendRelative, 'services/api');
+  assert.equal(layout.frontendRelative, 'apps/web');
+});
+
+test('project root requires an explicit backend selection when there are multiple APIs', () => {
+  const root = mkdtempSync(join(realpathSync(tmpdir()), 'auteric-layout-many-'));
+  for (const name of ['catalog', 'checkout']) {
+    const api = join(root, 'services', name);
+    mkdirSync(api, { recursive: true });
+    writeFileSync(join(api, 'package.json'), JSON.stringify({ dependencies: { express: '5.0.0' } }));
+  }
+  assert.throws(() => resolveProjectLayout(root), /multiple backend candidates/);
+  assert.equal(resolveProjectLayout(root, { backend: 'services/catalog' }).backend, join(root, 'services/catalog'));
+});
+
 test('inspect custom static project and prepare only service-signed UCP', () => {
-  const root = mkdtempSync(join(tmpdir(), 'auteric-cli-'));
+  const root = mkdtempSync(join(realpathSync(tmpdir()), 'auteric-cli-'));
   writeFileSync(join(root, 'index.html'), '<h1>Shop</h1>');
   assert.equal(inspect(root).framework, 'static');
   const document = { ucp: { version: '2026-08-25' }, auteric_attestation: { signature: 'server-provided-signature' } };
@@ -38,8 +64,8 @@ test('inspect custom static project and prepare only service-signed UCP', () => 
 });
 
 test('discovery does not follow project symlinks', () => {
-  const root = mkdtempSync(join(tmpdir(), 'auteric-symlink-'));
-  const elsewhere = mkdtempSync(join(tmpdir(), 'auteric-elsewhere-'));
+  const root = mkdtempSync(join(realpathSync(tmpdir()), 'auteric-symlink-'));
+  const elsewhere = mkdtempSync(join(realpathSync(tmpdir()), 'auteric-elsewhere-'));
   symlinkSync(elsewhere, join(root, '.well-known'));
   assert.throws(() => prepareDiscovery(root, 'static', {
     ucp: { version: '2026-08-25' }, auteric_attestation: { signature: 'server-supplied' },
@@ -47,7 +73,7 @@ test('discovery does not follow project symlinks', () => {
 });
 
 test('one browser approval prepares a pending store and signals dashboard readiness', async () => {
-  const root = mkdtempSync(join(tmpdir(), 'auteric-guided-connect-'));
+  const root = mkdtempSync(join(realpathSync(tmpdir()), 'auteric-guided-connect-'));
   const previousFetch = globalThis.fetch;
   const storeId = 'a'.repeat(32);
   const calls = [];

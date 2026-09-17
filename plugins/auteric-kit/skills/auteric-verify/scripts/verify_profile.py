@@ -48,6 +48,21 @@ def verify(profile, domain, trusted_key=None, expected_kid=None):
     declared_endpoints = [entry.get("endpoint") for entry in declared_services if isinstance(entry, dict)]
     if endpoint not in declared_endpoints:
         return "invalid", "Signed endpoint does not match the advertised shopping service"
+    requirements = {
+        "dev.ucp.shopping.catalog.search": {"search_products"},
+        "dev.ucp.shopping.catalog.lookup": {"get_product", "lookup_products"},
+        "dev.ucp.shopping.cart": {"create_cart", "get_cart", "replace_cart_items", "cancel_cart"},
+        "dev.ucp.shopping.checkout": {"create_checkout", "get_checkout", "update_checkout", "complete_checkout", "cancel_checkout"},
+    }
+    operations = payload.get("capabilities", [])
+    capabilities = declared.get("capabilities", {})
+    if not isinstance(operations, list) or not all(isinstance(op, str) for op in operations) or not isinstance(capabilities, dict):
+        return "invalid", "Capability binding must contain canonical operations and declarations"
+    expected = {name for name, needed in requirements.items() if needed <= set(operations)}
+    if set(capabilities) != expected:
+        return "invalid", "UCP capabilities differ from signed operations"
+    if profile.get("auteric_mcp") != payload.get("mcp"):
+        return "invalid", "MCP endpoint and tools differ from signed exposure"
     if signature.get("alg") != "Ed25519" or not signature.get("kid"):
         return "invalid", "Unsupported or incomplete signature metadata"
     if expected_kid and signature.get("kid") != expected_kid:

@@ -14,7 +14,7 @@ Before writing, show a concise table:
 | Discovery | `/.well-known/ucp` publication route | Framework/deployment route | Requires service-issued document if absent |
 | Validation | Project checks and representative product cases | Existing scripts | Ready or unavailable |
 
-Name every file expected to change and every dependency expected to be added. State that no protected status can be issued from local code alone. Wait for approval.
+Name every file expected to change and every dependency expected to be added. State that no protected status can be issued from local code alone. Continue authorized local changes. Wait for approval only before pushing, publishing or deploying.
 
 ## Local integration rules
 
