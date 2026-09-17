@@ -1,4 +1,4 @@
-# 0.4.0 local release candidate
+# 0.4.1 local release candidate
 
 Prepared, not pushed or published. The plugin includes the Node CLI and Python SDK
 source, so a separately published npm package is not required for connect.

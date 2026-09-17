@@ -1,4 +1,4 @@
-# Auteric Kit 0.4.0 — local release candidate
+# Auteric Kit 0.4.1 — local release candidate
 
 This revision is prepared locally; it has not been pushed or published.
 

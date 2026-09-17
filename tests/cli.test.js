@@ -63,6 +63,16 @@ test('inspect custom static project and prepare only service-signed UCP', () => 
   assert.throws(() => prepareDiscovery(root, 'static', { ucp: { version: '2026-08-25' } }), /signed/);
 });
 
+test('Vite publishes discovery from the untransformed public directory', () => {
+  const root = mkdtempSync(join(realpathSync(tmpdir()), 'auteric-vite-'));
+  writeFileSync(join(root, 'package.json'), JSON.stringify({ devDependencies: { vite: '6.0.0' } }));
+  const document = { ucp: { version: '2026-08-25' }, auteric_attestation: { signature: 'server-provided-signature' } };
+  assert.equal(inspect(root).framework, 'vite');
+  const result = prepareDiscovery(root, 'vite', document);
+  assert.match(result.path, /public\/\.well-known\/ucp$/);
+  assert.deepEqual(JSON.parse(readFileSync(result.path, 'utf8')), document);
+});
+
 test('discovery does not follow project symlinks', () => {
   const root = mkdtempSync(join(realpathSync(tmpdir()), 'auteric-symlink-'));
   const elsewhere = mkdtempSync(join(realpathSync(tmpdir()), 'auteric-elsewhere-'));

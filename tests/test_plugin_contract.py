@@ -10,7 +10,7 @@ PLUGIN = ROOT / "plugins" / "auteric-kit"
 class PluginContractTests(unittest.TestCase):
     def test_codex_manifest_has_user_facing_starters(self):
         manifest = json.loads((PLUGIN / ".codex-plugin" / "plugin.json").read_text())
-        self.assertEqual(manifest["version"], "0.4.0")
+        self.assertEqual(manifest["version"], "0.4.1")
         prompts = manifest["interface"]["defaultPrompt"]
         self.assertTrue(any("Prepare this storefront" in prompt for prompt in prompts))
         self.assertFalse(any("auteric-connect" in prompt for prompt in prompts))
@@ -30,7 +30,7 @@ class PluginContractTests(unittest.TestCase):
     def test_claude_has_a_matching_visible_entry_point(self):
         manifest = json.loads((PLUGIN / ".claude-plugin" / "plugin.json").read_text())
         command = (PLUGIN / "commands" / "prepare-storefront.md").read_text()
-        self.assertEqual(manifest["version"], "0.4.0")
+        self.assertEqual(manifest["version"], "0.4.1")
         self.assertIn("Prepare this storefront for shopping agents", command)
         self.assertNotIn("auteric-connect", command)
 

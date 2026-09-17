@@ -50,7 +50,7 @@ export function inspect(root) {
   const isFile = file => existsSync(join(root, file));
   const packageData = isFile('package.json') ? JSON.parse(readFileSync(join(root, 'package.json'), 'utf8')) : {};
   const deps = { ...packageData.dependencies, ...packageData.devDependencies };
-  const framework = deps.next ? 'next' : deps.nuxt ? 'nuxt' : deps.express ? 'express' : isFile('index.html') ? 'static' : 'custom';
+  const framework = deps.next ? 'next' : deps.nuxt ? 'nuxt' : deps.vite ? 'vite' : deps.express ? 'express' : isFile('index.html') ? 'static' : 'custom';
   const agents = ['codex', 'claude', 'cursor'].filter(agent => isFile(agent === 'cursor' ? '.cursor' : agent === 'claude' ? '.claude' : '.codex') || executable(agent === 'cursor' ? 'cursor-agent' : agent));
   return { framework, agents, catalogCandidate: Object.keys(deps).filter(dep => /commerce|shopify|medusa|stripe/.test(dep)),
     existingUcp: [join(root, '.well-known/ucp'), join(root, 'public/.well-known/ucp')].filter(existsSync) };
@@ -199,7 +199,7 @@ export function localTestDomain(root) {
 }
 
 function destination(root, framework) {
-  return join(root, ['next', 'nuxt'].includes(framework) || (framework !== 'static' && existsSync(join(root, 'public'))) ? 'public/.well-known/ucp' : '.well-known/ucp');
+  return join(root, ['next', 'nuxt', 'vite'].includes(framework) || (framework !== 'static' && existsSync(join(root, 'public'))) ? 'public/.well-known/ucp' : '.well-known/ucp');
 }
 
 export function prepareDiscovery(root, framework, document, options = {}) {
