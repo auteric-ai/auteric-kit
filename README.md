@@ -26,12 +26,13 @@ separate production Store and publish a fresh service-issued profile.
 Use `--api-url http://127.0.0.1:PORT` together with `--localhost` if your local
 Commerce API listens on another loopback port. The flag rejects non-loopback
 addresses. The CLI opens the API's browser approval page, then creates or resumes
-a pending store only after you approve the session. Neither a password nor the
+a pending store automatically after you approve the session. The browser opens
+that store's dashboard when setup finishes. Neither a password nor the
 short-lived session token is stored in the storefront repository. It writes
 `.auteric/config.json` with non-secret local IDs and state.
 
-When the authenticated Commerce API returns a signed UCP document, the CLI asks
-before preparing `/.well-known/ucp` in the correct static/public directory.
+When the authenticated Commerce API returns a signed UCP document, the CLI prepares
+`/.well-known/ucp` automatically in the correct static/public directory.
 It refuses to replace an existing, different profile. For a plain static site
 served from the project root, that file is `.well-known/ucp`; for Next.js it is
 `public/.well-known/ucp`. The result must be reviewed and published by the

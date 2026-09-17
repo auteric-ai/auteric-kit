@@ -1,7 +1,6 @@
 import { createHash, randomBytes } from 'node:crypto';
 import { existsSync, lstatSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
-import { createInterface } from 'node:readline/promises';
 import { spawn } from 'node:child_process';
 import { setTimeout as delay } from 'node:timers/promises';
 
@@ -103,7 +102,7 @@ async function authenticate(base, options) {
     const reply = await request(base, '/api/commerce/cli/poll', {
       method: 'POST', body: { request_id: session.request_id, state, verifier },
     });
-    if (reply.status === 'authorized') return reply;
+    if (reply.status === 'authorized') return { ...reply, request_id: session.request_id };
   }
   throw Error('Browser authorization expired. Run connect again.');
 }
@@ -172,11 +171,6 @@ async function connect(root, options) {
   const stores = await request(base, '/api/commerce/stores', { token: auth.access_token });
   let store = stores.find(item => item.domain === domain);
   if (!store) {
-    const rl = createInterface({ input: process.stdin, output: process.stdout });
-    let approval;
-    try { approval = options.yes ? 'yes' : await rl.question(`Create a pending Auteric store for ${domain} in ${auth.user.organization}? [y/N] `); }
-    finally { rl.close(); }
-    if (!['yes', 'y'].includes(approval.trim().toLowerCase())) { console.log('Store creation cancelled.'); return; }
     store = await request(base, '/api/commerce/stores', { method: 'POST', token: auth.access_token,
       body: { domain, name: domain, platform: 'custom', environment: options.localhost ? 'sandbox' : 'production' } });
   }
@@ -185,30 +179,31 @@ async function connect(root, options) {
   try { discovery = await request(base, `/api/commerce/stores/${encodeURIComponent(store.id)}/discovery`, { token: auth.access_token }); }
   catch (error) { console.log(`UCP publication pending: ${error.message}`); }
   if (discovery?.document) {
-    const rl = createInterface({ input: process.stdin, output: process.stdout });
-    let approval;
-    try { approval = options.yes ? 'yes' : await rl.question(`Prepare signed UCP at ${destination(root, project.framework)}? [y/N] `); }
-    finally { rl.close(); }
-    if (['y', 'yes'].includes(approval.trim().toLowerCase())) {
-      const result = prepareDiscovery(root, project.framework, discovery.document);
-      console.log(`Prepared ${result.path}. Review, commit and publish it on the store hostname.`);
-      state.status = 'discovery_prepared';
-      if (storeUrl) {
-        const check = await request(base, `/api/commerce/stores/${encodeURIComponent(store.id)}/verify-local`, {
-          method: 'POST', token: auth.access_token, body: { store_url: storeUrl },
-        });
-        if (check.local_verified && !check.public_domain_verified) {
-          state.status = 'locally_verified';
-          console.log(`Local UCP verified at ${check.url}. Public ownership and runtime protection remain unverified.`);
-        }
+    const result = prepareDiscovery(root, project.framework, discovery.document);
+    console.log(`Signed UCP prepared at ${result.path}.`);
+    state.status = 'discovery_prepared';
+    if (storeUrl) {
+      const check = await request(base, `/api/commerce/stores/${encodeURIComponent(store.id)}/verify-local`, {
+        method: 'POST', token: auth.access_token, body: { store_url: storeUrl },
+      });
+      if (check.local_verified && !check.public_domain_verified) {
+        state.status = 'locally_verified';
+        console.log(`Local UCP verified at ${check.url}. Public ownership and runtime protection remain unverified.`);
       }
     }
   }
   mkdirSync(resolve(configPath(root), '..'), { recursive: true });
   writeFileSync(configPath(root), JSON.stringify(state, null, 2) + '\n', { mode: 0o644 });
+  try {
+    await request(base, '/api/commerce/cli/complete', { method: 'POST', token: auth.access_token,
+      body: { request_id: auth.request_id, store_id: store.id } });
+  } catch (error) {
+    if (!/^404\b/.test(error.message)) throw error;
+    console.log('This control plane does not support automatic dashboard handoff yet. Open the dashboard link below.');
+  }
   console.log(`Store created or resumed: ${store.id}. Local configuration: ${configPath(root)}`);
   console.log('Ownership and capabilities remain unverified until public publication and successful connection tests.');
-  console.log(`Control plane: ${base}/console`);
+  console.log(`Your store dashboard: ${base}/console?store=${encodeURIComponent(store.id)}`);
   if (options.localhost) console.log('Local test mode: signatures from a development key and localhost URLs are not production trust or HTTPS merchant discovery.');
 }
 

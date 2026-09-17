@@ -45,3 +45,37 @@ test('discovery does not follow project symlinks', () => {
     ucp: { version: '2026-08-25' }, auteric_attestation: { signature: 'server-supplied' },
   }), /symlink/);
 });
+
+test('one browser approval prepares a pending store and signals dashboard readiness', async () => {
+  const root = mkdtempSync(join(tmpdir(), 'auteric-guided-connect-'));
+  const previousFetch = globalThis.fetch;
+  const storeId = 'a'.repeat(32);
+  const calls = [];
+  const document = { ucp: { version: '2026-08-25' }, auteric_attestation: { signature: 'service-signature' } };
+  globalThis.fetch = async (target, options = {}) => {
+    const path = new URL(target).pathname;
+    calls.push({ path, body: options.body ? JSON.parse(options.body) : null });
+    const data = path.endsWith('/cli/start')
+      ? { authorization_url: 'http://127.0.0.1:8100/cli/authorize?request=test',
+          request_id: 'test-request-id', user_code: '1234-5678', expires_at: Date.now() / 1000 + 60, interval: 0 }
+      : path.endsWith('/cli/poll')
+        ? { status: 'authorized', access_token: 'test-token', user: { email: 'owner@example.com', organization: 'Owner' } }
+        : path.endsWith('/cli/complete')
+          ? { completed: true, store_id: storeId }
+          : path.endsWith('/discovery')
+            ? { document }
+            : path.endsWith('/stores') && options.method === 'POST'
+              ? { id: storeId }
+              : path.endsWith('/stores') ? [] : {};
+    return new Response(JSON.stringify(data), { status: 200, headers: { 'content-type': 'application/json' } });
+  };
+  try {
+    await run(['connect', '--localhost', '--no-browser'], root);
+    assert.deepEqual(JSON.parse(readFileSync(join(root, '.well-known/ucp'), 'utf8')), document);
+    assert.equal(JSON.parse(readFileSync(join(root, '.auteric/config.json'), 'utf8')).store_id, storeId);
+    assert.equal(calls.find(call => call.path.endsWith('/cli/complete')).body.store_id, storeId);
+    assert.equal(calls.find(call => call.path.endsWith('/cli/complete')).body.request_id, 'test-request-id');
+  } finally {
+    globalThis.fetch = previousFetch;
+  }
+});
