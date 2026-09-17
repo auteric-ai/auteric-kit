@@ -1,4 +1,10 @@
-# Auteric Kit
+<p align="center">
+  <img src="https://scanner.auteric.com/static/brand/logo_evergreen_auteric-symbol_20260906_transparent.png" width="76" alt="Auteric mark" />
+</p>
+<h1 align="center">A U T E R I C</h1>
+<p align="center"><strong>Auteric Kit</strong> · Agentic commerce connection for custom storefronts</p>
+
+> Brand usage: use the Auteric mark beside the spaced uppercase wordmark, `A U T E R I C`. The shared visual specification is in [BRAND.md](BRAND.md).
 
 ## CLI preview for custom storefronts
 
