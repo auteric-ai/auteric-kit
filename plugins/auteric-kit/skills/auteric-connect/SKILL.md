@@ -5,6 +5,14 @@ description: Prepare an ecommerce or storefront project for shopping agents with
 
 # Prepare a storefront for shopping agents
 
+If the user asks for a single-command setup, the kit's unpublished CLI preview
+supports `node /path/to/auteric-kit/bin/auteric.js connect --domain STORE` and
+`--localhost --store-url http://127.0.0.1:5500` for local HTTP control-plane
+and storefront verification. The CLI currently performs browser authorization,
+pending store registration and local UCP publication checks; it does not install
+agent adapters or verify shopping actions. Do not claim `npx @auteric/cli` is
+available or that local development signatures prove public protection.
+
 This is a guided workflow. The merchant does not need to know this skill's name.
 Read [the workflow](references/workflow.md), [the implementation guide](references/implementation.md), and [the contract](references/contract.md) before proposing changes.
 

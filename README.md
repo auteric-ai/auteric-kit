@@ -1,5 +1,52 @@
 # Auteric Kit
 
+## CLI preview for custom storefronts
+
+The repository now includes a Node.js CLI source package. It has **not** been
+published to npm. Until the control-plane authentication routes are running,
+use the local checkout to inspect a store without changing it:
+
+```sh
+node /path/to/auteric-kit/bin/auteric.js connect --domain store.example.com --dry-run
+```
+
+To test browser authorization against a locally running Auteric Commerce API:
+
+```sh
+node /path/to/auteric-kit/bin/auteric.js connect --domain store.example.com --localhost \
+  --store-url http://127.0.0.1:5500
+```
+
+Use `--api-url http://127.0.0.1:PORT` together with `--localhost` if your local
+Commerce API listens on another loopback port. The flag rejects non-loopback
+addresses. The CLI opens the API's browser approval page, then creates or resumes
+a pending store only after you approve the session. Neither a password nor the
+short-lived session token is stored in the storefront repository. It writes
+`.auteric/config.json` with non-secret local IDs and state.
+
+When the authenticated Commerce API returns a signed UCP document, the CLI asks
+before preparing `/.well-known/ucp` in the correct static/public directory.
+It refuses to replace an existing, different profile. For a plain static site
+served from the project root, that file is `.well-known/ucp`; for Next.js it is
+`public/.well-known/ucp`. The result must be reviewed and published by the
+merchant. In local development only, the API can issue a profile pointing to an
+HTTP loopback Gateway. `--store-url` makes the API fetch the local storefront's
+`/.well-known/ucp` and compare the parsed JSON with the issued profile.
+Run a static server from the store project root, such as
+`python3 -m http.server 5500 --bind 127.0.0.1`, before using this flag. A
+development signature is cryptographically valid for its test key, but that
+key is not a production trust anchor. Local verification never marks the
+public domain as owned or enables production routing. Outside local
+development, HTTPS and independent public-domain verification are required.
+
+This is an **incomplete vertical slice**: the CLI identifies available agents
+but does not install or invoke them, map or test commerce capabilities, provision
+MCP, or enable runtime protection. `disconnect` fails explicitly until revocation
+is implemented. The local Commerce API requires the separate
+`auteric-commerce-starter/src` and `auteric-commerce-sdk/src` packages on
+`PYTHONPATH` (or installed in the server virtual environment). Do not advertise `npx @auteric/cli`
+until the package and corresponding API are published and validated together.
+
 Auteric Kit is a coding-agent plugin for **custom commerce sites**. It helps a store team map its real catalog, prepare merchant-controlled UCP discovery, and check public exposure without moving checkout or payment away from the store. The kit contains instructions and read-only verification tools. It does **not** contain a hosted Auteric Gateway, merchant account, signing key, or automatic runtime protection.
 
 ## Install in your store repository

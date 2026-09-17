@@ -1,5 +1,19 @@
 # Release status
 
+Version 0.3.0 adds an unpublished Node.js CLI source package. Its local HTTP
+path was exercised against a loopback Commerce API and loopback storefront:
+browser authorization, pending Store registration, service-issued UCP document,
+HTTP 200 at `/.well-known/ucp`, and `local_verified: true`. The local document
+uses a test signing key and an HTTP loopback endpoint. It is not a production
+merchant attestation. The corresponding control-plane changes live in the
+Auteric commerce platform repository and have not been deployed to the hosted
+service. The CLI has not been published to npm.
+
+The Commerce API currently exposes UCP REST routes and a WebMCP projection. It
+does **not** implement a merchant MCP Streamable HTTP endpoint with
+`initialize`, `tools/list`, and `tools/call`, nor a complete scope-aware tool
+registry. Do not describe it as a working multi-tenant merchant MCP server.
+
 Auteric Kit can be installed from this repository and used to prepare merchant storefront code. Its read-only verifier can inspect a published UCP document and verify a service-issued exposure signature with an independent trusted key.
 
 Version 0.2.0 adds a user-facing Codex starter action and a mandatory inspect → plan → approval → implement → verify workflow. It does not use a SessionStart hook: the current official Codex documentation inspected for this release does not establish a supported SessionStart prompt-injection mechanism. The starter action and natural-language skill triggers provide discoverability without unsolicited session messages.

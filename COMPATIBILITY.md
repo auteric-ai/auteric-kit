@@ -2,6 +2,11 @@
 
 Auteric Kit uses one shared integration workflow across supported coding agents. The wording and completion states are identical: inspect → plan → approval → implement → verify.
 
+The source repository also contains an unpublished CLI preview with `--localhost`
+for the local Commerce API. It performs shared browser authorization, pending
+store registration and local UCP checks independently of the coding agent. Agent installation and
+automatic invocation are not yet implemented by that CLI.
+
 | Agent | How the merchant starts | What happens next |
 | --- | --- | --- |
 | Codex | Choose **Prepare this storefront for shopping agents with Auteric** from the plugin starter actions, or ask naturally. | The shared storefront workflow starts. |
