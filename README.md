@@ -17,6 +17,12 @@ node /path/to/auteric-kit/bin/auteric.js connect --domain store.example.com --lo
   --store-url http://127.0.0.1:5500
 ```
 
+For a store without any public domain yet, omit `--domain` but keep `--localhost`
+and `--store-url`. The CLI registers a stable `local-...auteric.test` test
+identifier for this project. It is not a publishable domain, ownership proof,
+or production connection. When a real domain is available, connect it as a
+separate production Store and publish a fresh service-issued profile.
+
 Use `--api-url http://127.0.0.1:PORT` together with `--localhost` if your local
 Commerce API listens on another loopback port. The flag rejects non-loopback
 addresses. The CLI opens the API's browser approval page, then creates or resumes

@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { mkdtempSync, readFileSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { apiUrl, inspect, localStoreUrl, prepareDiscovery } from '../src/cli.js';
+import { apiUrl, inspect, localStoreUrl, localTestDomain, prepareDiscovery, run } from '../src/cli.js';
 
 test('localhost mode permits loopback only and cloud requires HTTPS', () => {
   assert.equal(apiUrl({ localhost: true }), 'http://127.0.0.1:8100');
@@ -13,6 +13,14 @@ test('localhost mode permits loopback only and cloud requires HTTPS', () => {
   assert.throws(() => apiUrl({ localhost: true, 'api-url': 'http://localhost:8100/path' }), /origin/);
   assert.equal(localStoreUrl('http://127.0.0.1:5500'), 'http://127.0.0.1:5500');
   assert.throws(() => localStoreUrl('http://example.com:5500'), /loopback/);
+});
+
+test('local store has a stable non-public test identifier without a domain', async () => {
+  const root = mkdtempSync(join(tmpdir(), 'auteric-local-store-'));
+  const domain = localTestDomain(root);
+  assert.match(domain, /^local-[a-f0-9]{12}\.auteric\.test$/);
+  assert.equal(localTestDomain(root), domain);
+  await run(['connect', '--localhost', '--dry-run', '--store-url', 'http://127.0.0.1:5500'], root);
 });
 
 test('inspect custom static project and prepare only service-signed UCP', () => {

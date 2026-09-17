@@ -115,6 +115,14 @@ function domainName(input) {
   return domain;
 }
 
+export function localTestDomain(root) {
+  const previous = readConfig(root);
+  if (previous?.local_only && /^local-[a-f0-9]{12}\.auteric\.test$/.test(previous.domain || '')) {
+    return previous.domain;
+  }
+  return `local-${createHash('sha256').update(resolve(root)).digest('hex').slice(0, 12)}.auteric.test`;
+}
+
 function destination(root, framework) {
   return join(root, ['next', 'nuxt'].includes(framework) || (framework !== 'static' && existsSync(join(root, 'public'))) ? 'public/.well-known/ucp' : '.well-known/ucp');
 }
@@ -148,12 +156,14 @@ async function connect(root, options) {
   const storeUrl = options['store-url'] ? localStoreUrl(options['store-url']) : null;
   if (storeUrl && !options.localhost) throw Error('--store-url is only available with --localhost');
   const project = inspect(root);
-  const domain = domainName(options.domain);
+  const localOnly = Boolean(options.localhost && !options.domain);
+  const domain = localOnly ? localTestDomain(root) : domainName(options.domain);
   if (project.existingUcp.length && readConfig(root)?.domain !== domain)
     throw Error(`UCP already exists: ${project.existingUcp.join(', ')}. Review before connecting.`);
   const agent = options.agent || project.agents[0] || 'none';
   if (!['codex', 'claude', 'cursor', 'none', 'auto'].includes(agent)) throw Error('Use --agent codex|claude|cursor|auto|none');
   console.log(`Store: ${domain} | Framework: ${project.framework} | Detected agent: ${agent}`);
+  if (localOnly) console.log('This is a local test identifier, not a public domain or ownership proof.');
   console.log('The CLI does not install coding-agent adapters or verify commerce APIs yet.');
   console.log('Candidate commerce libraries:', project.catalogCandidate.join(', ') || 'none detected');
   if (options['dry-run']) { console.log('Dry run: no authentication, store creation or file changes.'); return; }
@@ -170,7 +180,7 @@ async function connect(root, options) {
     store = await request(base, '/api/commerce/stores', { method: 'POST', token: auth.access_token,
       body: { domain, name: domain, platform: 'custom', environment: options.localhost ? 'sandbox' : 'production' } });
   }
-  const state = { api_url: base, domain, store_id: store.id, framework: project.framework, mode: options.localhost ? 'local' : 'cloud', status: 'store_registered' };
+  const state = { api_url: base, domain, store_id: store.id, framework: project.framework, mode: options.localhost ? 'local' : 'cloud', local_only: localOnly, status: 'store_registered' };
   let discovery;
   try { discovery = await request(base, `/api/commerce/stores/${encodeURIComponent(store.id)}/discovery`, { token: auth.access_token }); }
   catch (error) { console.log(`UCP publication pending: ${error.message}`); }
@@ -214,8 +224,9 @@ export async function run(argv, root = process.cwd()) {
       console.log(JSON.stringify({ node: process.version, framework: project.framework, agents: project.agents, existingUcp: project.existingUcp, api_url: apiUrl(options) }, null, 2));
       return;
     }
-    if (!state) throw Error('No local Auteric connection. Run auteric connect --domain store.example.com.');
+    if (!state) throw Error('No Auteric connection. Run auteric connect --localhost for a local store, or supply --domain for a public store.');
     if (command === 'status') { console.log(JSON.stringify(state, null, 2)); return; }
+    if (state.local_only) throw Error('This Store uses a local test identifier. Run connect --localhost --store-url to verify the local profile; public verification requires a real domain.');
     const response = await fetch(`https://${state.domain}/.well-known/ucp`, { redirect: 'error', signal: AbortSignal.timeout(10000) });
     if (!response.ok) throw Error(`Public discovery returned HTTP ${response.status}; publish the prepared file first.`);
     const published = await response.json();
@@ -227,6 +238,6 @@ export async function run(argv, root = process.cwd()) {
   if (command === 'disconnect') {
     throw Error('Disconnect is unavailable in this version. Disable agent access in Auteric Console; no repository files were deleted.');
   }
-  console.log('Usage: auteric connect --domain store.example.com [--localhost] [--api-url http://127.0.0.1:8100] [--store-url http://127.0.0.1:5500] [--dry-run] [--agent auto|codex|claude|cursor|none]');
+  console.log('Usage: auteric connect [--domain store.example.com] [--localhost] [--api-url http://127.0.0.1:8100] [--store-url http://127.0.0.1:5500] [--dry-run] [--agent auto|codex|claude|cursor|none]');
   console.log('Also: auteric login | status | verify | doctor | disconnect | logout');
 }
