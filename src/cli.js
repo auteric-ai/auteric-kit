@@ -90,6 +90,12 @@ async function authenticate(base, options) {
   const link = new URL(session.authorization_url);
   if (link.origin !== base || link.pathname !== '/cli/authorize') throw Error('Unexpected authorization URL from control plane');
   console.log(`Open this Auteric sign-in page:\n${link.href}`);
+  if (session.user_code) {
+    if (!/^\d{4}-\d{4}$/.test(session.user_code)) throw Error('Invalid pairing code from control plane');
+    console.log(`Enter this one-time code in the browser: ${session.user_code}`);
+  } else {
+    console.log('This control plane has not enabled CLI pairing codes yet.');
+  }
   if (!options['no-browser']) openBrowser(link.href);
   const deadline = Math.min(session.expires_at * 1000, Date.now() + 300000);
   while (Date.now() < deadline) {
