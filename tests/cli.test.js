@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdirSync, mkdtempSync, realpathSync, readFileSync, symlinkSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, realpathSync, readFileSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { apiUrl, inspect, localStoreUrl, localTestDomain, prepareDiscovery, resolveProjectLayout, run } from '../src/cli.js';
@@ -82,7 +82,7 @@ test('discovery does not follow project symlinks', () => {
   }), /symlink/);
 });
 
-test('one browser approval prepares a pending store and signals dashboard readiness', async () => {
+test('missing implementation stops before authorization, Store creation and UCP generation', async () => {
   const root = mkdtempSync(join(realpathSync(tmpdir()), 'auteric-guided-connect-'));
   const previousFetch = globalThis.fetch;
   const storeId = 'a'.repeat(32);
@@ -106,11 +106,11 @@ test('one browser approval prepares a pending store and signals dashboard readin
     return new Response(JSON.stringify(data), { status: 200, headers: { 'content-type': 'application/json' } });
   };
   try {
-    await run(['connect', '--localhost', '--no-browser'], root);
-    assert.deepEqual(JSON.parse(readFileSync(join(root, '.well-known/ucp'), 'utf8')), document);
-    assert.equal(JSON.parse(readFileSync(join(root, '.auteric/config.json'), 'utf8')).store_id, storeId);
-    assert.equal(calls.find(call => call.path.endsWith('/cli/complete')).body.store_id, storeId);
-    assert.equal(calls.find(call => call.path.endsWith('/cli/complete')).body.request_id, 'test-request-id');
+    const result = await run(['connect', '--localhost', '--no-browser'], root);
+    assert.equal(result.integration, 'implementation_required');
+    assert.equal(existsSync(join(root, '.well-known/ucp')), false);
+    assert.equal(existsSync(join(root, '.auteric/config.json')), false);
+    assert.deepEqual(calls, []);
   } finally {
     globalThis.fetch = previousFetch;
   }

@@ -251,6 +251,10 @@ async function connect(root, options) {
   if (options['dry-run']) { console.log('Dry run: no authentication, store creation or file changes.'); return; }
   const prepared = await sdk('prepare', layout.backend, { agent: agent === 'claude' ? 'claude-code' : agent === 'auto' ? 'codex' : agent }, { install: true });
   console.log(`Inspected ${prepared.inventory.files_inspected} backend files. Capability report: ${join(layout.backend, '.auteric/capabilities.json')}`);
+  if (!prepared.connector_prepared) {
+    console.log('Integration incomplete: no commerce connector is configured. The coding agent must trace the detected APIs, implement .auteric/connector.json and test its handlers before rerunning Connect. No new Store or UCP was created.');
+    return { integration: 'implementation_required', tested_operations: [] };
+  }
   const auth = await authenticate(base, options);
   console.log(`Signed in as ${auth.user.email} (${auth.user.organization})`);
   const stores = await request(base, '/api/commerce/stores', { token: auth.access_token });
@@ -268,6 +272,11 @@ async function connect(root, options) {
   state.tested_operations = validation.tested_operations;
   state.credential_file = validation.credential_file;
   console.log(`Integration: ${validation.status}; tested operations: ${validation.tested_operations.join(', ') || 'none'}`);
+  if (validation.status !== 'locally_tested') {
+    writeFileSync(configPath(root), JSON.stringify(state, null, 2) + '\n', { mode: 0o644 });
+    console.log('Setup is incomplete. No new UCP was generated. Inspect the validation report and finish the required adapter tests or production preparation.');
+    return state;
+  }
   let discovery;
   try { discovery = await request(base, `/api/commerce/stores/${encodeURIComponent(store.id)}/discovery`, { token: auth.access_token }); }
   catch (error) { console.log(`UCP publication pending: ${error.message}`); }

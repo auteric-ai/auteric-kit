@@ -25,6 +25,7 @@ treated as authority for cart, checkout, inventory, price, or payment.
 
 This is a guided workflow. The merchant does not need to know this skill's name.
 Read [the workflow](references/workflow.md), [the implementation guide](references/implementation.md), and [the contract](references/contract.md) before proposing changes.
+For a custom API integration or an empty UCP, also read [capability completion](references/capability-completion.md). A CLI invocation alone cannot implement arbitrary merchant business logic.
 
 ## 1. Inspect — read-only
 
