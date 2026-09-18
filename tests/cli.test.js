@@ -23,6 +23,11 @@ test('local store has a stable non-public test identifier without a domain', asy
   await run(['connect', '--localhost', '--dry-run', '--store-url', 'http://127.0.0.1:5500'], root);
 });
 
+test('flags without a subcommand use the Connect workflow for GitHub npx', async () => {
+  const root = mkdtempSync(join(realpathSync(tmpdir()), 'auteric-github-shortcut-'));
+  await run(['--localhost', '--dry-run', '--store-url', 'http://127.0.0.1:5500'], root);
+});
+
 test('project root selects one backend and frontend automatically', () => {
   const root = mkdtempSync(join(realpathSync(tmpdir()), 'auteric-layout-'));
   const api = join(root, 'services', 'api');

@@ -9,7 +9,12 @@ const PROD_API = 'https://control.auteric.com';
 const LOCAL_API = 'http://127.0.0.1:8100';
 
 function parse(argv) {
-  const [command = 'help', ...tail] = argv;
+  // `npx github:auteric-ai/auteric-kit --localhost ...` invokes the package's
+  // only binary with flags as argv. Treat that form as Connect so merchants do
+  // not have to learn a second, package-specific subcommand.
+  const [first = 'help', ...rest] = argv;
+  const command = first.startsWith('--') ? 'connect' : first;
+  const tail = first.startsWith('--') ? [first, ...rest] : rest;
   const options = {};
   for (let i = 0; i < tail.length; i++) {
     const arg = tail[i];
@@ -353,5 +358,6 @@ export async function run(argv, root = process.cwd()) {
     throw Error('Disconnect is unavailable in this version. Disable agent access in Auteric Console; no repository files were deleted.');
   }
   console.log('Usage: auteric connect [--domain store.example.com] [--localhost] [--api-url http://127.0.0.1:8100] [--store-url http://127.0.0.1:5500] [--backend services/api] [--frontend apps/web] [--dry-run] [--agent auto|codex|claude|cursor|none]');
+  console.log('GitHub shortcut: npx --yes github:auteric-ai/auteric-kit --localhost --store-url http://127.0.0.1:5500');
   console.log('Also: auteric inspect | connector | login | status | verify | doctor | disconnect | logout');
 }

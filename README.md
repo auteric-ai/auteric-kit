@@ -1,6 +1,4 @@
-# Auteric Kit 0.4.2 — local release candidate
-
-This revision is prepared locally; it has not been pushed or published.
+# Auteric Kit 0.4.3
 
 `connect` starts at the repository root, detects the storefront and the authoritative
 backend, then installs the bundled Python SDK and project skill, scans every canonical
@@ -38,6 +36,21 @@ use the local checkout to inspect a store without changing it:
 ```sh
 node /path/to/auteric-kit/bin/auteric.js connect --domain store.example.com --dry-run
 ```
+
+For the shortest GitHub-based local flow, run this once from the store repository
+root. It downloads the exact CLI from the public kit repository for this run; it
+does not require a clone, a Codex cache path, or a global installation:
+
+```sh
+npx --yes github:auteric-ai/auteric-kit --localhost --store-url http://127.0.0.1:5173
+```
+
+The flags-without-a-subcommand form means `connect`. It scans first. If it can
+prove and test a supported connector, it opens browser sign-in and continues;
+if the store has no traceable commerce API, it stops before creating a Store or
+issuing credentials. A plugin installation cannot run this automatically:
+Codex deliberately does not grant plugins install-time code execution or browser
+authorization.
 
 To test browser authorization against a locally running Auteric Commerce API:
 
