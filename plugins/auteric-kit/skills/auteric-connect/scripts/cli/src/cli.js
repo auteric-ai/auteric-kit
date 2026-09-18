@@ -274,6 +274,18 @@ export function prepareDiscovery(root, framework, document, options = {}) {
 function configPath(root) { return join(root, '.auteric', 'config.json'); }
 function readConfig(root) { try { return JSON.parse(readFileSync(configPath(root), 'utf8')); } catch { return null; } }
 
+export function existingDiscoveryDigest(root, framework, storeId) {
+  const path = destination(root, framework);
+  try {
+    const contents = readFileSync(path, 'utf8');
+    const profile = JSON.parse(contents);
+    // Recover only a previous profile for this exact Store. A profile belonging
+    // to another Store remains protected from accidental replacement.
+    if (profile?.auteric_attestation?.payload?.store_id !== storeId) return null;
+    return createHash('sha256').update(contents).digest('hex');
+  } catch { return null; }
+}
+
 async function connect(root, options) {
   const base = apiUrl(options);
   const storeUrl = options['store-url'] ? localStoreUrl(options['store-url']) : null;
@@ -326,7 +338,9 @@ async function connect(root, options) {
   try { discovery = await request(base, `/api/commerce/stores/${encodeURIComponent(store.id)}/discovery`, { token: auth.access_token }); }
   catch (error) { console.log(`UCP publication pending: ${error.message}`); }
   if (discovery?.document) {
-    const result = prepareDiscovery(layout.frontend, project.framework, discovery.document, { previousDigest: readConfig(root)?.discovery_digest });
+    const result = prepareDiscovery(layout.frontend, project.framework, discovery.document, {
+      previousDigest: readConfig(root)?.discovery_digest || existingDiscoveryDigest(layout.frontend, project.framework, store.id),
+    });
     state.discovery_digest = createHash('sha256').update(JSON.stringify(discovery.document, null, 2) + '\n').digest('hex');
     console.log(`Signed UCP prepared at ${result.path}.`);
     state.mcp_url = discovery.document.auteric_mcp?.endpoint;

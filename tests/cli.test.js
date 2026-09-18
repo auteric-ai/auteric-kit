@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { existsSync, mkdirSync, mkdtempSync, realpathSync, readFileSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { apiUrl, inspect, localStoreUrl, localTestDomain, prepareDiscovery, resolveProjectLayout, run, verifyLocalWithRetry } from '../src/cli.js';
+import { apiUrl, existingDiscoveryDigest, inspect, localStoreUrl, localTestDomain, prepareDiscovery, resolveProjectLayout, run, verifyLocalWithRetry } from '../src/cli.js';
 
 test('localhost mode permits loopback only and cloud requires HTTPS', () => {
   assert.equal(apiUrl({ localhost: true }), 'http://127.0.0.1:8100');
@@ -76,6 +76,14 @@ test('Vite publishes discovery from the untransformed public directory', () => {
   const result = prepareDiscovery(root, 'vite', document);
   assert.match(result.path, /public\/\.well-known\/ucp$/);
   assert.deepEqual(JSON.parse(readFileSync(result.path, 'utf8')), document);
+});
+
+test('recoverable UCP profile belongs to the exact Store only', () => {
+  const root = mkdtempSync(join(realpathSync(tmpdir()), 'auteric-recovery-'));
+  const document = { ucp: { version: '2026-08-25' }, auteric_attestation: { signature: 'signed', payload: { store_id: 'store-a' } } };
+  prepareDiscovery(root, 'vite', document);
+  assert.match(existingDiscoveryDigest(root, 'vite', 'store-a'), /^[a-f0-9]{64}$/);
+  assert.equal(existingDiscoveryDigest(root, 'vite', 'store-b'), null);
 });
 
 test('discovery does not follow project symlinks', () => {
