@@ -309,6 +309,7 @@ async function connect(root, options) {
   if (conflicts.length) console.log(`Existing assistant instructions preserved for: ${conflicts.join(', ')}. Review these files manually.`);
   console.log(`Inspected ${prepared.inventory.files_inspected} backend files. Capability report: ${join(layout.backend, '.auteric/capabilities.json')}`);
   if (!prepared.connector_prepared) {
+    for (const reason of prepared.inventory.connector_diagnostics || []) console.log(`Diagnosis: ${reason}`);
     console.log('Integration incomplete: no commerce connector is configured. The coding agent must trace the detected APIs, implement .auteric/connector.json and test its handlers before rerunning Connect. No new Store or UCP was created.');
     return { integration: 'implementation_required', tested_operations: [] };
   }

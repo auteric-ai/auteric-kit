@@ -70,54 +70,8 @@ def inventory(root):
 
 
 def _local_catalog_connector(root, report, store_url):
-    """Create only a runtime-validated, read-only common catalog adapter."""
-    if not store_url:
-        return None
-    parsed = urlsplit(store_url)
-    if parsed.scheme != "http" or parsed.hostname not in {"127.0.0.1", "localhost", "::1"} or parsed.path not in {"", "/"}:
-        return None
-    candidates = report.get("candidates", [])
-    operations = {item.get("operation") for item in candidates}
-    paths = {item.get("behavior") for item in candidates}
-    if not {"search_products", "get_product"}.issubset(operations) or not {"GET /api/products", "GET /api/products/:id"}.issubset(paths):
-        return None
-    try:
-        with httpx.Client(timeout=5, follow_redirects=False, trust_env=False) as client:
-            response = client.get(store_url.rstrip("/") + "/api/products", params={"query": "", "limit": 2})
-            response.raise_for_status()
-            payload = response.json()
-    except (httpx.HTTPError, ValueError):
-        return None
-    response_root = None
-    if isinstance(payload, list):
-        rows = payload
-    elif isinstance(payload, dict) and isinstance(payload.get("items"), list):
-        rows = payload["items"]
-        response_root = "items"
-    else:
-        return None
-    if not rows or not isinstance(rows[0], dict):
-        return None
-    sample = rows[0]
-    if not all(isinstance(sample.get(field), str) and sample[field] for field in ("id", "sku", "name")) or not isinstance(sample.get("price"), (int, float)) or not isinstance(sample.get("currency"), str):
-        return None
-    product = {
-        "id": {"source": "id", "kind": "string"}, "sku": {"source": "sku", "kind": "string"},
-        "title": {"source": "name", "kind": "string"}, "description": {"source": "description", "kind": "string", "default": None},
-        "price": {"source": "price", "kind": "number"}, "currency": {"source": "currency", "kind": "currency"},
-        "availability": {"source": "availability", "kind": "enum", "default": "unknown", "values": {"in_stock": "in_stock", "out_of_stock": "out_of_stock", "preorder": "preorder", "unknown": "unknown"}},
-    }
-    mappings = [
-        {"operation": "search_products", "method": "GET", "path": "/api/products", "request": {"query": {"query": {"source": "query", "kind": "string"}}}, "response_root": response_root, "response": product},
-        {"operation": "get_product", "method": "GET", "path": "/api/products/{id}", "request": {"path": {"id": {"source": "product_id", "kind": "string"}}}, "response": product},
-    ]
-    return {
-        "kind": "rest", "base_url": store_url.rstrip("/"),
-        "allowed_paths": ["/api/products", "/api/products/{id}"],
-        "approved_mapping_digests": [mapping_digest(item) for item in mappings], "mappings": mappings,
-        "test_inputs": {"search_products": {"query": "", "limit": 2}, "get_product": {"product_id": sample["id"]}},
-        "generated": {"kind": "local_read_only_catalog", "verified_url": store_url.rstrip("/") + "/api/products"},
-    }
+    from .catalog_probe import discover
+    return discover(report, store_url)
 
 
 def prepare(root, agent, store_url=None, instructions_root=None):

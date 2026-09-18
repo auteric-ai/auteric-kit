@@ -49,6 +49,7 @@ def inspect_repository(project_root, *, max_files=1000, max_bytes=8_000_000):
     count = total = 0
     truncated = False
     def candidate(method, route, symbol, source, line, authority):
+        route = re.sub(r'<(?:(?:string|int|uuid):)?([A-Za-z_]\w*)>', r'{\1}', route)
         # Do not emit query strings, URLs or suspicious literal route values.
         if not route.startswith('/') or any(c in route for c in '?\n\r') or len(route) > 300:
             return

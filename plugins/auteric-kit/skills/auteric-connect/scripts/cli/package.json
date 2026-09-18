@@ -1,6 +1,6 @@
 {
   "name": "@auteric/cli",
-  "version": "0.4.6",
+  "version": "0.4.7",
   "description": "Connect a custom storefront to an Auteric Commerce control plane",
   "type": "module",
   "bin": {

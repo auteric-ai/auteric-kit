@@ -1,4 +1,17 @@
-# Auteric Kit 0.4.6
+# Auteric Kit 0.4.7
+
+Fresh-store regression coverage now includes 48 isolated catalog simulations:
+Express, custom route registration, FastAPI and Flask; list and wrapped responses;
+and `query`, `q` and `search` parameters. Automatic local preparation verifies
+filtering and product identity before generating mappings, retains merchant
+currency and optional catalog data, and reports contract failures explicitly.
+Linux and macOS CI run both Python and Node suites. These simulations do not
+establish universal framework support or production checkout compatibility.
+
+The CLI installs assistant instructions but does not invoke an AI model. Unknown
+APIs, GraphQL, authentication or business-specific cart contracts require the
+coding assistant to complete an adapter using those instructions. Repeating the
+same terminal command without implementing that adapter cannot resolve them.
 
 `connect` starts at the repository root, detects the storefront and the authoritative
 backend, then installs the bundled Python SDK and project skill, scans every canonical
