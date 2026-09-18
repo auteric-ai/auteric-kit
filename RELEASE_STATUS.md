@@ -1,4 +1,4 @@
-# 0.4.3 GitHub release
+# 0.4.4 GitHub release
 
 The plugin includes the Node CLI and Python SDK source, so a separately published
 npm package is not required for Connect. `npx --yes github:auteric-ai/auteric-kit

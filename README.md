@@ -1,4 +1,4 @@
-# Auteric Kit 0.4.3
+# Auteric Kit 0.4.4
 
 `connect` starts at the repository root, detects the storefront and the authoritative
 backend, then installs the bundled Python SDK and project skill, scans every canonical
@@ -51,6 +51,12 @@ if the store has no traceable commerce API, it stops before creating a Store or
 issuing credentials. A plugin installation cannot run this automatically:
 Codex deliberately does not grant plugins install-time code execution or browser
 authorization.
+
+For a local Express/Vite store with a public `GET /api/products` collection and
+`GET /api/products/:id` item endpoint, Connect verifies the live response and
+creates a read-only catalog connector automatically. Cart, checkout and payment
+are never inferred from route names and remain disabled until their contracts
+are explicitly supported and tested.
 
 To test browser authorization against a locally running Auteric Commerce API:
 

@@ -232,6 +232,8 @@ class MappedConnector:
             )
         else:
             output = raw
+        if operation == "search_products":
+            output = output[:data["limit"]]
         return validate_output(operation, output)
 
     async def close(self):

@@ -116,6 +116,24 @@ def inspect_repository(project_root, *, max_files=1000, max_bytes=8_000_000):
             if path.suffix in {'.js','.jsx','.ts','.tsx'}:
                 for match in re.finditer(r'\b(?:app|router)\.(get|post|put|patch|delete)\(\s*[\'"]([^\'"\r\n]+)[\'"]', content):
                     candidate(match[1].upper(), match[2], 'route_handler', source, content[:match.start()].count('\n')+1, 'node_route_syntax')
+                for match in re.finditer(r'\broute\(\s*[\'"](get|post|put|patch|delete)[\'"]\s*,\s*[\'"]([^\'"\r\n]+)[\'"]', content):
+                    candidate(match[1].upper(), match[2], 'route_handler', source, content[:match.start()].count('\n')+1, 'node_route_helper_syntax')
+                # Recognize literal path lists used with a small Express route
+                # helper. Dynamic route construction remains out of scope.
+                for loop in re.finditer(r'for\s*\(\s*const\s+(\w+)\s+of\s+\[([^\]]*)\]\s*\)\s*\{([\s\S]{0,12000}?)\}', content):
+                    variable, values, body = loop.groups()
+                    routes = re.findall(r'[\'"]([^\'"\r\n]+)[\'"]', values)
+                    for call in re.finditer(r'\broute\(\s*[\'"](get|post|put|patch|delete)[\'"]\s*,\s*' + re.escape(variable) + r'(?=\s*[,+])', body):
+                        suffix = body[call.end():].lstrip()
+                        suffix_match = re.match(r'\+\s*[\'"]([^\'"\r\n]*)[\'"]', suffix)
+                        for route in routes:
+                            candidate(call[1].upper(), route + (suffix_match[1] if suffix_match else ''), 'route_handler', source, content[:loop.start() + call.start()].count('\n')+1, 'node_route_helper_loop')
+                    # The first handler body can contain braces, so the bounded
+                    # loop body above may end before a later `base + '/:id'`
+                    # handler. Search the same source for that literal form.
+                    for call in re.finditer(r'\broute\(\s*[\'"](get|post|put|patch|delete)[\'"]\s*,\s*' + re.escape(variable) + r'\s*\+\s*[\'"]([^\'"\r\n]+)[\'"]', content):
+                        for route in routes:
+                            candidate(call[1].upper(), route + call[2], 'route_handler', source, content[:call.start()].count('\n')+1, 'node_route_helper_loop')
                 if name in {'route.ts','route.js'} and 'app' in path.relative_to(root).parts:
                     parts = path.relative_to(root).parts
                     route = '/' + '/'.join(parts[parts.index('app')+1:-1])

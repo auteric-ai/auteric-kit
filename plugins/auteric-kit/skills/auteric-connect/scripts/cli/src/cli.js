@@ -254,7 +254,7 @@ async function connect(root, options) {
   console.log('Connect installs local skills, inventories every canonical capability, prepares supported adapters and tests them in the selected sandbox.');
   console.log('Candidate commerce libraries:', project.catalogCandidate.join(', ') || 'none detected');
   if (options['dry-run']) { console.log('Dry run: no authentication, store creation or file changes.'); return; }
-  const prepared = await sdk('prepare', layout.backend, { agent: agent === 'claude' ? 'claude-code' : agent === 'auto' ? 'codex' : agent }, { install: true });
+  const prepared = await sdk('prepare', layout.backend, { agent: agent === 'claude' ? 'claude-code' : agent === 'auto' ? 'codex' : agent, store_url: storeUrl }, { install: true });
   console.log(`Inspected ${prepared.inventory.files_inspected} backend files. Capability report: ${join(layout.backend, '.auteric/capabilities.json')}`);
   if (!prepared.connector_prepared) {
     console.log('Integration incomplete: no commerce connector is configured. The coding agent must trace the detected APIs, implement .auteric/connector.json and test its handlers before rerunning Connect. No new Store or UCP was created.');
