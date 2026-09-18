@@ -11,8 +11,8 @@ from auteric_edge.repository_inspection import inspect_repository  # noqa: E402
 
 class RepositoryInspectionTests(unittest.TestCase):
     def test_detects_literal_express_route_helper_loop(self):
-        with tempfile.TemporaryDirectory(dir="/private/tmp") as directory:
-            root = Path(directory)
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory).resolve()
             (root / "server.js").write_text(
                 "for (const base of ['/api/products']) {\n"
                 "  route('get', base, null, handler);\n"

@@ -11,5 +11,6 @@ jobs:
         with:
           python-version: '3.12'
       - run: python -m pip install -r requirements-verify.txt
+      - run: python -m pip install -e runtime/sdk
       - run: python -m unittest discover -s tests -v
       - run: python scripts/package-openai-skills.py
