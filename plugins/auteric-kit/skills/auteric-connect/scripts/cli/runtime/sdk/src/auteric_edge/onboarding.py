@@ -240,7 +240,10 @@ async def connect(root, settings):
             await worker.tick()
             task = asyncio.create_task(worker.run())
             for item in mappings:
-                row = await call(prefix + "/mappings", item)
+                # The control plane receives a draft envelope. `item` is the
+                # local deterministic REST/SDK mapping, while `operation` is
+                # the canonical capability being activated.
+                row = await call(prefix + "/mappings", {"operation": item["operation"], "mapping": item})
                 evidence = await call(
                     prefix + "/mappings/" + row["id"] + "/test", {"input": inputs[item["operation"]], "mode": mode}
                 )

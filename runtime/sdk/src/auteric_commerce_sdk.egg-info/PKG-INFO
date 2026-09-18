@@ -1,0 +1,10 @@
+Metadata-Version: 2.4
+Name: auteric-commerce-sdk
+Version: 0.1.0
+Summary: Customer-side canonical commerce connector for Auteric
+Requires-Python: >=3.11
+Requires-Dist: httpx<1,>=0.28
+Requires-Dist: pydantic<3,>=2.9
+Provides-Extra: test
+Requires-Dist: pytest<10,>=8; extra == "test"
+Requires-Dist: build<2,>=1; extra == "test"

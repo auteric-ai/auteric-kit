@@ -1,4 +1,4 @@
-# Auteric Kit 0.4.4
+# Auteric Kit 0.4.5
 
 `connect` starts at the repository root, detects the storefront and the authoritative
 backend, then installs the bundled Python SDK and project skill, scans every canonical

@@ -1,0 +1,6 @@
+httpx<1,>=0.28
+pydantic<3,>=2.9
+
+[test]
+pytest<10,>=8
+build<2,>=1

@@ -1,0 +1,3 @@
+[console_scripts]
+auteric = auteric_edge.cli:main
+auteric-commerce = auteric_edge.cli:main
