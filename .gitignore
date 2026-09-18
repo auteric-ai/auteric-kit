@@ -3,4 +3,6 @@ __pycache__/
 .pytest_cache/
 .venv/
 dist/
+runtime/sdk/build/
+runtime/sdk/src/*.egg-info/
 .DS_Store
