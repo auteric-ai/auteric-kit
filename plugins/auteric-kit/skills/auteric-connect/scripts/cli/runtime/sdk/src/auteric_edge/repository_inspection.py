@@ -118,6 +118,8 @@ def inspect_repository(project_root, *, max_files=1000, max_bytes=8_000_000):
                     candidate(match[1].upper(), match[2], 'route_handler', source, content[:match.start()].count('\n')+1, 'node_route_syntax')
                 for match in re.finditer(r'\broute\(\s*[\'"](get|post|put|patch|delete)[\'"]\s*,\s*[\'"]([^\'"\r\n]+)[\'"]', content):
                     candidate(match[1].upper(), match[2], 'route_handler', source, content[:match.start()].count('\n')+1, 'node_route_helper_syntax')
+                for match in re.finditer(r'\bregisterRoute\(\s*[\'"](get|post|put|patch|delete)[\'"]\s*,\s*[\'"]([^\'"\r\n]+)[\'"]', content):
+                    candidate(match[1].upper(), match[2], 'route_handler', source, content[:match.start()].count('\n')+1, 'node_route_register_helper')
                 # Recognize literal path lists used with a small Express route
                 # helper. Dynamic route construction remains out of scope.
                 for loop in re.finditer(r'for\s*\(\s*const\s+(\w+)\s+of\s+\[([^\]]*)\]\s*\)\s*\{([\s\S]{0,12000}?)\}', content):

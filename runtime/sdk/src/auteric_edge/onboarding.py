@@ -83,24 +83,32 @@ def _local_catalog_connector(root, report, store_url):
         return None
     try:
         with httpx.Client(timeout=5, follow_redirects=False, trust_env=False) as client:
-            response = client.get(store_url.rstrip("/") + "/api/products", params={"q": ""})
+            response = client.get(store_url.rstrip("/") + "/api/products", params={"query": "", "limit": 2})
             response.raise_for_status()
-            rows = response.json()
+            payload = response.json()
     except (httpx.HTTPError, ValueError):
         return None
-    if not isinstance(rows, list) or not rows or not isinstance(rows[0], dict):
+    response_root = None
+    if isinstance(payload, list):
+        rows = payload
+    elif isinstance(payload, dict) and isinstance(payload.get("items"), list):
+        rows = payload["items"]
+        response_root = "items"
+    else:
+        return None
+    if not rows or not isinstance(rows[0], dict):
         return None
     sample = rows[0]
-    if not all(isinstance(sample.get(field), str) and sample[field] for field in ("id", "sku", "name", "description")) or not isinstance(sample.get("price"), (int, float)):
+    if not all(isinstance(sample.get(field), str) and sample[field] for field in ("id", "sku", "name")) or not isinstance(sample.get("price"), (int, float)) or not isinstance(sample.get("currency"), str):
         return None
     product = {
         "id": {"source": "id", "kind": "string"}, "sku": {"source": "sku", "kind": "string"},
-        "title": {"source": "name", "kind": "string"}, "description": {"source": "description", "kind": "string"},
-        "price": {"source": "price", "kind": "number"}, "currency": {"constant": "USD"},
-        "availability": {"constant": "unknown"},
+        "title": {"source": "name", "kind": "string"}, "description": {"source": "description", "kind": "string", "default": None},
+        "price": {"source": "price", "kind": "number"}, "currency": {"source": "currency", "kind": "currency"},
+        "availability": {"source": "availability", "kind": "enum", "default": "unknown", "values": {"in_stock": "in_stock", "out_of_stock": "out_of_stock", "preorder": "preorder", "unknown": "unknown"}},
     }
     mappings = [
-        {"operation": "search_products", "method": "GET", "path": "/api/products", "request": {"query": {"q": {"source": "query", "kind": "string"}}}, "response": product},
+        {"operation": "search_products", "method": "GET", "path": "/api/products", "request": {"query": {"query": {"source": "query", "kind": "string"}}}, "response_root": response_root, "response": product},
         {"operation": "get_product", "method": "GET", "path": "/api/products/{id}", "request": {"path": {"id": {"source": "product_id", "kind": "string"}}}, "response": product},
     ]
     return {

@@ -24,6 +24,18 @@ class RepositoryInspectionTests(unittest.TestCase):
         self.assertIn(("search_products", "GET /api/products"), detected)
         self.assertIn(("get_product", "GET /api/products/:id"), detected)
 
+    def test_detects_registered_catalog_routes(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory).resolve()
+            (root / "server.js").write_text(
+                "registerRoute('get', '/api/products', {}, handler);\n"
+                "registerRoute('get', '/api/products/:id', {}, handler);\n"
+            )
+            report = inspect_repository(root)
+        detected = {(item["operation"], item["behavior"]) for item in report["candidates"]}
+        self.assertIn(("search_products", "GET /api/products"), detected)
+        self.assertIn(("get_product", "GET /api/products/:id"), detected)
+
 
 if __name__ == "__main__":
     unittest.main()
