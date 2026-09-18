@@ -5,13 +5,15 @@ description: Prepare an ecommerce or storefront project for shopping agents with
 
 # Prepare a storefront for shopping agents
 
-If the user asks for a single-command setup, the kit's unpublished CLI preview
-supports `node <this-skill-directory>/scripts/cli/bin/auteric.js connect --domain STORE` and
-`--localhost --store-url http://127.0.0.1:5500` for local HTTP control-plane
+If the user asks for a single-command setup, run
+`npx --yes github:auteric-ai/auteric-kit --domain STORE` or
+`npx --yes github:auteric-ai/auteric-kit --localhost --store-url http://127.0.0.1:5500 --serve`
+from the merchant repository root. Local mode requires the storefront and Auteric
+Commerce service to be running. The CLI supports local HTTP control-plane
 and storefront verification. The CLI installs the bundled SDK and project skill, inventories all canonical
 capabilities, installs supported local adapters, performs browser authorization
 and exact sandbox contract/Gateway tests, then prepares signed UCP locally.
-Keep `auteric connector` running for ongoing agent requests. Inspect
+`--serve` keeps the connector running in that terminal after verification. Inspect
 `.auteric/capabilities.json` and `.auteric/validation.json` for missing operations. Do not claim `npx @auteric/cli` is
 available or that local development signatures prove public protection.
 

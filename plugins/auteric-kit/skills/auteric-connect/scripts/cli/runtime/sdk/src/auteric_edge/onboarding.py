@@ -112,9 +112,18 @@ def _local_catalog_connector(root, report, store_url):
     }
 
 
-def prepare(root, agent, store_url=None):
+def prepare(root, agent, store_url=None, instructions_root=None):
     report = inventory(root)
-    skill = install(agent, root) if agent in {"codex", "claude-code", "cursor"} else None
+    destination = instructions_root or root
+    clients = ("codex", "claude-code", "cursor") if agent == "auto" else (agent,)
+    skill = []
+    for client in clients:
+        if client not in {"codex", "claude-code", "cursor"}:
+            continue
+        try:
+            skill.append({"client": client, **install(client, destination)})
+        except FileExistsError:
+            skill.append({"client": client, "changed": False, "conflict": True})
     ignore = safe_path(root, ".auteric/.gitignore")
     if not ignore.exists():
         ignore.parent.mkdir(parents=True, exist_ok=True)
@@ -407,7 +416,7 @@ def main():
     if data["command"] == "inspect":
         result = inventory(root)
     elif data["command"] == "prepare":
-        result = prepare(root, data.get("agent"), data.get("store_url"))
+        result = prepare(root, data.get("agent"), data.get("store_url"), data.get("instructions_root"))
     elif data["command"] == "connect":
         result = asyncio.run(connect(root, data))
         save(root, ".auteric/validation.json", result)

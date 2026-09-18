@@ -16,7 +16,7 @@
   "src/auteric_edge/manual.py": "8bfc979cac3a9ba28602565aa95c5faa1c0fcdbf0e988a159bbed3a1484dc6c4",
   "src/auteric_edge/mapping.py": "b0a905ead191f3ae743cae71fd065264e0244016d561b17fe294ba64b7be2a22",
   "src/auteric_edge/models.py": "2ae51c1698f9b41f3ea99d3d3a1182bb936e19b7851646ebc8c40d0939ffd853",
-  "src/auteric_edge/onboarding.py": "3c310ae24d88806fe348d4dda0657f5474f6b577b99c825b2a61076a9533e89c",
+  "src/auteric_edge/onboarding.py": "41eab5b3957cf973d7e67c5b8cd1be3d518c700d441d874f8cafa60e581f85da",
   "src/auteric_edge/platforms/__init__.py": "33d3c27ac052d984539d3647be32d095f15d22e4955b2522d0bb28c8d8972c6e",
   "src/auteric_edge/platforms/adobe.py": "268ac4f00239df29d50201051a338775bb0c7d6bd2b46427e500d2403e998806",
   "src/auteric_edge/platforms/bigcommerce.py": "05002fdc7321415cb616e853088dd76391d19d1a0de259751f612e1489f65de5",

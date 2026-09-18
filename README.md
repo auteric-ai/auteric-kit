@@ -1,4 +1,4 @@
-# Auteric Kit 0.4.5
+# Auteric Kit 0.4.6
 
 `connect` starts at the repository root, detects the storefront and the authoritative
 backend, then installs the bundled Python SDK and project skill, scans every canonical
@@ -42,15 +42,33 @@ root. It downloads the exact CLI from the public kit repository for this run; it
 does not require a clone, a Codex cache path, or a global installation:
 
 ```sh
-npx --yes github:auteric-ai/auteric-kit --localhost --store-url http://127.0.0.1:5173
+npx --yes github:auteric-ai/auteric-kit --localhost --store-url http://127.0.0.1:5173 --serve
 ```
 
-The flags-without-a-subcommand form means `connect`. It scans first. If it can
+The flags-without-a-subcommand form means `connect`. It installs project instructions
+for Codex and GitHub Copilot (`.agents/skills`), Claude Code (`.claude/skills`),
+and Cursor (`.cursor/rules`) without depending on which editor is running.
+`--serve` keeps the connector in the foreground after a verified local setup;
+keep this terminal open, and use Ctrl-C to stop it. It scans first. If it can
 prove and test a supported connector, it opens browser sign-in and continues;
 if the store has no traceable commerce API, it stops before creating a Store or
 issuing credentials. A plugin installation cannot run this automatically:
 Codex deliberately does not grant plugins install-time code execution or browser
 authorization.
+
+Run the command in the integrated terminal of VS Code, Cursor, Claude Code, or
+Codex, from the repository root containing the frontend and backend. Do not paste
+it into an AI chat prompt expecting shell execution. The local storefront and
+Auteric Commerce service must already be running. For multiple API candidates,
+choose the authoritative backend with `--backend`; separate repositories require
+an explicit integration rather than an inferred cross-repository connector.
+The bundled CLI does not need a separate Codex marketplace installation.
+
+Local verification first fetches and compares the exact signed document from
+the storefront, then retries transient control-plane fetch failures. If the route
+still cannot be fetched, setup retains its tested connector and signed UCP,
+reports `local_discovery_pending`, and exits nonzero. It never claims the public
+domain or ongoing runtime protection from a localhost test.
 
 For a local Express/Vite store with a public `GET /api/products` collection and
 `GET /api/products/:id` item endpoint, Connect verifies the live response and

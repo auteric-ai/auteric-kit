@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { existsSync, mkdirSync, mkdtempSync, realpathSync, readFileSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { apiUrl, inspect, localStoreUrl, localTestDomain, prepareDiscovery, resolveProjectLayout, run } from '../src/cli.js';
+import { apiUrl, inspect, localStoreUrl, localTestDomain, prepareDiscovery, resolveProjectLayout, run, verifyLocalWithRetry } from '../src/cli.js';
 
 test('localhost mode permits loopback only and cloud requires HTTPS', () => {
   assert.equal(apiUrl({ localhost: true }), 'http://127.0.0.1:8100');
@@ -118,5 +118,45 @@ test('missing implementation stops before authorization, Store creation and UCP 
     assert.deepEqual(calls, []);
   } finally {
     globalThis.fetch = previousFetch;
+  }
+});
+
+test('local verification retries a temporarily unavailable route and preserves exact UCP', async () => {
+  const prior = globalThis.fetch;
+  const document = { ucp: { version: '2026-08-25', capabilities: { catalog: true } }, auteric_attestation: { signature: 'signed' } };
+  let verificationCalls = 0;
+  globalThis.fetch = async target => {
+    const path = new URL(target).pathname;
+    if (path === '/.well-known/ucp') return Response.json(document);
+    verificationCalls++;
+    return verificationCalls < 3
+      ? Response.json({ detail: 'Local UCP route is unavailable or invalid' }, { status: 422 })
+      : Response.json({ local_verified: true, public_domain_verified: false, url: 'http://127.0.0.1:5173/.well-known/ucp' });
+  };
+  try {
+    const result = await verifyLocalWithRetry('http://127.0.0.1:8100', 'store', 'test-token', 'http://127.0.0.1:5173', document, 4, async () => {});
+    assert.equal(result.local_verified, true);
+    assert.equal(verificationCalls, 3);
+  } finally { globalThis.fetch = prior; }
+});
+
+test('local verification diagnoses wrong SPA fallback before calling control plane', async () => {
+  const prior = globalThis.fetch;
+  const paths = [];
+  globalThis.fetch = async target => { paths.push(new URL(target).pathname); return new Response('<html>SPA</html>', { status: 200 }); };
+  try {
+    const document = { ucp: { version: '2026-08-25' } };
+    const result = await verifyLocalWithRetry('http://127.0.0.1:8100', 'store', 'test-token', 'http://127.0.0.1:5173', document, 1, async () => {});
+    assert.equal(result.local_verified, false);
+    assert.match(result.reason, /did not return JSON/);
+    assert.deepEqual(paths, ['/.well-known/ucp']);
+  } finally { globalThis.fetch = prior; }
+});
+
+test('Vite, Next, and static deployments use their public discovery directory', () => {
+  for (const framework of ['vite', 'next', 'static']) {
+    const root = mkdtempSync(join(realpathSync(tmpdir()), `auteric-${framework}-`));
+    const result = prepareDiscovery(root, framework, { ucp: { version: '2026-08-25' }, auteric_attestation: { signature: 'signed' } });
+    assert.equal(result.path.includes('/public/'), framework !== 'static');
   }
 });

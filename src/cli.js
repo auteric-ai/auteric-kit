@@ -20,7 +20,7 @@ function parse(argv) {
     const arg = tail[i];
     if (!arg.startsWith('--')) throw Error(`Unknown argument: ${arg}`);
     const [name, value] = arg.slice(2).split('=', 2);
-    if (['localhost', 'dry-run', 'yes', 'no-browser'].includes(name)) {
+    if (['localhost', 'dry-run', 'yes', 'no-browser', 'serve'].includes(name)) {
       options[name] = true;
     } else if (['api-url', 'domain', 'agent', 'store-url', 'backend', 'frontend'].includes(name)) {
       options[name] = value ?? tail[++i];
@@ -162,6 +162,43 @@ async function request(base, path, { method = 'GET', body, token } = {}) {
   return data;
 }
 
+export async function probeLocalDiscovery(storeUrl, document) {
+  const target = localStoreUrl(storeUrl) + '/.well-known/ucp';
+  let response;
+  try {
+    response = await fetch(target, { redirect: 'error', signal: AbortSignal.timeout(5000) });
+  } catch {
+    return { available: false, reason: `Cannot fetch ${target}. Start the storefront and expose the generated UCP file.` };
+  }
+  if (response.status !== 200) return { available: false, reason: `${target} returned HTTP ${response.status}. Check the storefront's public/static directory.` };
+  let observed;
+  try { observed = await response.json(); } catch { return { available: false, reason: `${target} did not return JSON.` }; }
+  if (JSON.stringify(observed) !== JSON.stringify(document))
+    return { available: false, reason: `${target} serves a different UCP document. Check dev-server caching or the public/static directory.` };
+  return { available: true, url: target };
+}
+
+export async function verifyLocalWithRetry(base, storeId, token, storeUrl, document, attempts = 4, pause = delay) {
+  let probe;
+  for (let attempt = 0; attempt < attempts; attempt++) {
+    probe = await probeLocalDiscovery(storeUrl, document);
+    if (probe.available) break;
+    if (attempt < attempts - 1) await pause(500 * (attempt + 1));
+  }
+  if (!probe.available) return { local_verified: false, reason: probe.reason };
+  for (let attempt = 0; attempt < attempts; attempt++) {
+    try {
+      return await request(base, `/api/commerce/stores/${encodeURIComponent(storeId)}/verify-local`, {
+        method: 'POST', token, body: { store_url: storeUrl },
+      });
+    } catch (error) {
+      if (!/^422 Local UCP route is unavailable or invalid$/.test(error.message)) throw error;
+      if (attempt < attempts - 1) await pause(500 * (attempt + 1));
+    }
+  }
+  return { local_verified: false, reason: `Auteric could not fetch ${probe.url} after ${attempts} attempts. The signed file and tested connector are saved; check that the Commerce service can reach this loopback port.` };
+}
+
 async function authenticate(base, options) {
   const verifier = randomBytes(32).toString('base64url');
   const state = randomBytes(32).toString('base64url');
@@ -247,14 +284,17 @@ async function connect(root, options) {
   const domain = localOnly ? localTestDomain(root) : domainName(options.domain);
   if (project.existingUcp.length && readConfig(root)?.domain !== domain)
     throw Error(`UCP already exists: ${project.existingUcp.join(', ')}. Review before connecting.`);
-  const agent = options.agent || project.agents[0] || 'none';
+  const agent = options.agent || 'auto';
   if (!['codex', 'claude', 'cursor', 'none', 'auto'].includes(agent)) throw Error('Use --agent codex|claude|cursor|auto|none');
   console.log(`Store: ${domain} | Frontend: ${layout.frontendRelative} | Backend: ${layout.backendRelative} | Framework: ${project.framework} | Detected agent: ${agent}`);
   if (localOnly) console.log('This is a local test identifier, not a public domain or ownership proof.');
   console.log('Connect installs local skills, inventories every canonical capability, prepares supported adapters and tests them in the selected sandbox.');
   console.log('Candidate commerce libraries:', project.catalogCandidate.join(', ') || 'none detected');
   if (options['dry-run']) { console.log('Dry run: no authentication, store creation or file changes.'); return; }
-  const prepared = await sdk('prepare', layout.backend, { agent: agent === 'claude' ? 'claude-code' : agent === 'auto' ? 'codex' : agent, store_url: storeUrl }, { install: true });
+  const prepared = await sdk('prepare', layout.backend, { agent: agent === 'claude' ? 'claude-code' : agent,
+    store_url: storeUrl, instructions_root: root }, { install: true });
+  const conflicts = (prepared.skill || []).filter(item => item.conflict).map(item => item.client);
+  if (conflicts.length) console.log(`Existing assistant instructions preserved for: ${conflicts.join(', ')}. Review these files manually.`);
   console.log(`Inspected ${prepared.inventory.files_inspected} backend files. Capability report: ${join(layout.backend, '.auteric/capabilities.json')}`);
   if (!prepared.connector_prepared) {
     console.log('Integration incomplete: no commerce connector is configured. The coding agent must trace the detected APIs, implement .auteric/connector.json and test its handlers before rerunning Connect. No new Store or UCP was created.');
@@ -291,13 +331,18 @@ async function connect(root, options) {
     console.log(`Signed UCP prepared at ${result.path}.`);
     state.mcp_url = discovery.document.auteric_mcp?.endpoint;
     state.status = validation.status === 'locally_tested' ? 'capabilities_prepared' : validation.status;
+    // Persist the tested connector and signed profile before probing a dev server.
+    // A transient route failure must not erase successfully completed setup.
+    writeFileSync(configPath(root), JSON.stringify(state, null, 2) + '\n', { mode: 0o644 });
     if (storeUrl) {
-      const check = await request(base, `/api/commerce/stores/${encodeURIComponent(store.id)}/verify-local`, {
-        method: 'POST', token: auth.access_token, body: { store_url: storeUrl },
-      });
+      const check = await verifyLocalWithRetry(base, store.id, auth.access_token, storeUrl, discovery.document);
       if (check.local_verified && !check.public_domain_verified) {
         state.local_discovery_verified = true;
         console.log(`Local UCP verified at ${check.url}. Public ownership and runtime protection remain unverified.`);
+      } else {
+        state.local_discovery_verified = false;
+        state.status = 'local_discovery_pending';
+        console.log(`Local discovery pending: ${check.reason}`);
       }
     }
   }
@@ -311,10 +356,14 @@ async function connect(root, options) {
     console.log('This control plane does not support automatic dashboard handoff yet. Open the dashboard link below.');
   }
   console.log(`Store created or resumed: ${store.id}. Local configuration: ${configPath(root)}`);
-  console.log('Public publication and production verification are pending. Push and publish require your approval.');
+  console.log('Public publication and production verification are pending.');
   if (validation.credential_file) console.log(`Start the persistent local connector using the same CLI entrypoint: node ${process.argv[1]} connector`);
   console.log(`Your store dashboard: ${base}/console?store=${encodeURIComponent(store.id)}`);
   if (options.localhost) console.log('Local test mode: signatures from a development key and localhost URLs are not production trust or HTTPS merchant discovery.');
+  if (options.serve && state.local_discovery_verified && state.credential_file) {
+    console.log('Connector running outbound. Keep this terminal open; Ctrl-C stops it.');
+    await sdk('serve', layout.backend, { credential_file: state.credential_file });
+  }
   return state;
 }
 
