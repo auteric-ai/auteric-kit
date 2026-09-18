@@ -286,7 +286,7 @@ async function connect(root, options) {
     throw Error(`UCP already exists: ${project.existingUcp.join(', ')}. Review before connecting.`);
   const agent = options.agent || 'auto';
   if (!['codex', 'claude', 'cursor', 'none', 'auto'].includes(agent)) throw Error('Use --agent codex|claude|cursor|auto|none');
-  console.log(`Store: ${domain} | Frontend: ${layout.frontendRelative} | Backend: ${layout.backendRelative} | Framework: ${project.framework} | Detected agent: ${agent}`);
+  console.log(`Store: ${domain} | Frontend: ${layout.frontendRelative} | Backend: ${layout.backendRelative} | Framework: ${project.framework} | Instructions: ${agent === 'auto' ? 'Codex/Copilot, Claude, Cursor' : agent}`);
   if (localOnly) console.log('This is a local test identifier, not a public domain or ownership proof.');
   console.log('Connect installs local skills, inventories every canonical capability, prepares supported adapters and tests them in the selected sandbox.');
   console.log('Candidate commerce libraries:', project.catalogCandidate.join(', ') || 'none detected');
@@ -363,6 +363,8 @@ async function connect(root, options) {
   if (options.serve && state.local_discovery_verified && state.credential_file) {
     console.log('Connector running outbound. Keep this terminal open; Ctrl-C stops it.');
     await sdk('serve', layout.backend, { credential_file: state.credential_file });
+  } else if (options.serve) {
+    console.log('Connector was not started: local discovery is unverified. Resolve the reported route issue, then rerun Connect.');
   }
   return state;
 }
