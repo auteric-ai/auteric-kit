@@ -30,7 +30,7 @@ class PluginContractTests(unittest.TestCase):
     def test_claude_has_a_matching_visible_entry_point(self):
         manifest = json.loads((PLUGIN / ".claude-plugin" / "plugin.json").read_text())
         command = (PLUGIN / "commands" / "prepare-storefront.md").read_text()
-        self.assertEqual(manifest["version"], "0.4.5")
+        self.assertEqual(manifest["version"], json.loads((ROOT / "package.json").read_text())["version"])
         self.assertIn("Prepare this storefront for shopping agents", command)
         self.assertNotIn("auteric-connect", command)
 
