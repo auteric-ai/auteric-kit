@@ -38,6 +38,9 @@ test('adapter prompt asks for uncovered operations while preserving verified cov
   const prompt = adapterPrompt('/tmp/store', '/tmp/store/api', 'http://127.0.0.1:3001', ['create_cart']);
   assert.match(prompt, /Preserve its verified operations/);
   assert.match(prompt, /create_cart/);
+  assert.match(prompt, /api_inventory is the complete discovered API surface/);
+  assert.match(prompt, /tool_eligible=true/);
+  assert.match(prompt, /Never turn inventory_only, internal_dependency or blocked_by_policy entries into agent tools/);
 });
 test('missing assistant returns an actionable terminal result', async () => {
   const path = process.env.PATH; process.env.PATH = '';

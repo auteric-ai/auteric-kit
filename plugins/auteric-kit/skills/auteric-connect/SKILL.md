@@ -10,8 +10,9 @@ If the user asks for a single-command setup, run
 `npx --yes github:auteric-ai/auteric-kit --localhost --store-url http://127.0.0.1:5500 --serve`
 from the merchant repository root. Local mode requires the storefront and Auteric
 Commerce service to be running. The CLI supports local HTTP control-plane
-and storefront verification. The CLI installs the bundled SDK and project skill, inventories all canonical
-capabilities, installs supported local adapters, performs browser authorization
+and storefront verification. The CLI installs the bundled SDK and project skill,
+inventories the entire detected API surface, classifies every endpoint, and selects
+only supported shopping operations as capability/tool candidates. It installs supported local adapters, performs browser authorization
 and exact sandbox contract/Gateway tests, then prepares signed UCP locally.
 `--serve` keeps the connector running in that terminal after verification. Inspect
 `.auteric/capabilities.json` and `.auteric/validation.json` for missing operations. Do not claim `npx @auteric/cli` is
@@ -39,6 +40,12 @@ A resumed session does not prove current runtime protection.
 ## 1. Inspect — read-only
 
 Work in the merchant's existing project. Identify the framework/runtime, package manager, deployment route, catalog and inventory source, product/variant model, cart flow, checkout/payment boundary, authentication boundary, and existing UCP or agent-facing interfaces. Record exact source files and routes. Preserve the storefront design and existing payment system.
+
+Keep every detected API in `api_inventory`, including infrastructure, identity,
+admin, payment and unrelated routes. Generate connector mappings only for entries
+marked `tool_eligible` with a supported canonical shopping operation. Entries marked
+`inventory_only`, `internal_dependency` or `blocked_by_policy` provide context and
+must never become MCP tools.
 
 Do not write files, install dependencies, create a branch, call a hosted Auteric service, or create credentials during this phase.
 

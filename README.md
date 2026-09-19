@@ -1,4 +1,4 @@
-# Auteric Kit 0.5.0
+# Auteric Kit 0.6.0
 
 Fresh-store regression coverage now includes 48 isolated catalog simulations:
 Express, custom route registration, FastAPI and Flask; list and wrapped responses;
@@ -31,8 +31,9 @@ with bounded backoff and stops on revoked authorization. `--serve` remains a
 foreground process, not an installed operating-system service.
 
 `connect` starts at the repository root, detects the storefront and the authoritative
-backend, then installs the bundled Python SDK and project skill, scans every canonical
-operation, installs a static catalog adapter when supported, pairs with the account
+backend, then installs the bundled Python SDK and project skill, inventories every
+detected API and classifies it before selecting canonical shopping operations. It
+installs a static catalog adapter when supported, pairs with the account
 owner in the browser, and runs sandbox mapping and Gateway/MCP checks. It writes
 capability and validation reports in `.auteric/`. Keep `auteric connector` running
 for continued access. Runtime credentials stay outside the merchant repository.
@@ -41,6 +42,11 @@ The plugin carries its CLI at `skills/auteric-connect/scripts/cli/bin/auteric.js
 The skill invokes that actual installed path; npm publication is not required.
 Node 20+ and Python 3.11+ with venv are required; first runtime installation fetches
 httpx and pydantic dependencies into a private virtual environment.
+
+The inventory records infrastructure, identity, customer, admin, payment, webhook
+and other APIs so the adapter can understand the whole store. Only supported catalog,
+cart and checkout behaviors become tool candidates. Administrative, payment-capture,
+refund, webhook and sandbox-control routes are explicitly excluded from MCP exposure.
 
 Factory and REST integrations use an explicit `.auteric/connector.json` with
 supported operations and sandbox `test_inputs`. Route-name matches are candidates;

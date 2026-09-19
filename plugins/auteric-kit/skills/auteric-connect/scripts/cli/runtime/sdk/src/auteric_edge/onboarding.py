@@ -301,7 +301,7 @@ async def connect(root, settings):
                                     "params": {
                                         "protocolVersion": "2025-11-25",
                                         "capabilities": {},
-                                        "clientInfo": {"name": "auteric-connect", "version": "0.4.0"},
+                                        "clientInfo": {"name": "auteric-connect", "version": "0.6.0"},
                                     },
                                 },
                             )

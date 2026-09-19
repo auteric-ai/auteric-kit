@@ -91,7 +91,11 @@ function candidateKind(directory) {
   try { files = readdirSync(directory, { withFileTypes: true }); } catch { return { api: false, frontend: false }; }
   const hasStatic = files.some(file => file.isFile() && file.name === 'index.html');
   const hasPythonApi = files.some(file => file.isFile() && /^(main|app|server)\.py$/.test(file.name));
-  return { api: nodeApi || hasPythonApi, frontend: nodeUi || hasStatic };
+  const namesInDirectory = new Set(files.filter(file => file.isFile()).map(file => file.name));
+  const hasBackendManifest = ['composer.json', 'Gemfile', 'go.mod', 'pom.xml', 'build.gradle', 'build.gradle.kts']
+    .some(name => namesInDirectory.has(name)) || files.some(file => file.isFile() && file.name.endsWith('.csproj'));
+  const hasBackendSource = files.some(file => file.isFile() && /^(routes|router|server|main|app)\.(php|rb|go|java|kt|cs)$/.test(file.name));
+  return { api: nodeApi || hasPythonApi || hasBackendManifest || hasBackendSource, frontend: nodeUi || hasStatic };
 }
 
 function walkProject(root, maximumDepth = 4) {
@@ -314,7 +318,7 @@ async function connect(root, options) {
   if (!['codex', 'claude', 'cursor', 'copilot', 'none', 'auto'].includes(agent)) throw Error('Use --agent codex|claude|cursor|auto|none');
   console.log(`Store: ${domain} | Frontend: ${layout.frontendRelative} | Backend: ${layout.backendRelative} | Framework: ${project.framework} | Instructions: ${agent === 'auto' ? 'Codex/Copilot, Claude, Cursor' : agent}`);
   if (localOnly) console.log('This is a local test identifier, not a public domain or ownership proof.');
-  console.log('Connect installs local skills, inventories every canonical capability, prepares supported adapters and tests them in the selected sandbox.');
+  console.log('Connect inventories the full API surface, selects supported shopping capabilities, prepares their adapters and tests them in the selected sandbox.');
   console.log('Candidate commerce libraries:', project.catalogCandidate.join(', ') || 'none detected');
   if (options['dry-run']) { console.log('Dry run: no authentication, store creation or file changes.'); return; }
   journal(root, 'inspection', 'running');
@@ -322,7 +326,8 @@ async function connect(root, options) {
     store_url: probeUrl, instructions_root: root }, { install: true });
   const conflicts = (prepared.skill || []).filter(item => item.conflict).map(item => item.client);
   if (conflicts.length) console.log(`Existing assistant instructions preserved for: ${conflicts.join(', ')}. Review these files manually.`);
-  console.log(`Inspected ${prepared.inventory.files_inspected} backend files. Capability report: ${join(layout.backend, '.auteric/capabilities.json')}`);
+  const summary = prepared.inventory.inventory_summary || {};
+  console.log(`Inspected ${prepared.inventory.files_inspected} backend files and inventoried ${summary.api_endpoints ?? summary.total_endpoints ?? 0} APIs plus ${summary.storefront_routes ?? 0} storefront routes; ${summary.tool_candidates ?? 0} are canonical shopping-tool candidates. Capability report: ${join(layout.backend, '.auteric/capabilities.json')}`);
   journal(root, 'inspection', 'complete');
   let assistantAttempted = false;
   if (!prepared.connector_prepared && agent !== 'none') {

@@ -1,4 +1,4 @@
-# 0.5.0 GitHub release
+# 0.6.0 GitHub release
 
 The GitHub package bundles the CLI and SDK. No npm publication or separate plugin
 installation is necessary for the terminal Connect command.
