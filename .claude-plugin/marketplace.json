@@ -10,7 +10,7 @@
   "plugins": [{
     "name": "auteric-kit",
     "source": "./plugins/auteric-kit",
-    "version": "0.4.1",
+    "version": "0.5.0",
     "description": "Prepare a storefront for shopping agents through a reviewable Auteric workflow.",
     "author": {"name": "Auteric", "url": "https://github.com/auteric-ai"},
     "homepage": "https://github.com/auteric-ai/auteric-kit",

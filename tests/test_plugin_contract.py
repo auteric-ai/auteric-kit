@@ -8,6 +8,24 @@ PLUGIN = ROOT / "plugins" / "auteric-kit"
 
 
 class PluginContractTests(unittest.TestCase):
+    def test_all_release_manifests_share_the_package_version(self):
+        expected = json.loads((ROOT / "package.json").read_text())["version"]
+        codex = json.loads((ROOT / "plugins/auteric-kit/.codex-plugin/plugin.json").read_text())
+        claude = json.loads((ROOT / "plugins/auteric-kit/.claude-plugin/plugin.json").read_text())
+        marketplace = json.loads((ROOT / ".claude-plugin/marketplace.json").read_text())
+        bundled = json.loads(
+            (ROOT / "plugins/auteric-kit/skills/auteric-connect/scripts/cli/package.json").read_text()
+        )
+        self.assertEqual(
+            {
+                codex["version"],
+                claude["version"],
+                marketplace["plugins"][0]["version"],
+                bundled["version"],
+            },
+            {expected},
+        )
+
     def test_codex_manifest_has_user_facing_starters(self):
         manifest = json.loads((PLUGIN / ".codex-plugin" / "plugin.json").read_text())
         self.assertEqual(manifest["version"], json.loads((ROOT / "package.json").read_text())["version"])
