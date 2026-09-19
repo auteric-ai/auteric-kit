@@ -1,13 +1,29 @@
-# 0.4.5 GitHub release
+# 0.5.0 GitHub release
 
-The plugin includes the Node CLI and Python SDK source, so a separately published
-npm package is not required for Connect. `npx --yes github:auteric-ai/auteric-kit
---localhost --store-url http://127.0.0.1:PORT` downloads and runs the repository
-CLI for one session; it does not install a global executable.
-Local integration is authorized by the connect request. Browser identity consent
-is preserved; push, publication and production activation remain separate gates.
+The GitHub package bundles the CLI and SDK. No npm publication or separate plugin
+installation is necessary for the terminal Connect command.
 
-Validation evidence and known boundaries are recorded in the platform's
-`docs/commerce/connect-acceptance.md`. The previous installed 0.3.0 plugin is not
-silently replaced by editing this checkout. Install the reviewed local artifact
-or publish the release only after approval.
+Validated locally: automatic Codex adapter creation for an unfamiliar custom REST
+store; actual catalog API from the existing Vite/Express store on port 5173;
+isolated owner sign-in with normal code approval; separate MCP service execution;
+local signed UCP route; repeat connection without re-pairing, duplicate Store or
+mapping activation; worker restart and credential revocation. The acceptance
+harness is in `acceptance/test_onboarding.py`, with the custom merchant source in
+`acceptance/fixtures/custom`. Pairing codes stay in test-process memory.
+
+The standard suites cover 48 deterministic catalog combinations, schema rejection,
+private session state, mapping pinning, exclusive connection locks and bounded
+assistant execution. The platform acceptance suite additionally exercises all 11
+canonical operations with a synthetic nonfinancial connector. That fixture is not
+proof that arbitrary real carts or payment systems work.
+
+Live model execution was tested with Codex only. Claude, Cursor and Copilot command
+adapters still need validation with installed, authenticated provider CLIs.
+The connector is foreground and needs process supervision for persistent hosting.
+Production ownership, HTTPS publication, hosted deployment, real merchant write
+journeys and payments were not exercised. Payment capture/orders/refunds remain
+unsupported. Release of the kit is not a production deployment of the platform.
+
+A platform fix allows loopback product links only for a development service and
+sandbox Store. It must be included in the running local platform separately from
+the kit. Public-mode URL rules stay unchanged.

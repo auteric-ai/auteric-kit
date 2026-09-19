@@ -9,6 +9,7 @@ import hashlib
 import json
 import os
 import sys
+import time
 from pathlib import Path
 from urllib.parse import urlsplit
 
@@ -19,6 +20,8 @@ from .catalog import CatalogConnector, safe_path
 from .manual import ManualConnector, load_factory
 from .mapping import MappedConnector
 from .mapping import mapping_digest
+from .mapping import validate_mapping
+from .models import validate_input, validate_output, READ_OPERATIONS
 from .repository_inspection import inspect_repository
 from .worker import EdgeWorker
 
@@ -106,13 +109,13 @@ def connector(root, config, development):
     if config["kind"] == "catalog":
         implementation = ManualConnector(CatalogConnector(root, config["path"]))
         products = implementation.implementation.products()
-        mappings = [{"operation": op, "mapping": {"kind": "sdk"}} for op in sorted(implementation.operations)]
+        mappings = [{"operation": op, "kind": "sdk"} for op in sorted(implementation.operations)]
         inputs = {"search_products": {"query": "", "limit": 2}, "get_product": {"product_id": products[0]["id"]}}
     elif config["kind"] == "factory":
         # Explicit local module selection, never a remote job or inferred import.
         sys.path.insert(0, str(Path(root).absolute()))
         implementation = load_factory(config["factory"])
-        mappings = [{"operation": op, "mapping": {"kind": "sdk"}} for op in implementation.operations]
+        mappings = [{"operation": op, "kind": "sdk"} for op in implementation.operations]
         inputs = config.get("test_inputs", {})
     elif config["kind"] == "rest":
         implementation = MappedConnector(
@@ -137,6 +140,38 @@ def runtime_directory():
 
 def runtime_key(base, sid):
     return hashlib.sha256((base + "/" + sid).encode()).hexdigest()
+
+
+async def local_check(root, development):
+    """Independent validation before authentication; no merchant writes."""
+    config = json.loads(safe_path(root, '.auteric/connector.json').read_text())
+    if config.get('kind') == 'rest':
+        for mapping in config['mappings']:
+            validate_mapping(mapping)
+        digests = [mapping_digest(m) for m in config['mappings']]
+        if not config.get('approved_mapping_digests'):
+            config['approved_mapping_digests'] = digests
+            save(root, '.auteric/connector.json', config)
+        if set(config['approved_mapping_digests']) != set(digests):
+            return {'status': 'mapping_changed', 'tested_operations': []}
+    implementation, mappings, inputs = connector(root, config, development)
+    checked = []
+    try:
+        if not mappings:
+            return {'status': 'empty_connector', 'tested_operations': []}
+        for item in mappings:
+            operation = item['operation']
+            if operation not in inputs:
+                return {'status': 'test_inputs_required', 'operation': operation, 'tested_operations': checked}
+            validate_input(operation, inputs[operation])
+            if operation in READ_OPERATIONS and operation in {'search_products', 'get_product'}:
+                result = await implementation.execute(operation, inputs[operation], {**item.get('mapping', item), 'operation': operation})
+                validate_output(operation, result)
+                checked.append(operation)
+        return {'status': 'local_contract_passed', 'tested_operations': checked,
+                'prepared_operations': [m['operation'] for m in mappings], 'merchant_writes_executed': False}
+    finally:
+        await implementation.close()
 
 
 async def connect(root, settings):
@@ -365,8 +400,24 @@ async def serve(root, credential_file):
         environment=settings["environment"],
         allow_loopback=settings["development"],
     )
+    health = {'status': 'starting', 'store_id': settings['store_id'], 'pid': os.getpid(), 'last_success': None}
     try:
-        await worker.run()
+        while True:
+            try:
+                busy = await worker.tick()
+                health.update(status='healthy', last_success=time.time(), failures=0)
+            except httpx.HTTPStatusError as exc:
+                health.update(status='authorization_failed' if exc.response.status_code in {401, 403} else 'unavailable', failures=health.get('failures', 0) + 1)
+                if exc.response.status_code in {401, 403}:
+                    save(root, '.auteric/health.json', health)
+                    raise
+                busy = False
+            except (httpx.HTTPError, ValueError):
+                health.update(status='unavailable', failures=health.get('failures', 0) + 1)
+                busy = False
+            health['checked_at'] = time.time()
+            save(root, '.auteric/health.json', health)
+            await asyncio.sleep(0.1 if busy else min(30, 2 ** min(health.get('failures', 0) + 1, 5)))
     finally:
         await worker.close()
         await implementation.close()
@@ -382,6 +433,12 @@ def main():
     elif data["command"] == "connect":
         result = asyncio.run(connect(root, data))
         save(root, ".auteric/validation.json", result)
+    elif data['command'] == 'local-check':
+        try:
+            result = asyncio.run(local_check(root, data.get('development', False)))
+        except Exception as exc:
+            result = {'status': 'local_contract_failed', 'error_type': type(exc).__name__, 'tested_operations': []}
+        save(root, '.auteric/local-validation.json', result)
     elif data["command"] == "serve":
         result = asyncio.run(serve(root, data["credential_file"]))
     else:

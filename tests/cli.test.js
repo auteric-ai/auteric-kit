@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { existsSync, mkdirSync, mkdtempSync, realpathSync, readFileSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { apiUrl, existingDiscoveryDigest, inspect, localStoreUrl, localTestDomain, prepareDiscovery, resolveProjectLayout, run, verifyLocalWithRetry } from '../src/cli.js';
+import { apiUrl, existingDiscoveryDigest, inspect, localStoreUrl, localTestDomain, prepareDiscovery, resolveProjectLayout, run, uncoveredOperations, verifyLocalWithRetry } from '../src/cli.js';
 
 test('localhost mode permits loopback only and cloud requires HTTPS', () => {
   assert.equal(apiUrl({ localhost: true }), 'http://127.0.0.1:8100');
@@ -26,6 +26,21 @@ test('local store has a stable non-public test identifier without a domain', asy
 test('flags without a subcommand use the Connect workflow for GitHub npx', async () => {
   const root = mkdtempSync(join(realpathSync(tmpdir()), 'auteric-github-shortcut-'));
   await run(['--localhost', '--dry-run', '--store-url', 'http://127.0.0.1:5500'], root);
+});
+
+test('cloud dry run accepts a merchant domain without a local API origin', async () => {
+  const root = mkdtempSync(join(realpathSync(tmpdir()), 'auteric-cloud-store-'));
+  await run(['connect', '--domain', 'shop.example', '--dry-run'], root);
+});
+
+test('candidate operations outside an existing connector remain completion work', () => {
+  const inventory = { capability_coverage: [
+    { operation: 'search_products', status: 'candidate' },
+    { operation: 'get_product', status: 'candidate' },
+    { operation: 'create_cart', status: 'candidate' },
+    { operation: 'payment_capture', status: 'unsupported' },
+  ] };
+  assert.deepEqual(uncoveredOperations(inventory, ['search_products', 'get_product']), ['create_cart']);
 });
 
 test('project root selects one backend and frontend automatically', () => {
@@ -119,7 +134,7 @@ test('missing implementation stops before authorization, Store creation and UCP 
     return new Response(JSON.stringify(data), { status: 200, headers: { 'content-type': 'application/json' } });
   };
   try {
-    const result = await run(['connect', '--localhost', '--no-browser'], root);
+    const result = await run(['connect', '--localhost', '--no-browser', '--no-agent'], root);
     assert.equal(result.integration, 'implementation_required');
     assert.equal(existsSync(join(root, '.well-known/ucp')), false);
     assert.equal(existsSync(join(root, '.auteric/config.json')), false);

@@ -1,4 +1,4 @@
-# Auteric Kit 0.4.7
+# Auteric Kit 0.5.0
 
 Fresh-store regression coverage now includes 48 isolated catalog simulations:
 Express, custom route registration, FastAPI and Flask; list and wrapped responses;
@@ -8,10 +8,27 @@ currency and optional catalog data, and reports contract failures explicitly.
 Linux and macOS CI run both Python and Node suites. These simulations do not
 establish universal framework support or production checkout compatibility.
 
-The CLI installs assistant instructions but does not invoke an AI model. Unknown
-APIs, GraphQL, authentication or business-specific cart contracts require the
-coding assistant to complete an adapter using those instructions. Repeating the
-same terminal command without implementing that adapter cannot resolve them.
+Connect first attempts deterministic catalog discovery. If no connector can be
+prepared, it detects an installed coding CLI (Codex, Claude Code, Cursor CLI or
+Copilot CLI), invokes one bounded adapter task, and independently validates the
+result before sign-in. This uses the assistant's existing account and normal
+permissions; model usage and data handling follow that provider. `--no-agent`
+disables automatic invocation. An editor installation alone may not include an
+authenticated CLI. Missing tools, credentials and unsupported semantics are
+reported as incomplete, never as a successful connection.
+
+Codex automatic adapter creation has been exercised against a fresh custom HTTP
+merchant. The other provider command adapters have argument-level tests only;
+they have not been live-validated on this machine. No universal framework or
+production checkout compatibility is claimed.
+
+Setup journals its stages, locks concurrent runs, caches short-lived sign-in in
+private files outside the project, and resumes unchanged active mappings without
+replaying merchant mutation tests. Changed or interrupted write integrations stop
+for reconciliation. `logout` deletes the project CLI session; connector revocation
+remains an explicit Console action. A worker retries transient network failures
+with bounded backoff and stops on revoked authorization. `--serve` remains a
+foreground process, not an installed operating-system service.
 
 `connect` starts at the repository root, detects the storefront and the authoritative
 backend, then installs the bundled Python SDK and project skill, scans every canonical
@@ -72,7 +89,8 @@ authorization.
 Run the command in the integrated terminal of VS Code, Cursor, Claude Code, or
 Codex, from the repository root containing the frontend and backend. Do not paste
 it into an AI chat prompt expecting shell execution. The local storefront and
-Auteric Commerce service must already be running. For multiple API candidates,
+Auteric Commerce service must already be running. If the backend has a separate
+origin, add `--backend-url http://127.0.0.1:3001`. For multiple API candidates,
 choose the authoritative backend with `--backend`; separate repositories require
 an explicit integration rather than an inferred cross-repository connector.
 The bundled CLI does not need a separate Codex marketplace installation.
@@ -211,9 +229,28 @@ The checker never sends credentials, follows no redirects, executes no shopping 
 ## Development and release checks
 
 ```sh
-python3 -m pip install -r requirements-verify.txt
+python3 -m pip install -r requirements-verify.txt -e runtime/sdk pytest
+npm test
 python3 -m unittest discover -s tests -v
 python3 scripts/package-openai-skills.py
 ```
 
 The repository includes Codex and Claude Code plugin manifests and the `auteric-connect` and `auteric-verify` skills. The package script creates a skills-only ZIP for environments that accept a local plugin archive. See [release status](RELEASE_STATUS.md) before describing the kit as a live merchant connection.
+
+## Isolated HTTP acceptance
+
+`acceptance/test_onboarding.py` runs against a local platform checkout. Set
+`AUTERIC_PLATFORM_ROOT`, `AUTERIC_MERCHANT_ROOT` and `AUTERIC_MERCHANT_API`, then run
+`python -m pytest -q acceptance/test_onboarding.py` from a Python environment with
+the platform test dependencies. It copies integration source into a temporary
+project, uses the live merchant API for read-only catalog calls, creates an isolated
+owner/database, consumes that test owner's pairing code in memory, verifies UCP
+and MCP, resumes without new mappings or sign-in, and verifies credential revocation.
+The original merchant's files, ownership and public discovery are untouched.
+Automatic agent execution is disabled for this live read-only case. Set
+`AUTERIC_ACCEPTANCE_AGENT=1` only for an isolated merchant API whose writes are
+disposable, such as `acceptance/fixtures/custom`.
+
+The separate platform's UCP encoder must permit loopback product links only when
+the service is in development mode and the Store is sandbox. The kit alone cannot
+upgrade an older running control plane.

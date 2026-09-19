@@ -1,6 +1,8 @@
+import { prepareWithAgent } from './agent.js';
+import { atomicJSON, journal, lockProject, sessionPath, cachedSession, projectDigest, readJSON } from './workflow.js';
 import { sdk } from './sdk.js';
 import { createHash, randomBytes } from 'node:crypto';
-import { existsSync, lstatSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
+import { existsSync, lstatSync, mkdirSync, readFileSync, readdirSync, writeFileSync, unlinkSync } from 'node:fs';
 import { join, relative, resolve } from 'node:path';
 import { spawn } from 'node:child_process';
 import { setTimeout as delay } from 'node:timers/promises';
@@ -20,9 +22,9 @@ function parse(argv) {
     const arg = tail[i];
     if (!arg.startsWith('--')) throw Error(`Unknown argument: ${arg}`);
     const [name, value] = arg.slice(2).split('=', 2);
-    if (['localhost', 'dry-run', 'yes', 'no-browser', 'serve'].includes(name)) {
+    if (['localhost', 'dry-run', 'yes', 'no-browser', 'serve', 'no-agent'].includes(name)) {
       options[name] = true;
-    } else if (['api-url', 'domain', 'agent', 'store-url', 'backend', 'frontend'].includes(name)) {
+    } else if (['api-url', 'domain', 'agent', 'store-url', 'backend', 'frontend', 'backend-url'].includes(name)) {
       options[name] = value ?? tail[++i];
       if (!options[name]) throw Error(`--${name} needs a value`);
     } else throw Error(`Unknown flag: --${name}`);
@@ -44,10 +46,11 @@ export function apiUrl(options = {}) {
 
 export function localStoreUrl(value) {
   const url = new URL(value);
-  if (url.protocol !== 'http:' || !['127.0.0.1', '[::1]'].includes(url.hostname)
+  if (url.protocol !== 'http:' || !['localhost', '127.0.0.1', '[::1]'].includes(url.hostname)
       || url.username || url.password || url.pathname !== '/' || url.search || url.hash) {
     throw Error('--store-url must be a plain HTTP loopback origin, for example http://127.0.0.1:5500');
   }
+  if (url.hostname === 'localhost') url.hostname = '127.0.0.1';
   return url.origin;
 }
 
@@ -274,6 +277,13 @@ export function prepareDiscovery(root, framework, document, options = {}) {
 function configPath(root) { return join(root, '.auteric', 'config.json'); }
 function readConfig(root) { try { return JSON.parse(readFileSync(configPath(root), 'utf8')); } catch { return null; } }
 
+export function uncoveredOperations(inventory, preparedOperations = []) {
+  const prepared = new Set(preparedOperations);
+  return (inventory.capability_coverage || [])
+    .filter(item => item.status === 'candidate' && !prepared.has(item.operation))
+    .map(item => item.operation);
+}
+
 export function existingDiscoveryDigest(root, framework, storeId) {
   const path = destination(root, framework);
   try {
@@ -294,47 +304,111 @@ async function connect(root, options) {
   const project = inspect(layout.frontend);
   const localOnly = Boolean(options.localhost && !options.domain);
   const domain = localOnly ? localTestDomain(root) : domainName(options.domain);
+  const backendUrl = options['backend-url']
+    ? (options.localhost ? localStoreUrl(options['backend-url']) : apiUrl({ 'api-url': options['backend-url'] }))
+    : storeUrl || (localOnly ? null : `https://${domain}`);
+  const probeUrl = options.localhost ? backendUrl : null;
   if (project.existingUcp.length && readConfig(root)?.domain !== domain)
     throw Error(`UCP already exists: ${project.existingUcp.join(', ')}. Review before connecting.`);
-  const agent = options.agent || 'auto';
-  if (!['codex', 'claude', 'cursor', 'none', 'auto'].includes(agent)) throw Error('Use --agent codex|claude|cursor|auto|none');
+  const agent = options['no-agent'] ? 'none' : options.agent || 'auto';
+  if (!['codex', 'claude', 'cursor', 'copilot', 'none', 'auto'].includes(agent)) throw Error('Use --agent codex|claude|cursor|auto|none');
   console.log(`Store: ${domain} | Frontend: ${layout.frontendRelative} | Backend: ${layout.backendRelative} | Framework: ${project.framework} | Instructions: ${agent === 'auto' ? 'Codex/Copilot, Claude, Cursor' : agent}`);
   if (localOnly) console.log('This is a local test identifier, not a public domain or ownership proof.');
   console.log('Connect installs local skills, inventories every canonical capability, prepares supported adapters and tests them in the selected sandbox.');
   console.log('Candidate commerce libraries:', project.catalogCandidate.join(', ') || 'none detected');
   if (options['dry-run']) { console.log('Dry run: no authentication, store creation or file changes.'); return; }
-  const prepared = await sdk('prepare', layout.backend, { agent: agent === 'claude' ? 'claude-code' : agent,
-    store_url: storeUrl, instructions_root: root }, { install: true });
+  journal(root, 'inspection', 'running');
+  let prepared = await sdk('prepare', layout.backend, { agent: agent === 'claude' ? 'claude-code' : agent === 'copilot' ? 'codex' : agent,
+    store_url: probeUrl, instructions_root: root }, { install: true });
   const conflicts = (prepared.skill || []).filter(item => item.conflict).map(item => item.client);
   if (conflicts.length) console.log(`Existing assistant instructions preserved for: ${conflicts.join(', ')}. Review these files manually.`);
   console.log(`Inspected ${prepared.inventory.files_inspected} backend files. Capability report: ${join(layout.backend, '.auteric/capabilities.json')}`);
+  journal(root, 'inspection', 'complete');
+  let assistantAttempted = false;
+  if (!prepared.connector_prepared && agent !== 'none') {
+    const assistant = await prepareWithAgent(root, layout.backend, backendUrl, agent);
+    assistantAttempted = true;
+    console.log(`Adapter preparation: ${assistant.status}`);
+    prepared = await sdk('prepare', layout.backend, { agent: 'none', store_url: probeUrl, instructions_root: root });
+  }
   if (!prepared.connector_prepared) {
+    journal(root, 'adapter', 'implementation_required');
     for (const reason of prepared.inventory.connector_diagnostics || []) console.log(`Diagnosis: ${reason}`);
     console.log('Integration incomplete: no commerce connector is configured. The coding agent must trace the detected APIs, implement .auteric/connector.json and test its handlers before rerunning Connect. No new Store or UCP was created.');
     return { integration: 'implementation_required', tested_operations: [] };
   }
-  const auth = await authenticate(base, options);
+  journal(root, 'local_validation', 'running');
+  let local = await sdk('local-check', layout.backend, { development: Boolean(options.localhost) });
+  let pending = uncoveredOperations(prepared.inventory, local.prepared_operations);
+  if (local.status === 'local_contract_passed' && pending.length && agent !== 'none' && !assistantAttempted) {
+    const assistant = await prepareWithAgent(root, layout.backend, backendUrl, agent, { missingOperations: pending });
+    assistantAttempted = true;
+    console.log(`Capability completion: ${assistant.status}`);
+    prepared = await sdk('prepare', layout.backend, { agent: 'none', store_url: probeUrl, instructions_root: root });
+    local = await sdk('local-check', layout.backend, { development: Boolean(options.localhost) });
+    pending = uncoveredOperations(prepared.inventory, local.prepared_operations);
+  }
+  journal(root, 'local_validation', local.status);
+  if (pending.length) console.log(`Unconnected source candidates (not exposed as tools): ${pending.join(', ')}. Their business/session contracts still require an adapter.`);
+  if (local.status !== 'local_contract_passed') {
+    console.log(`Adapter validation: ${local.status}. See .auteric/local-validation.json; authentication has not started.`);
+    return { integration: local.status, tested_operations: local.tested_operations || [] };
+  }
+  const authPath = sessionPath(root, base, domain);
+  let auth = cachedSession(authPath);
+  if (auth) {
+    try { await request(base, '/api/commerce/auth/me', { token: auth.access_token }); }
+    catch (error) { if (!/^(401|403)\b/.test(error.message)) throw error; unlinkSync(authPath); auth = null; }
+  }
+  journal(root, 'authentication', 'running');
+  if (!auth) {
+    auth = await authenticate(base, options);
+    atomicJSON(authPath, { ...auth, expires_at: Date.now() + Math.max(0, Number(auth.expires_in || 0) - 60) * 1000 });
+  }
+  journal(root, 'authentication', 'complete');
   console.log(`Signed in as ${auth.user.email} (${auth.user.organization})`);
   const stores = await request(base, '/api/commerce/stores', { token: auth.access_token });
-  let store = stores.find(item => item.domain === domain);
+  const previous = readConfig(root);
+  if (previous?.store_id && (previous.api_url !== base || previous.domain !== domain || !stores.some(item => item.id === previous.store_id && item.domain === domain)))
+    throw Error('Saved Store does not belong to this account or control plane. No new Store was created.');
+  let store = stores.find(item => item.domain === domain && (!previous?.store_id || item.id === previous.store_id));
   if (!store) {
     store = await request(base, '/api/commerce/stores', { method: 'POST', token: auth.access_token,
       body: { domain, name: domain, platform: 'custom', environment: options.localhost ? 'sandbox' : 'production' } });
   }
-  const state = { discovery_digest: readConfig(root)?.discovery_digest, api_url: base, domain, store_id: store.id, framework: project.framework, backend_dir: layout.backendRelative, frontend_dir: layout.frontendRelative, mode: options.localhost ? 'local' : 'cloud', local_only: localOnly, status: 'store_registered' };
+  const state = { ...previous, discovery_digest: readConfig(root)?.discovery_digest, api_url: base, domain, store_id: store.id, framework: project.framework, backend_dir: layout.backendRelative, frontend_dir: layout.frontendRelative, mode: options.localhost ? 'local' : 'cloud', local_only: localOnly, status: 'store_registered' };
   mkdirSync(resolve(configPath(root), '..'), { recursive: true });
-  writeFileSync(configPath(root), JSON.stringify(state, null, 2) + '\n', { mode: 0o644 });
-  const validation = await sdk('connect', layout.backend, { api_url: base, store_id: store.id, token: auth.access_token,
-    environment: store.environment || (options.localhost ? 'sandbox' : 'production'), development: Boolean(options.localhost) });
+  atomicJSON(configPath(root), state);
+  journal(root, 'runtime_validation', 'running');
+  const digest = projectDigest(layout.backend);
+  const savedValidation = readJSON(join(layout.backend, '.auteric/validation.json'));
+  let validation;
+  if (previous?.integration === 'locally_tested' && previous.project_digest === digest && previous.credential_file && existsSync(previous.credential_file) && savedValidation?.status === 'locally_tested') {
+    const active = await request(base, `/api/commerce/stores/${encodeURIComponent(store.id)}/mappings`, { token: auth.access_token });
+    if (!savedValidation.mapping_versions?.length || !savedValidation.mapping_versions.every(item => active.some(row => row.id === item.id && row.state === 'active')))
+      throw Error('Previously tested mappings were changed or disabled. Review their status before activating access again.');
+    validation = savedValidation;
+    console.log('Resuming previously tested mappings; no merchant mutation tests are replayed.');
+  } else {
+    if (previous?.integration && local.prepared_operations?.some(op => !['search_products', 'get_product', 'get_cart', 'get_checkout'].includes(op)))
+      throw Error('This changed or interrupted connector includes merchant writes. Reconcile the previous test run before repeating those operations.');
+    validation = await sdk('connect', layout.backend, { api_url: base, store_id: store.id, token: auth.access_token,
+      environment: store.environment || (options.localhost ? 'sandbox' : 'production'), development: Boolean(options.localhost) });
+  }
+  state.project_digest = digest;
+  state.unconnected_candidates = pending;
+  journal(root, 'runtime_validation', validation.status);
   state.integration = validation.status;
   state.tested_operations = validation.tested_operations;
   state.credential_file = validation.credential_file;
   console.log(`Integration: ${validation.status}; tested operations: ${validation.tested_operations.join(', ') || 'none'}`);
   if (validation.status !== 'locally_tested') {
-    writeFileSync(configPath(root), JSON.stringify(state, null, 2) + '\n', { mode: 0o644 });
+    atomicJSON(configPath(root), state);
     console.log('Setup is incomplete. No new UCP was generated. Inspect the validation report and finish the required adapter tests or production preparation.');
     return state;
   }
+  atomicJSON(configPath(root), state);
+  journal(root, 'discovery', 'running');
   let discovery;
   try { discovery = await request(base, `/api/commerce/stores/${encodeURIComponent(store.id)}/discovery`, { token: auth.access_token }); }
   catch (error) { console.log(`UCP publication pending: ${error.message}`); }
@@ -348,7 +422,7 @@ async function connect(root, options) {
     state.status = validation.status === 'locally_tested' ? 'capabilities_prepared' : validation.status;
     // Persist the tested connector and signed profile before probing a dev server.
     // A transient route failure must not erase successfully completed setup.
-    writeFileSync(configPath(root), JSON.stringify(state, null, 2) + '\n', { mode: 0o644 });
+    atomicJSON(configPath(root), state);
     if (storeUrl) {
       const check = await verifyLocalWithRetry(base, store.id, auth.access_token, storeUrl, discovery.document);
       if (check.local_verified && !check.public_domain_verified) {
@@ -362,7 +436,8 @@ async function connect(root, options) {
     }
   }
   mkdirSync(resolve(configPath(root), '..'), { recursive: true });
-  writeFileSync(configPath(root), JSON.stringify(state, null, 2) + '\n', { mode: 0o644 });
+  atomicJSON(configPath(root), state);
+  journal(root, 'discovery', state.local_discovery_verified ? 'local_verified' : 'pending');
   try {
     await request(base, '/api/commerce/cli/complete', { method: 'POST', token: auth.access_token,
       body: { request_id: auth.request_id, store_id: store.id } });
@@ -399,9 +474,15 @@ export async function run(argv, root = process.cwd()) {
     const backend = state.backend_dir ? resolve(root, state.backend_dir) : root;
     return sdk('serve', backend, { credential_file: state.credential_file });
   }
-  if (command === 'connect') return connect(root, options);
+  if (command === 'connect') {
+    if (options['dry-run']) return connect(root, options);
+    const release = lockProject(root);
+    try { return await connect(root, options); }
+    catch (error) { journal(root, 'connection', 'failed'); throw error; }
+    finally { release(); }
+  }
   if (command === 'login') { const auth = await authenticate(apiUrl(options), options); console.log(`Signed in as ${auth.user.email}. This session is held only for this command; use connect to register a store.`); return; }
-  if (command === 'logout') { console.log('No persistent CLI credential is stored. Browser sessions are managed in the Auteric console.'); return; }
+  if (command === 'logout') { const state = readConfig(root); if (state) { const path = sessionPath(root, state.api_url, state.domain); if (existsSync(path)) unlinkSync(path); } console.log('Project CLI session removed. Browser sessions and connector access are managed in the Auteric console.'); return; }
   if (command === 'status' || command === 'doctor' || command === 'verify') {
     const state = readConfig(root);
     const project = inspect(root);
@@ -423,7 +504,7 @@ export async function run(argv, root = process.cwd()) {
   if (command === 'disconnect') {
     throw Error('Disconnect is unavailable in this version. Disable agent access in Auteric Console; no repository files were deleted.');
   }
-  console.log('Usage: auteric connect [--domain store.example.com] [--localhost] [--api-url http://127.0.0.1:8100] [--store-url http://127.0.0.1:5500] [--backend services/api] [--frontend apps/web] [--dry-run] [--agent auto|codex|claude|cursor|none]');
+  console.log('Usage: auteric connect [--domain store.example.com] [--localhost] [--api-url http://127.0.0.1:8100] [--store-url http://127.0.0.1:5500] [--backend-url http://127.0.0.1:3001] [--backend services/api] [--frontend apps/web] [--dry-run] [--no-agent] [--agent auto|codex|claude|cursor|copilot|none]');
   console.log('GitHub shortcut: npx --yes github:auteric-ai/auteric-kit --localhost --store-url http://127.0.0.1:5500');
   console.log('Also: auteric inspect | connector | login | status | verify | doctor | disconnect | logout');
 }

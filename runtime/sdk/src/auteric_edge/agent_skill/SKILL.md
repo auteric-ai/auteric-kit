@@ -18,9 +18,13 @@ For separate repositories or deployments, establish which API is authoritative
 before wiring it. Never assume the frontend origin is also the backend origin.
 Complete a tested REST mapping or local factory for supported operations, then
 rerun Connect once. Do not instruct the owner to repeat an unchanged failing command.
-An installed skill does not run an AI model: the host agent must execute this
-workflow when asked to connect; a terminal-only CLI can only prepare supported
-deterministic adapters. Report this boundary if human or agent implementation is needed.
+Installing instructions alone does not run a model. Connect first tries deterministic
+adapters; when none exists it invokes an available local coding CLI with a bounded
+adapter task, then independently validates its output. If AUTERIC_AGENT_TASK=1,
+prepare only the requested adapter and stop: never invoke Connect or another agent.
+When already operating inside a coding assistant, use --no-agent and implement
+missing wiring here instead of nesting assistants. Missing account access or
+unsupported contracts must remain explicit; never claim universal API support.
 
 Auteric is the independent security/control layer for agentic commerce. The coding
 agent works at development time; production executes fixed code and mappings, never
@@ -79,7 +83,7 @@ Keep merchant secrets local. Use fixed URLs/operations, allowlisted config, boun
 timeouts/responses and no redirects. Do not catch failures and return fake products,
 empty carts or success. Declare unavailable capabilities rather than placeholders.
 
-Use a local `build_connector()` factory and SDK mappings `{"kind":"sdk"}` for
+Use a local `build_connector()` factory and SDK mappings `{"operation":"search_products","kind":"sdk"}` for
 manual code; reviewed REST mappings are an alternative. The runtime routes all
 agent operations through Auteric policies. Avoid direct agent-to-backend bypasses.
 Do not emulate atomic cart replacement using untracked remove/add loops.

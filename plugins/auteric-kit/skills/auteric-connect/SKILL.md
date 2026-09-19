@@ -27,7 +27,14 @@ treated as authority for cart, checkout, inventory, price, or payment.
 
 This is a guided workflow. The merchant does not need to know this skill's name.
 Read [the workflow](references/workflow.md), [the implementation guide](references/implementation.md), and [the contract](references/contract.md) before proposing changes.
-For a custom API integration or an empty UCP, also read [capability completion](references/capability-completion.md). A CLI invocation alone cannot implement arbitrary merchant business logic.
+For a custom API integration or an empty UCP, also read [capability completion](references/capability-completion.md). Connect can invoke an available coding CLI to prepare a missing adapter; this is
+a bounded implementation attempt followed by independent validation, not universal
+API compatibility. Inside a coding assistant, pass `--no-agent`, implement the
+adapter in the current task, and rerun Connect. Never nest Connect when
+`AUTERIC_AGENT_TASK=1`. Use `--backend-url` when the API and storefront origins differ.
+Read `.auteric/workflow.json` for the last stage, `.auteric/local-validation.json`
+for pre-authentication checks and `.auteric/health.json` for worker connectivity.
+A resumed session does not prove current runtime protection.
 
 ## 1. Inspect — read-only
 
