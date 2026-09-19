@@ -75,6 +75,10 @@ def test_real_store_and_auth_resume(tmp_path):
     allow_agent = os.environ.get('AUTERIC_ACCEPTANCE_AGENT') == '1'
     merchant = tmp_path/'merchant'
     shutil.copytree(source, merchant, ignore=shutil.ignore_patterns('node_modules','.git','.auteric','.well-known','.env*','dist','build','.agents','.claude','.cursor'))
+    connector_fixture = os.environ.get('AUTERIC_ACCEPTANCE_CONNECTOR')
+    if connector_fixture:
+        (merchant/'.auteric').mkdir(exist_ok=True)
+        shutil.copyfile(connector_fixture, merchant/'.auteric/connector.json')
     public = merchant/'public'; public.mkdir(exist_ok=True)
     frontend_server = ThreadingHTTPServer(('127.0.0.1',0), functools.partial(QuietHandler,directory=str(public)))
     thread = threading.Thread(target=frontend_server.serve_forever,daemon=True); thread.start()

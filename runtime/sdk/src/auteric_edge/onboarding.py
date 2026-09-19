@@ -25,6 +25,36 @@ from .models import validate_input, validate_output, READ_OPERATIONS
 from .repository_inspection import inspect_repository
 from .worker import EdgeWorker
 
+OPERATION_ORDER = (
+    "search_products", "get_product", "create_cart", "get_cart", "add_to_cart",
+    "update_cart_item", "remove_from_cart", "replace_cart_items", "cancel_cart",
+    "create_checkout", "get_checkout",
+)
+
+
+def ordered_mappings(mappings):
+    rank = {operation: index for index, operation in enumerate(OPERATION_ORDER)}
+    return sorted(mappings, key=lambda item: rank.get(item["operation"], len(rank)))
+
+
+def lifecycle_test_input(operation, inputs, resources):
+    value = dict(inputs[operation])
+    if "cart_id" in value and resources.get("cart_id"):
+        value["cart_id"] = resources["cart_id"]
+    if "checkout_id" in value and resources.get("checkout_id"):
+        value["checkout_id"] = resources["checkout_id"]
+    return value
+
+
+def remember_lifecycle_resource(operation, evidence, resources):
+    response = evidence.get("response") or {}
+    if operation == "create_cart" and response.get("id"):
+        resources["cart_id"] = response["id"]
+    if operation == "create_checkout" and response.get("id"):
+        resources["checkout_id"] = response["id"]
+    if operation == "cancel_cart":
+        resources["cart_closed"] = True
+
 
 def save(root, relative, data):
     path = safe_path(root, relative)
@@ -245,13 +275,34 @@ async def connect(root, settings):
         try:
             await worker.tick()
             task = asyncio.create_task(worker.run())
-            for item in mappings:
+            contract_resources = {}
+            versions_by_operation = {}
+            for item in ordered_mappings(mappings):
                 # The control plane receives a draft envelope. `item` is the
                 # local deterministic REST/SDK mapping, while `operation` is
                 # the canonical capability being activated.
                 row = await call(prefix + "/mappings", {"operation": item["operation"], "mapping": item})
+                versions_by_operation[item["operation"]] = row["id"]
+                if item["operation"] == "create_checkout" and contract_resources.pop("cart_closed", False):
+                    fresh = await call(
+                        prefix + "/mappings/" + versions_by_operation["create_cart"] + "/test",
+                        {"input": dict(inputs["create_cart"]), "mode": mode},
+                    )
+                    if fresh["status"] != "pass":
+                        report["status"] = "contract_failed"
+                        return report
+                    remember_lifecycle_resource("create_cart", fresh, contract_resources)
+                    if "add_to_cart" in versions_by_operation:
+                        seeded = await call(
+                            prefix + "/mappings/" + versions_by_operation["add_to_cart"] + "/test",
+                            {"input": lifecycle_test_input("add_to_cart", inputs, contract_resources), "mode": mode},
+                        )
+                        if seeded["status"] != "pass":
+                            report["status"] = "contract_failed"
+                            return report
+                test_input = lifecycle_test_input(item["operation"], inputs, contract_resources)
                 evidence = await call(
-                    prefix + "/mappings/" + row["id"] + "/test", {"input": inputs[item["operation"]], "mode": mode}
+                    prefix + "/mappings/" + row["id"] + "/test", {"input": test_input, "mode": mode}
                 )
                 report["mapping_versions"].append(
                     {"operation": item["operation"], "id": row["id"], "status": evidence["status"]}
@@ -260,6 +311,7 @@ async def connect(root, settings):
                     report["status"] = "contract_failed"
                     return report
                 report["tested_operations"].append(item["operation"])
+                remember_lifecycle_resource(item["operation"], evidence, contract_resources)
             for row in report["mapping_versions"]:
                 await call(prefix + "/mappings/" + row["id"] + "/activate")
             report["status"] = "connection_test_required"
@@ -333,6 +385,25 @@ async def connect(root, settings):
                                 "cancel_cart",
                             ]
                             for index, op in enumerate([op for op in order if op in names], 3):
+                                if op == "cancel_cart" and "create_cart" in names:
+                                    mcp.headers["Idempotency-Key"] = "connect-cancel-fixture"
+                                    fixture = await mcp.post(
+                                        endpoint,
+                                        json={
+                                            "jsonrpc": "2.0",
+                                            "id": index + 1000,
+                                            "method": "tools/call",
+                                            "params": {"name": "create_cart", "arguments": {**inputs["create_cart"], "items": []}},
+                                        },
+                                    )
+                                    fixture.raise_for_status()
+                                    fixture_result = fixture.json()["result"]
+                                    if fixture_result.get("isError"):
+                                        raise ValueError("MCP cancel fixture could not create an isolated cart")
+                                    fixture_envelope = json.loads(fixture_result["content"][0]["text"])
+                                    if fixture_envelope.get("state") != "executed":
+                                        raise ValueError("MCP cancel fixture did not execute")
+                                    resources["cart_id"] = fixture_envelope["result"]["id"]
                                 arguments = dict(inputs[op])
                                 if op == "create_cart":
                                     arguments["items"] = []
@@ -364,6 +435,26 @@ async def connect(root, settings):
                                 checks.append({"operation": op, "state": "executed"})
                             await mcp.delete(endpoint)
                             report["mcp"] = {"endpoint": endpoint, "tools": names, "checks": checks}
+                            defaults = [
+                                {"operation": operation, "enabled": operation in {"search_products", "get_product"}}
+                                for operation in report["tested_operations"]
+                            ]
+                            report["capability_defaults"] = await call(
+                                prefix + "/capabilities", {"capabilities": defaults}, method="PUT"
+                            )
+                            # Changing the exposed capability set intentionally
+                            # invalidates the prior activation evidence. Re-test
+                            # the safe default surface, then restore agent access
+                            # against that exact binding. All other mappings stay
+                            # tested and connected for later dashboard activation.
+                            report["all_capabilities_connection_test"] = report["connection_test"]
+                            report["connection_test"] = await call(
+                                prefix + "/test-transaction",
+                                {"product_id": inputs.get("get_product", {}).get("product_id"), "query": ""},
+                            )
+                            if report["connection_test"]["state"] != "passed":
+                                raise ValueError("Default catalog capability test failed")
+                            await call(prefix + "/agent-access", {"enabled": True}, method="PUT")
                             report["status"] = "locally_tested"
                     finally:
                         # Test credentials are revoked even if a check fails.

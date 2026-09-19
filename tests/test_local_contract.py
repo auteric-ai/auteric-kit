@@ -7,9 +7,29 @@ from tempfile import TemporaryDirectory
 from unittest.mock import AsyncMock, patch
 
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]/'runtime/sdk/src'))
-from auteric_edge.onboarding import local_check
+from auteric_edge.onboarding import local_check, lifecycle_test_input, ordered_mappings, remember_lifecycle_resource
 
 class LocalContractTests(TestCase):
+    def test_contract_lifecycle_orders_dependencies_and_reuses_created_ids(self):
+        mappings = [
+            {'operation': 'cancel_cart'}, {'operation': 'get_checkout'},
+            {'operation': 'create_checkout'}, {'operation': 'get_cart'}, {'operation': 'create_cart'},
+        ]
+        self.assertEqual([item['operation'] for item in ordered_mappings(mappings)], [
+            'create_cart', 'get_cart', 'cancel_cart', 'create_checkout', 'get_checkout'
+        ])
+        inputs = {
+            'get_cart': {'cart_id': 'placeholder'},
+            'get_checkout': {'checkout_id': 'placeholder'},
+        }
+        resources = {}
+        remember_lifecycle_resource('create_cart', {'response': {'id': 'cart-live'}}, resources)
+        self.assertEqual(lifecycle_test_input('get_cart', inputs, resources)['cart_id'], 'cart-live')
+        remember_lifecycle_resource('create_checkout', {'response': {'id': 'checkout-live'}}, resources)
+        self.assertEqual(lifecycle_test_input('get_checkout', inputs, resources)['checkout_id'], 'checkout-live')
+        remember_lifecycle_resource('cancel_cart', {'response': {'id': 'cart-live'}}, resources)
+        self.assertTrue(resources['cart_closed'])
+
     def test_static_catalog_uses_valid_sdk_mapping(self):
         with TemporaryDirectory() as directory:
             root=Path(directory).resolve(); (root/'.auteric').mkdir()
