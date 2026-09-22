@@ -30,6 +30,8 @@ OPERATION_ORDER = (
     "search_products", "get_product", "create_cart", "get_cart", "add_to_cart",
     "update_cart_item", "remove_from_cart", "replace_cart_items", "cancel_cart",
     "create_checkout", "get_checkout",
+    "update_checkout", "complete_checkout", "cancel_checkout", "get_order",
+    "apply_discount_code", "remove_discount_code", "get_shipping_options", "set_shipping_address", "select_shipping_option",
 )
 
 
@@ -63,6 +65,8 @@ def lifecycle_test_input(operation, inputs, resources):
         value["cart_id"] = resources["cart_id"]
     if "checkout_id" in value and resources.get("checkout_id"):
         value["checkout_id"] = resources["checkout_id"]
+    if "order_id" in value and resources.get("order_id"):
+        value["order_id"] = resources["order_id"]
     return value
 
 
@@ -72,6 +76,8 @@ def remember_lifecycle_resource(operation, evidence, resources):
         resources["cart_id"] = response["id"]
     if operation == "create_checkout" and response.get("id"):
         resources["checkout_id"] = response["id"]
+    if operation == "complete_checkout" and response.get("metadata", {}).get("order_id"):
+        resources["order_id"] = response["metadata"]["order_id"]
     if operation == "cancel_cart":
         resources["cart_closed"] = True
 

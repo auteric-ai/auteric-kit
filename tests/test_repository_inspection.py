@@ -53,18 +53,19 @@ class RepositoryInspectionTests(unittest.TestCase):
         self.assertEqual(report["mode"], "full_api_inventory_filtered_commerce_tools")
         self.assertEqual(report["inventory_summary"]["total_endpoints"], len(routes))
         self.assertEqual(report["inventory_summary"]["api_endpoints"], len(routes))
-        self.assertEqual(report["inventory_summary"]["tool_candidates"], 11)
+        self.assertEqual(report["inventory_summary"]["tool_candidates"], 17)
         self.assertEqual({item["operation"] for item in report["candidates"]}, {
             "search_products", "get_product", "create_cart", "get_cart", "add_to_cart",
             "update_cart_item", "remove_from_cart", "replace_cart_items", "cancel_cart",
-            "create_checkout", "get_checkout",
+            "create_checkout", "get_checkout", "update_checkout", "cancel_checkout", "get_order",
+            "get_shipping_options", "apply_discount_code", "remove_discount_code",
         })
         by_route = {item["route"]: item for item in report["api_inventory"]}
         self.assertEqual(by_route["/api/auth/login"]["exposure"], "internal_dependency")
         self.assertEqual(by_route["/api/admin/products"]["exposure"], "blocked_by_policy")
         self.assertEqual(by_route["/api/checkouts/:id/payments"]["exposure"], "blocked_by_policy")
         self.assertEqual(by_route["/api/webhooks/sandbox"]["exposure"], "blocked_by_policy")
-        self.assertFalse(by_route["/api/carts/:id/coupon"]["tool_eligible"])
+        self.assertTrue(by_route["/api/carts/:id/coupon"]["tool_eligible"])
         self.assertFalse(by_route["/api/checkouts/:id/lock"]["tool_eligible"])
 
     def test_html_product_page_is_inventory_context_not_a_tool(self):

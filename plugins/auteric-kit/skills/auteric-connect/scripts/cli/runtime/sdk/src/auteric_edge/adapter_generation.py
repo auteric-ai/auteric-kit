@@ -38,7 +38,7 @@ class ServiceBinding(BaseModel):
 
 class AdapterRecipe(BaseModel):
     model_config = ConfigDict(extra='forbid')
-    bindings: list[ServiceBinding] = Field(min_length=1, max_length=11)
+    bindings: list[ServiceBinding] = Field(min_length=1, max_length=20)
     owner_reviewed_service_authentication: bool
     owner_reviewed_no_payment_capture: bool
 

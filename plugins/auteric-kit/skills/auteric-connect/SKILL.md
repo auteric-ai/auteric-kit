@@ -81,12 +81,15 @@ End with these explicit sections: **Completed locally**, **Requires Auteric cred
 
 Use the SDK capability report to cover search_products, get_product, create_cart,
 get_cart, add_to_cart, update_cart_item, remove_from_cart, replace_cart_items,
-cancel_cart, create_checkout and get_checkout. Trace every candidate to its actual
+cancel_cart, create_checkout, get_checkout, update_checkout, complete_checkout,
+cancel_checkout and get_order. Trace every candidate to its actual
 business logic. Complete factory/REST adapters and sandbox test inputs where
 supported; do not stop after catalog if real cart or checkout APIs exist.
-Unsupported and untested operations must have explicit reasons. Payments, refunds,
-orders and identity linking are not supported by this canonical runtime and must
-not be invented. Local skill installation is separate from runtime tool exposure.
+Unsupported and untested operations must have explicit reasons. Checkout completion
+requires a real merchant payment handler, encrypted sensitive-job transport,
+idempotency and an order-confirmation adapter; never infer those from a payment
+route or frontend button. Refunds and identity linking must not be invented. Local
+skill installation is separate from runtime tool exposure.
 A shared MCP process serves logical Store endpoints and filters tools by active
 mappings, capability controls and store-scoped grants. Read its signed
 `auteric_mcp.endpoint`; do not guess a new per-merchant server.

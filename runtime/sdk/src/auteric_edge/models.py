@@ -63,6 +63,18 @@ class Checkout(Model):
     metadata: dict[str, JsonValue] = Field(default_factory=dict)
 
 
+class Order(Model):
+    id: Identifier
+    checkout_id: Identifier
+    status: Literal["pending", "confirmed", "processing", "fulfilled", "canceled", "completed"]
+    items: list[CartItem] = Field(default_factory=list)
+    total: Money
+    currency: Currency
+    order_url: str | None = None
+    fulfillment_context: dict[str, JsonValue] = Field(default_factory=dict)
+    metadata: dict[str, JsonValue] = Field(default_factory=dict)
+
+
 class SearchRequest(Model):
     query: str = Field(default="", max_length=500)
     limit: int = Field(default=20, ge=1, le=100, strict=True)
@@ -110,6 +122,45 @@ class CheckoutRequest(Model):
     checkout_id: Identifier
 
 
+class CreateCheckoutRequest(Model):
+    cart_id: Identifier
+    buyer: dict[str, JsonValue] = Field(default_factory=dict)
+    context: dict[str, JsonValue] = Field(default_factory=dict)
+    payment: dict[str, JsonValue] = Field(default_factory=dict)
+    fulfillment: dict[str, JsonValue] = Field(default_factory=dict)
+
+
+class UpdateCheckoutRequest(CheckoutRequest):
+    items: list[ItemInput] = Field(default_factory=list, max_length=100)
+    buyer: dict[str, JsonValue] = Field(default_factory=dict)
+    context: dict[str, JsonValue] = Field(default_factory=dict)
+    fulfillment: dict[str, JsonValue] = Field(default_factory=dict)
+
+
+class CompleteCheckoutRequest(CheckoutRequest):
+    payment: dict[str, JsonValue]
+
+
+class OrderRequest(Model):
+    order_id: Identifier
+
+
+class DiscountCodeRequest(CartRequest):
+    code: str = Field(min_length=1, max_length=200)
+
+
+class ShippingOptionsRequest(CartRequest):
+    address: dict[str, JsonValue] = Field(default_factory=dict)
+
+
+class ShippingAddressRequest(CheckoutRequest):
+    address: dict[str, JsonValue]
+
+
+class ShippingOptionRequest(CheckoutRequest):
+    option_id: Identifier
+
+
 INPUTS = {
     "search_products": SearchRequest,
     "get_product": ProductRequest,
@@ -118,8 +169,17 @@ INPUTS = {
     "add_to_cart": AddRequest,
     "update_cart_item": UpdateRequest,
     "remove_from_cart": RemoveRequest,
-    "create_checkout": CartRequest,
+    "create_checkout": CreateCheckoutRequest,
     "get_checkout": CheckoutRequest,
+    "update_checkout": UpdateCheckoutRequest,
+    "complete_checkout": CompleteCheckoutRequest,
+    "cancel_checkout": CheckoutRequest,
+    "get_order": OrderRequest,
+    "apply_discount_code": DiscountCodeRequest,
+    "remove_discount_code": DiscountCodeRequest,
+    "get_shipping_options": ShippingOptionsRequest,
+    "set_shipping_address": ShippingAddressRequest,
+    "select_shipping_option": ShippingOptionRequest,
 }
 INPUTS.update({"replace_cart_items": ReplaceRequest, "cancel_cart": CartRequest})
 OUTPUTS = {
@@ -130,9 +190,18 @@ OUTPUTS = {
     },
     "create_checkout": TypeAdapter(Checkout),
     "get_checkout": TypeAdapter(Checkout),
+    "update_checkout": TypeAdapter(Checkout),
+    "complete_checkout": TypeAdapter(Checkout),
+    "cancel_checkout": TypeAdapter(Checkout),
+    "get_order": TypeAdapter(Order),
+    "apply_discount_code": TypeAdapter(Cart),
+    "remove_discount_code": TypeAdapter(Cart),
+    "get_shipping_options": TypeAdapter(list[dict[str, JsonValue]]),
+    "set_shipping_address": TypeAdapter(Checkout),
+    "select_shipping_option": TypeAdapter(Checkout),
 }
 OUTPUTS.update({"replace_cart_items": TypeAdapter(Cart), "cancel_cart": TypeAdapter(Cart)})
-READ_OPERATIONS = frozenset({"search_products", "get_product", "get_cart", "get_checkout"})
+READ_OPERATIONS = frozenset({"search_products", "get_product", "get_cart", "get_checkout", "get_order", "get_shipping_options"})
 
 
 def validate_input(operation, data):

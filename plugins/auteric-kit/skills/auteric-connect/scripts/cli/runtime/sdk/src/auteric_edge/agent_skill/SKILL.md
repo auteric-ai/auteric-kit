@@ -60,11 +60,15 @@ still applies. Do not promise that a cloud coding assistant keeps all code offli
 Display a concise journey map with relative file:line references:
 search_products, get_product, create_cart, get_cart, add_to_cart,
 update_cart_item, remove_from_cart, replace_cart_items, cancel_cart, create_checkout, get_checkout.
+Then cover update_checkout, complete_checkout, cancel_checkout and get_order when
+the repository contains real server-side business logic for them.
 
 For each operation include: concrete function/endpoint, identifier/variant mapping,
 request/response transformation, buyer/cart ownership, auth scopes, session handling,
 error behavior, side effects, available test, missing information and confidence
 supported by code evidence. A create-order/payment API is NOT create_checkout.
+`complete_checkout` requires a configured payment handler, safe idempotency,
+encrypted sensitive transport and a resulting order that `get_order` can read.
 
 List exact proposed file changes, dependencies, local validation commands, data
 leaving the merchant environment, and paths that will remain untouched. Prefer a

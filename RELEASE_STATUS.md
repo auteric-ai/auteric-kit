@@ -23,7 +23,7 @@ harness is in `acceptance/test_onboarding.py`, with the custom merchant source i
 
 The standard suites cover 48 deterministic catalog combinations, schema rejection,
 private session state, mapping pinning, exclusive connection locks and bounded
-assistant execution. The platform acceptance suite additionally exercises all 11
+assistant execution. The platform acceptance suite additionally exercises all 20
 canonical operations with a synthetic nonfinancial connector. That fixture is not
 proof that arbitrary real carts or payment systems work.
 

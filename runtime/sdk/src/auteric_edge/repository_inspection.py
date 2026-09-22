@@ -56,7 +56,13 @@ def classify_api(method, path, name):
                 'reason': 'Cart lifecycle is directly relevant to a purchase journey'}
     if 'checkout' in terms:
         return {'domain': 'checkout', 'shopping_relevance': 'direct', 'exposure': 'tool_candidate',
-                'reason': 'Checkout handoff is directly relevant when it does not capture payment'}
+                'reason': 'Checkout lifecycle is directly relevant and requires runtime contract validation'}
+    if 'order' in terms:
+        return {'domain': 'order', 'shopping_relevance': 'direct', 'exposure': 'tool_candidate',
+                'reason': 'Buyer-scoped order confirmation is directly relevant to a completed checkout'}
+    if re.search(r'shipping|fulfillment|coupon|discount', terms):
+        return {'domain': 'checkout_extension', 'shopping_relevance': 'direct', 'exposure': 'tool_candidate',
+                'reason': 'Checkout extension requires an authoritative adapter and lifecycle validation'}
     if SHOPPING_SUPPORT_TERMS.search(terms):
         return {'domain': 'shopping_support', 'shopping_relevance': 'supporting', 'exposure': 'inventory_only',
                 'reason': 'Shopping-related API is recorded but has no supported canonical tool contract'}
@@ -90,7 +96,19 @@ def operation_for(method, path, name):
     cart = bool(re.search(r'cart|basket|bag', terms))
     product = bool(re.search(r'product|catalog|item', terms))
     checkout = 'checkout' in terms
-    if re.search(r'capture|complete|payment|place.?order|refund|coupon|discount|shipping|lock', terms):
+    order = 'order' in terms
+    if method == 'GET' and order and re.search(r'[:{\[]', path) and not re.search(r'tracking|fulfillment|history', terms): return 'get_order'
+    if method == 'GET' and re.search(r'shipping|fulfillment', terms): return 'get_shipping_options'
+    if checkout and method in {'PUT', 'PATCH'} and re.search(r'address|destination', terms): return 'set_shipping_address'
+    if checkout and method in {'PUT', 'PATCH'} and re.search(r'option|method|shipping|fulfillment', terms): return 'select_shipping_option'
+    if cart and re.search(r'coupon|discount', terms):
+        if method == 'DELETE': return 'remove_discount_code'
+        if method in {'POST', 'PUT', 'PATCH'}: return 'apply_discount_code'
+    if checkout and method in {'PUT', 'PATCH'}: return 'update_checkout'
+    if checkout and method == 'DELETE': return 'cancel_checkout'
+    if checkout and method == 'POST' and re.search(r'complete|confirm|place', terms): return 'complete_checkout'
+    if checkout and method == 'POST' and re.search(r'cancel', terms): return 'cancel_checkout'
+    if re.search(r'capture|payment|refund|coupon|discount|shipping|lock', terms):
         return None
     if method == 'GET' and checkout and re.search(r'[:{\[]', path): return 'get_checkout'
     if method == 'POST' and checkout and not re.search(r'[:{\[]', path): return 'create_checkout'

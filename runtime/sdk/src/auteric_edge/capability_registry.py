@@ -16,12 +16,20 @@ _CURRENT = (
  ("remove_from_cart", "dev.ucp.shopping.cart", "write", ("DELETE",), "Remove an existing cart line."),
  ("replace_cart_items", "dev.ucp.shopping.cart", "write", ("PUT",), "Atomically replace cart contents."),
  ("cancel_cart", "dev.ucp.shopping.cart", "write", ("DELETE", "POST"), "Cancel an agent-owned cart."),
- ("create_checkout", "dev.ucp.shopping.checkout", "write", ("POST",), "Create a human checkout handoff; never capture payment."),
- ("get_checkout", "dev.ucp.shopping.checkout", "read", ("GET",), "Read an agent-owned checkout handoff."),
+ ("create_checkout", "dev.ucp.shopping.checkout", "write", ("POST",), "Create an agent-owned checkout from an authoritative cart."),
+ ("get_checkout", "dev.ucp.shopping.checkout", "read", ("GET",), "Read an agent-owned checkout."),
+ ("update_checkout", "dev.ucp.shopping.checkout", "write", ("PUT", "PATCH"), "Update buyer, fulfillment and checkout context."),
+ ("complete_checkout", "dev.ucp.shopping.checkout", "write", ("POST",), "Complete a ready checkout through a configured payment handler."),
+ ("cancel_checkout", "dev.ucp.shopping.checkout", "write", ("DELETE", "POST"), "Cancel a non-terminal agent-owned checkout."),
+ ("get_order", "dev.ucp.shopping.order", "read", ("GET",), "Read the order confirmation created by checkout completion."),
+ ("apply_discount_code", "dev.ucp.shopping.discount", "write", ("POST",), "Apply a merchant-validated discount code to an agent-owned cart."),
+ ("remove_discount_code", "dev.ucp.shopping.discount", "write", ("DELETE", "POST"), "Remove a discount code from an agent-owned cart."),
+ ("get_shipping_options", "dev.ucp.shopping.fulfillment", "read", ("GET",), "Read authoritative fulfillment options for an agent-owned cart."),
+ ("set_shipping_address", "dev.ucp.shopping.fulfillment", "write", ("PUT", "PATCH"), "Set an authoritative checkout shipping destination."),
+ ("select_shipping_option", "dev.ucp.shopping.fulfillment", "write", ("PUT", "PATCH"), "Select an authoritative checkout fulfillment option."),
 )
 _PLANNED = (
- "list_collections", "get_collection", "get_shipping_options", "set_shipping_address", "select_shipping_option",
- "estimate_taxes", "apply_discount_code", "remove_discount_code", "get_order", "list_orders", "get_fulfillment_tracking",
+ "list_collections", "get_collection", "estimate_taxes", "list_orders", "get_fulfillment_tracking",
  "request_return", "get_return", "get_loyalty_balance", "redeem_loyalty_points",
 )
 # Broader commerce inventory. These signatures are deliberately planned: discovery
@@ -42,8 +50,6 @@ _EXTRA_PLANNED = (
  ("set_cart_shipping_address", "shipping.address", "write", ("PUT", "PATCH"), "/api/auteric/v2/carts/{cart_id}/shipping-address"),
  ("get_cart_discount_codes", "discounts", "read", ("GET",), "/api/auteric/v2/carts/{cart_id}/discount-codes"),
  ("get_tax_quote", "tax.quote", "read", ("POST",), "/api/auteric/v2/carts/{cart_id}/tax-quote"),
- ("update_checkout", "checkout.details", "write", ("PUT", "PATCH"), "/api/auteric/v2/checkouts/{checkout_id}"),
- ("cancel_checkout", "checkout.cancel", "write", ("DELETE",), "/api/auteric/v2/checkouts/{checkout_id}"),
  ("lock_checkout", "checkout.lock", "write", ("POST",), "/api/auteric/v2/checkouts/{checkout_id}/lock"),
  ("list_payment_methods", "payments.methods", "read", ("GET",), "/api/auteric/v2/checkouts/{checkout_id}/payment-methods"),
  ("create_payment_intent", "payments.intent", "write", ("POST",), "/api/auteric/v2/checkouts/{checkout_id}/payment-intents"),
@@ -76,11 +82,16 @@ _EXTRA_PLANNED = (
  ("get_quote", "b2b.quotes", "read", ("GET",), "/api/auteric/v2/b2b/quotes/{quote_id}"),
 )
 _PATHS = {
- "search_products":"/api/auteric/v1/products/search", "get_product":"/api/auteric/v1/products/{product_id}", "create_cart":"/api/auteric/v1/carts", "get_cart":"/api/auteric/v1/carts/{cart_id}", "add_to_cart":"/api/auteric/v1/carts/{cart_id}/items", "update_cart_item":"/api/auteric/v1/carts/{cart_id}/items/{product_id}", "remove_from_cart":"/api/auteric/v1/carts/{cart_id}/items/{product_id}", "replace_cart_items":"/api/auteric/v1/carts/{cart_id}/items", "cancel_cart":"/api/auteric/v1/carts/{cart_id}", "create_checkout":"/api/auteric/v1/checkouts", "get_checkout":"/api/auteric/v1/checkouts/{checkout_id}",
+ "search_products":"/api/auteric/v1/products/search", "get_product":"/api/auteric/v1/products/{product_id}", "create_cart":"/api/auteric/v1/carts", "get_cart":"/api/auteric/v1/carts/{cart_id}", "add_to_cart":"/api/auteric/v1/carts/{cart_id}/items", "update_cart_item":"/api/auteric/v1/carts/{cart_id}/items/{product_id}", "remove_from_cart":"/api/auteric/v1/carts/{cart_id}/items/{product_id}", "replace_cart_items":"/api/auteric/v1/carts/{cart_id}/items", "cancel_cart":"/api/auteric/v1/carts/{cart_id}", "create_checkout":"/api/auteric/v1/checkouts", "get_checkout":"/api/auteric/v1/checkouts/{checkout_id}", "update_checkout":"/api/auteric/v1/checkouts/{checkout_id}", "complete_checkout":"/api/auteric/v1/checkouts/{checkout_id}/complete", "cancel_checkout":"/api/auteric/v1/checkouts/{checkout_id}", "get_order":"/api/auteric/v1/orders/{order_id}",
  "list_collections":"/api/auteric/v1/collections", "get_collection":"/api/auteric/v1/collections/{collection_id}", "get_shipping_options":"/api/auteric/v1/carts/{cart_id}/shipping-options", "set_shipping_address":"/api/auteric/v1/checkouts/{checkout_id}/shipping-address", "select_shipping_option":"/api/auteric/v1/checkouts/{checkout_id}/shipping-option", "estimate_taxes":"/api/auteric/v1/checkouts/{checkout_id}/tax-estimate", "apply_discount_code":"/api/auteric/v1/carts/{cart_id}/discount-codes", "remove_discount_code":"/api/auteric/v1/carts/{cart_id}/discount-codes/{code}", "get_order":"/api/auteric/v1/orders/{order_id}", "list_orders":"/api/auteric/v1/orders", "get_fulfillment_tracking":"/api/auteric/v1/orders/{order_id}/tracking", "request_return":"/api/auteric/v1/orders/{order_id}/returns", "get_return":"/api/auteric/v1/returns/{return_id}", "get_loyalty_balance":"/api/auteric/v1/loyalty/balance", "redeem_loyalty_points":"/api/auteric/v1/loyalty/redemptions",
 }
 _BASE = ("reviewed_mapping", "contract_test", "policy", "runtime_activation")
 CONTRACTS = {op: CapabilityContract(op, cap, side, verbs, _BASE + (("ownership", "idempotency") if side == "write" else ("ownership",)), desc) for op, cap, side, verbs, desc in _CURRENT}
+CONTRACTS["complete_checkout"] = CapabilityContract(
+    "complete_checkout", "dev.ucp.shopping.checkout", "write", ("POST",),
+    _BASE + ("ownership", "idempotency", "configured_payment_handler", "encrypted_sensitive_payload"),
+    "Complete a ready checkout through a configured payment handler.",
+)
 PLANNED_CONTRACTS = {op: CapabilityContract(op, "auteric.commerce." + op, "write" if op.startswith(("set_", "select_", "apply_", "remove_", "request_", "redeem_")) else "read", ("POST",), ("engine_release",) + _BASE, "Reserved future contract.", "planned") for op in _PLANNED}
 PLANNED_CONTRACTS.update({op: CapabilityContract(op, "auteric.commerce." + capability, side_effect, verbs, ("engine_release",) + _BASE + (("buyer_identity", "idempotency") if side_effect == "write" else ("buyer_identity",)), "Reserved future contract.", "planned") for op, capability, side_effect, verbs, _path in _EXTRA_PLANNED})
 _PATHS.update({op: path for op, _capability, _side_effect, _verbs, path in _EXTRA_PLANNED})
