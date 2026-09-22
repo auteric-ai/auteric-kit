@@ -7,7 +7,7 @@
   "src/auteric_edge/agent_skill/SKILL.md": "d7da65be8df554b4e12df4aff94906e45c5ea4aefd6a110859f8585127fa972e",
   "src/auteric_edge/agent_skill/VERIFY.md": "fac13c9850b8e7a61cc3e6dcb277da3a58f7e5edaf004f53b2ece9901d1808da",
   "src/auteric_edge/agent_skill/WEBMCP.md": "246728bbf3aea9cecafa73ee26aba376797e8da9176a0ffa7798bbea53f2441b",
-  "src/auteric_edge/capability_registry.py": "98cf235a57b655288e8f92a1bb12c9f4f126638b69554e7c00cb413ea0dad116",
+  "src/auteric_edge/capability_registry.py": "8aafdbd4eee986b174c75d53a8798efadcf1ae08cdbfc7feff666c4d151e50d4",
   "src/auteric_edge/catalog.py": "df00edb2fa6327b031770ecfdbf77346ade01704759b2fdf105ccd7912e54b21",
   "src/auteric_edge/catalog_probe.py": "b54dd3a607a8bf7a194c1699e07ddeeb5a43883a18661351897fecc2a8df554d",
   "src/auteric_edge/cli.py": "7fda2da41cb201648c123e4045e965b00e190778cc3aa61e64c9b7433913a888",
