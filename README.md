@@ -1,4 +1,4 @@
-# Auteric Kit 0.6.0
+# Auteric Kit 0.6.1
 
 Fresh-store regression coverage now includes 48 isolated catalog simulations:
 Express, custom route registration, FastAPI and Flask; list and wrapped responses;
@@ -206,6 +206,16 @@ or browser `localStorage` is never enough to activate a merchant capability.
 Codex, Claude Code, Cursor, and other Skills-compatible agents use the same inspected-and-approved workflow. Their buttons and commands differ by host; see [supported coding agents](COMPATIBILITY.md) for the matching entry point.
 
 ## What the merchant does
+
+Gateway MCP and Integration MCP have separate jobs: the Gateway is the persistent
+Store-scoped shopping-tool runtime; the optional Integration MCP can help an
+installer configure a store, while this skill/CLI can install without it. The
+Gateway exposes only mapped, enabled, runtime-tested capabilities. The 8-digit
+Merchant ID is a one-time account/installation pairing code, not domain ownership
+verification. After a successful local UCP check, Connect creates a read-only
+Gateway grant in a private user session file; the merchant must keep the outbound
+connector running and configure the intended MCP client with that secret. A local
+development key and URL do not establish public trust.
 
 1. **Prepare:** The agent maps products, variants, price, availability, and canonical URLs from the real store. It implements only capabilities backed by existing business logic. Review the diff and run the store's tests.
 2. **Connect:** An authorized merchant/operator creates a Store in a running Auteric Commerce service, provisions a scoped connector, activates tested mappings and policies, and obtains its signed UCP discovery document. The service is separate from this plugin. The kit never invents a Gateway URL, token, or attestation.

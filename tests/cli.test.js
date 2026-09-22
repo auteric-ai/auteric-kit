@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { existsSync, mkdirSync, mkdtempSync, realpathSync, readFileSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { apiUrl, existingDiscoveryDigest, inspect, localStoreUrl, localTestDomain, prepareDiscovery, resolveProjectLayout, run, uncoveredOperations, verifyLocalWithRetry } from '../src/cli.js';
+import { apiUrl, existingDiscoveryDigest, inspect, localStoreUrl, localTestDomain, prepareBuiltDiscovery, prepareDiscovery, resolveProjectLayout, run, uncoveredOperations, verifyLocalWithRetry } from '../src/cli.js';
 
 test('localhost mode permits loopback only and cloud requires HTTPS', () => {
   assert.equal(apiUrl({ localhost: true }), 'http://127.0.0.1:8100');
@@ -93,6 +93,19 @@ test('Vite publishes discovery from the untransformed public directory', () => {
   assert.deepEqual(JSON.parse(readFileSync(result.path, 'utf8')), document);
 });
 
+test('existing production build receives the same signed profile without replacing unrelated data', () => {
+  const root = mkdtempSync(join(realpathSync(tmpdir()), 'auteric-built-'));
+  const built = join(root, 'dist');
+  mkdirSync(built);
+  writeFileSync(join(built, 'index.html'), '<h1>Shop</h1>');
+  const document = { ucp: { version: '2026-08-25' }, auteric_attestation: { signature: 'signed' } };
+  const first = prepareBuiltDiscovery(root, document);
+  assert.equal(first.path, join(built, '.well-known', 'ucp'));
+  assert.deepEqual(JSON.parse(readFileSync(first.path, 'utf8')), document);
+  assert.equal(prepareBuiltDiscovery(root, document).changed, false);
+  assert.throws(() => prepareBuiltDiscovery(root, { ...document, ucp: { version: 'new' } }), /no file was overwritten/);
+});
+
 test('recoverable UCP profile belongs to the exact Store only', () => {
   const root = mkdtempSync(join(realpathSync(tmpdir()), 'auteric-recovery-'));
   const document = { ucp: { version: '2026-08-25' }, auteric_attestation: { signature: 'signed', payload: { store_id: 'store-a' } } };
@@ -163,6 +176,18 @@ test('local verification retries a temporarily unavailable route and preserves e
   } finally { globalThis.fetch = prior; }
 });
 
+test('local discovery rejects a JSON body served with the wrong MIME type', async () => {
+  const previous = globalThis.fetch;
+  globalThis.fetch = async () => new Response(JSON.stringify({ ucp: { version: '2026-08-25' } }),
+    { headers: { 'content-type': 'application/octet-stream' } });
+  try {
+    const result = await verifyLocalWithRetry('http://127.0.0.1:8100', 'store', 'token',
+      'http://127.0.0.1:9020', { ucp: { version: '2026-08-25' } }, 1);
+    assert.equal(result.local_verified, false);
+    assert.match(result.reason, /Content-Type: application\/json/);
+  } finally { globalThis.fetch = previous; }
+});
+
 test('local verification diagnoses wrong SPA fallback before calling control plane', async () => {
   const prior = globalThis.fetch;
   const paths = [];
@@ -171,7 +196,7 @@ test('local verification diagnoses wrong SPA fallback before calling control pla
     const document = { ucp: { version: '2026-08-25' } };
     const result = await verifyLocalWithRetry('http://127.0.0.1:8100', 'store', 'test-token', 'http://127.0.0.1:5173', document, 1, async () => {});
     assert.equal(result.local_verified, false);
-    assert.match(result.reason, /did not return JSON/);
+    assert.match(result.reason, /Content-Type: application\/json/);
     assert.deepEqual(paths, ['/.well-known/ucp']);
   } finally { globalThis.fetch = prior; }
 });

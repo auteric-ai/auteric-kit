@@ -178,6 +178,8 @@ export async function probeLocalDiscovery(storeUrl, document) {
     return { available: false, reason: `Cannot fetch ${target}. Start the storefront and expose the generated UCP file.` };
   }
   if (response.status !== 200) return { available: false, reason: `${target} returned HTTP ${response.status}. Check the storefront's public/static directory.` };
+  if (!/^application\/json(?:\s*;|$)/i.test(response.headers.get('content-type') || ''))
+    return { available: false, reason: `${target} must return Content-Type: application/json (the server may be serving a static file or SPA fallback).` };
   let observed;
   try { observed = await response.json(); } catch { return { available: false, reason: `${target} did not return JSON.` }; }
   if (JSON.stringify(observed) !== JSON.stringify(document))
@@ -216,7 +218,7 @@ async function authenticate(base, options) {
   console.log(`Open this Auteric sign-in page:\n${link.href}`);
   if (session.user_code) {
     if (!/^\d{4}-\d{4}$/.test(session.user_code)) throw Error('Invalid pairing code from control plane');
-    console.log(`Enter this one-time code in the browser: ${session.user_code}`);
+    console.log(`Merchant ID (one-time pairing code): ${session.user_code}`);
   } else {
     console.log('This control plane has not enabled CLI pairing codes yet.');
   }
@@ -278,6 +280,14 @@ export function prepareDiscovery(root, framework, document, options = {}) {
   return { path, changed: true };
 }
 
+export function prepareBuiltDiscovery(frontend, document, previousDigest) {
+  // Express/static production previews commonly serve dist rather than Vite's
+  // public directory. Keep the built copy in sync without rebuilding code.
+  const built = join(frontend, 'dist');
+  if (!existsSync(join(built, 'index.html'))) return null;
+  return prepareDiscovery(built, 'static', document, { previousDigest });
+}
+
 function configPath(root) { return join(root, '.auteric', 'config.json'); }
 function readConfig(root) { try { return JSON.parse(readFileSync(configPath(root), 'utf8')); } catch { return null; } }
 
@@ -298,6 +308,41 @@ export function existingDiscoveryDigest(root, framework, storeId) {
     if (profile?.auteric_attestation?.payload?.store_id !== storeId) return null;
     return createHash('sha256').update(contents).digest('hex');
   } catch { return null; }
+}
+
+async function provisionGatewayAccess(root, base, domain, storeId, token, operations, signedEndpoint) {
+  const scopes = operations.filter(operation => ['search_products', 'get_product', 'get_cart', 'get_checkout'].includes(operation));
+  if (!scopes.length || !signedEndpoint) return null;
+  const secretFile = sessionPath(root, base, domain).replace(/\.json$/, '.gateway.json');
+  if (existsSync(secretFile) && (lstatSync(secretFile).mode & 0o077))
+    throw Error('Gateway credential file must be private to the current user');
+  const saved = readJSON(secretFile);
+  const listing = await request(base, `/api/commerce/stores/${encodeURIComponent(storeId)}/mcp-credentials`, { token });
+  if (listing.mcp_url !== signedEndpoint) throw Error('Gateway URL differs from the signed UCP profile');
+  const valid = saved?.store_id === storeId && saved?.mcp_url === signedEndpoint &&
+    scopes.every(scope => saved.operations?.includes(scope)) &&
+    listing.credentials?.some(item => item.credential_id === saved.credential_id && !item.revoked && scopes.every(scope => item.operations.includes(scope)));
+  if (valid) return { credential_file: secretFile, credential_id: saved.credential_id, operations: scopes };
+  const granted = await request(base, `/api/commerce/stores/${encodeURIComponent(storeId)}/mcp-credentials`, {
+    method: 'POST', token, body: { operations: scopes },
+  });
+  if (granted.mcp_url !== signedEndpoint) {
+    await request(base, `/api/commerce/stores/${encodeURIComponent(storeId)}/mcp-credentials/${encodeURIComponent(granted.credential_id)}`, { method: 'DELETE', token });
+    throw Error('New Gateway grant differs from signed UCP profile');
+  }
+  try {
+    atomicJSON(secretFile, { store_id: storeId, mcp_url: granted.mcp_url, credential_id: granted.credential_id,
+      operations: scopes, token: granted.token });
+  } catch (error) {
+    await request(base, `/api/commerce/stores/${encodeURIComponent(storeId)}/mcp-credentials/${encodeURIComponent(granted.credential_id)}`, { method: 'DELETE', token });
+    throw error;
+  }
+  if (saved?.store_id === storeId && saved.credential_id !== granted.credential_id &&
+      listing.credentials?.some(item => item.credential_id === saved.credential_id && !item.revoked)) {
+    await request(base, `/api/commerce/stores/${encodeURIComponent(storeId)}/mcp-credentials/${encodeURIComponent(saved.credential_id)}`,
+      { method: 'DELETE', token });
+  }
+  return { credential_file: secretFile, credential_id: granted.credential_id, operations: scopes };
 }
 
 async function connect(root, options) {
@@ -418,11 +463,14 @@ async function connect(root, options) {
   try { discovery = await request(base, `/api/commerce/stores/${encodeURIComponent(store.id)}/discovery`, { token: auth.access_token }); }
   catch (error) { console.log(`UCP publication pending: ${error.message}`); }
   if (discovery?.document) {
+    const previousDigest = readConfig(root)?.discovery_digest || existingDiscoveryDigest(layout.frontend, project.framework, store.id);
     const result = prepareDiscovery(layout.frontend, project.framework, discovery.document, {
-      previousDigest: readConfig(root)?.discovery_digest || existingDiscoveryDigest(layout.frontend, project.framework, store.id),
+      previousDigest,
     });
+    const built = prepareBuiltDiscovery(layout.frontend, discovery.document, previousDigest);
     state.discovery_digest = createHash('sha256').update(JSON.stringify(discovery.document, null, 2) + '\n').digest('hex');
     console.log(`Signed UCP prepared at ${result.path}.`);
+    if (built) console.log(`Built storefront UCP prepared at ${built.path}.`);
     state.mcp_url = discovery.document.auteric_mcp?.endpoint;
     state.status = validation.status === 'locally_tested' ? 'capabilities_prepared' : validation.status;
     // Persist the tested connector and signed profile before probing a dev server.
@@ -437,6 +485,16 @@ async function connect(root, options) {
         state.local_discovery_verified = false;
         state.status = 'local_discovery_pending';
         console.log(`Local discovery pending: ${check.reason}`);
+      }
+    }
+    if (!options.localhost || state.local_discovery_verified) {
+      const gateway = await provisionGatewayAccess(root, base, domain, store.id, auth.access_token,
+        validation.tested_operations, state.mcp_url);
+      if (gateway) {
+        state.gateway_credential_file = gateway.credential_file;
+        state.gateway_credential_id = gateway.credential_id;
+        state.gateway_operations = gateway.operations;
+        console.log(`Gateway MCP read-only grant ready for ${gateway.operations.join(', ')}. Private credential: ${gateway.credential_file}`);
       }
     }
   }

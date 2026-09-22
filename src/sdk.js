@@ -10,7 +10,7 @@ export function sdkPython({ install = false } = {}) {
   if (runtime) return runtime;
   const manifest = fileURLToPath(new URL('../runtime/manifest.json', import.meta.url));
   const revision = existsSync(manifest) ? createHash('sha256').update(readFileSync(manifest)).digest('hex').slice(0, 12) : 'source';
-  const cacheName = 'sdk-0.6.0-' + revision;
+  const cacheName = 'sdk-0.6.1-' + revision;
   const cached = join(homedir(), '.cache', 'auteric', cacheName, process.platform === 'win32' ? 'Scripts/python.exe' : 'bin/python');
   const candidates = [process.env.AUTERIC_PYTHON, cached].filter(Boolean);
   for (const python of candidates) {

@@ -1,4 +1,14 @@
-# 0.6.0 GitHub release
+# 0.6.1 GitHub release
+
+This update copies a signed UCP document into an existing built static storefront
+as well as its source `public` directory, then verifies the served route. It
+creates a private read-only Gateway MCP grant after connection verification, while
+keeping Integration MCP optional. A local Vite/Express test returned the exact
+signed JSON from port 9020 and listed/called `search_products` and `get_product`
+through the dedicated Gateway MCP on port 8102. Other detected cart/checkout
+routes remained inventory because their adapter contracts were not validated.
+This is local evidence only; public domain ownership and production deployment
+remain unverified.
 
 The GitHub package bundles the CLI and SDK. No npm publication or separate plugin
 installation is necessary for the terminal Connect command.

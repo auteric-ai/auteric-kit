@@ -69,6 +69,9 @@ Implement the smallest integration that the inspected project can honestly suppo
 Reuse the existing cart and checkout flow. Never replace payment logic, collect payment credentials, expose secrets client-side, or declare a write action merely because a storefront button exists. For any approved write capability, bind caller identity and merchant/resource ownership on the server, validate price and quantity again, make writes idempotent, and add an allow/deny test.
 
 If the merchant supplies a configured Auteric service and credentials, integrate only its documented values. Publish the exact service-issued JSON at the merchant-controlled `/.well-known/ucp` route. Merge an existing UCP document deliberately; never overwrite another integration. If service access is absent, finish all supportable local work and label the remote step as pending.
+For Express/static production previews, verify the actual running server serves
+that route from the current signed file with `Content-Type: application/json`;
+an SPA fallback or extensionless octet-stream response is not valid discovery.
 
 ## 4. Verify and report
 
@@ -87,3 +90,14 @@ not be invented. Local skill installation is separate from runtime tool exposure
 A shared MCP process serves logical Store endpoints and filters tools by active
 mappings, capability controls and store-scoped grants. Read its signed
 `auteric_mcp.endpoint`; do not guess a new per-merchant server.
+
+There are two different MCP roles. Gateway MCP is the always-available shopper
+runtime, with a Store-scoped endpoint and only tested, active mapped capabilities.
+Integration MCP is an optional developer installation surface; this skill and CLI
+can perform the same installation without it. Never advertise installation tools
+as shopper tools or require Integration MCP to keep Gateway MCP working. Connect
+automatically provisions a private, read-only Gateway grant after successful local
+discovery verification (or tested cloud integration), and stores it outside the
+merchant repository. The connector process must remain running for actual tool
+calls. The pairing value shown as Merchant ID is an expiring 8-digit code tied to
+the signed-in account, not a permanent Store ID or proof of domain ownership.
