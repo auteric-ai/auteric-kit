@@ -25,7 +25,7 @@ export function adapterPrompt(root, backend, apiOrigin, missingOperations = []) 
   return `${skill}\n\nAUTERIC CONNECT AUTOMATED ADAPTER TASK\n` +
     `Repository: ${JSON.stringify(root)}\nBackend: ${JSON.stringify(backend)}\nMerchant API origin: ${JSON.stringify(apiOrigin)}\n` +
     `The owner asked to connect this store. Prepare a real adapter now; do not stop at a plan.\n` +
-    `Read the capability report at ${JSON.stringify(join(backend, '.auteric/capabilities.json'))}. Its api_inventory is the complete discovered API surface; use it to understand dependencies and boundaries, but create mappings only from candidates explicitly carrying a supported canonical operation and tool_eligible=true.\n` +
+    `Read the capability report at ${JSON.stringify(join(backend, '.auteric/capabilities.json'))}, including capability_contract_pool. Its api_inventory is the complete discovered API surface; select only current registry contracts from candidates explicitly carrying a supported canonical operation and tool_eligible=true. Planned contracts are inventory only.\n` +
     `Never turn inventory_only, internal_dependency or blocked_by_policy entries into agent tools. Auth/session APIs may be used internally for ownership, while admin, payment, refund, webhook and sandbox-completion APIs stay unexposed.\n` +
     `An existing connector may cover only part of the store. Preserve its verified operations and complete every additionally supportable canonical operation. Requested gaps: ${JSON.stringify(missingOperations)}.\n` +
     `Write ${JSON.stringify(join(backend, '.auteric/connector.json'))} with kind=rest, base_url, allowed_paths, approved_mapping_digests (may be empty; deterministic validation will pin them), mappings and test_inputs.\n` +

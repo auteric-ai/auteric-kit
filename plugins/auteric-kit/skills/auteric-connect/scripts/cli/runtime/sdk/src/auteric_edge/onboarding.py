@@ -22,6 +22,7 @@ from .mapping import MappedConnector
 from .mapping import mapping_digest
 from .mapping import validate_mapping
 from .models import validate_input, validate_output, READ_OPERATIONS
+from .capability_registry import contract, registry_document
 from .repository_inspection import inspect_repository
 from .worker import EdgeWorker
 
@@ -98,6 +99,25 @@ def inventory(root):
                 reason="Browser-only state or simulated payment is not an authenticated commerce API",
                 evidence=browser,
             )
+    report["capability_contract_pool"] = registry_document()
+    # A deterministic handoff for an Installation MCP or local coding agent:
+    # discovery proposes bindings, but only a reviewed adapter may activate one.
+    candidates = {}
+    for item in report["candidates"]:
+        candidates.setdefault(item["operation"], []).append({
+            "method": item["behavior"].split(" ", 1)[0], "route": item["behavior"].split(" ", 1)[1],
+            "source": item["source"], "line": item["line"], "confidence": item["confidence"],
+        })
+    report["installation_binding_plan"] = [
+        {
+            "operation": operation,
+            "canonical_path": contract(operation).operation,
+            "contract_version": "v1",
+            "state": "requires_adapter_review",
+            "merchant_candidates": entries,
+        }
+        for operation, entries in sorted(candidates.items())
+    ]
     report["unsupported_runtime_domains"] = ["payment capture", "orders", "refunds", "identity linking"]
     return report
 
