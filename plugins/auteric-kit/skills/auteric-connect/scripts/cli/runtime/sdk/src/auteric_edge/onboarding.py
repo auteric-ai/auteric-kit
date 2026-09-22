@@ -33,6 +33,25 @@ OPERATION_ORDER = (
 )
 
 
+def planned_operation_for(api):
+    """Conservative semantic hints for capabilities that have no runtime yet."""
+    route = str(api.get("route", "")).lower()
+    method = str(api.get("method", "")).upper()
+    if "collection" in route: return "get_collection" if "{" in route or ":" in route else "list_collections"
+    if "categor" in route: return "list_categories"
+    if "variant" in route and method == "GET": return "get_variant"
+    if "inventory" in route and method == "GET": return "get_inventory_availability"
+    if "shipping" in route: return "get_shipping_options" if method == "GET" else "select_shipping_option"
+    if "coupon" in route or "discount" in route: return "apply_discount_code" if method != "GET" else "get_cart_discount_codes"
+    if "wishlist" in route: return "list_wishlist" if method == "GET" else ("remove_wishlist_item" if method == "DELETE" else "add_wishlist_item")
+    if "subscription" in route: return "list_subscriptions" if method == "GET" and not ("{" in route or ":" in route) else "get_subscription"
+    if "gift" in route: return "get_gift_card_balance" if method == "GET" else "apply_gift_card"
+    if "fulfillment" in route or "tracking" in route: return "get_fulfillment_tracking"
+    if "return" in route: return "list_returns" if method == "GET" and not ("{" in route or ":" in route) else "get_return"
+    if "order" in route: return "list_orders" if method == "GET" and not ("{" in route or ":" in route) else "get_order"
+    return None
+
+
 def ordered_mappings(mappings):
     rank = {operation: index for index, operation in enumerate(OPERATION_ORDER)}
     return sorted(mappings, key=lambda item: rank.get(item["operation"], len(rank)))
@@ -117,6 +136,20 @@ def inventory(root):
             "merchant_candidates": entries,
         }
         for operation, entries in sorted(candidates.items())
+    ]
+    # Keep every discovered API in a merchant capability inventory. This is
+    # deliberately broader than MCP: a capability can be planned or merchant-
+    # specific without becoming an agent tool.
+    report["merchant_capability_inventory"] = [
+        {
+            "capability_id": api.get("canonical_candidate") or planned_operation_for(api) or
+                "merchant." + api["domain"] + "." + api["method"].lower() + "." + api["route"].strip("/").replace("/", ".").replace(":", "").replace("{", "").replace("}", ""),
+            "source": {"route": api["route"], "method": api["method"], "file": api["source"], "line": api["line"]},
+            "classification": "runtime_candidate" if api.get("canonical_candidate") else ("planned_contract_candidate" if planned_operation_for(api) else "merchant_or_internal_capability"),
+            "mcp_exposure": "eligible_after_adapter_validation" if api.get("canonical_candidate") else "not_exposed",
+            "reason": api["reason"],
+        }
+        for api in report["api_inventory"]
     ]
     report["unsupported_runtime_domains"] = ["payment capture", "orders", "refunds", "identity linking"]
     return report

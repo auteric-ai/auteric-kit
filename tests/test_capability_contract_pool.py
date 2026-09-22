@@ -27,3 +27,12 @@ def test_inventory_emits_installation_binding_plan(tmp_path):
             "confidence": "requires_review",
         }],
     }]
+    assert report["merchant_capability_inventory"][0]["mcp_exposure"] == "eligible_after_adapter_validation"
+
+def test_inventory_retains_planned_and_merchant_capabilities_without_exposure(tmp_path):
+    (tmp_path / "app.js").write_text("app.get('/api/shipping-methods', handler);\napp.post('/api/payments', handler);")
+    report = inventory(tmp_path)
+    capabilities = {item["capability_id"]: item for item in report["merchant_capability_inventory"]}
+    assert capabilities["get_shipping_options"]["classification"] == "planned_contract_candidate"
+    assert capabilities["get_shipping_options"]["mcp_exposure"] == "not_exposed"
+    assert all(item["mcp_exposure"] == "not_exposed" for item in capabilities.values() if item["capability_id"] != "get_shipping_options")
