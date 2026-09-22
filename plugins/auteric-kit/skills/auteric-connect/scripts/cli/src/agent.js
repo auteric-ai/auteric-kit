@@ -37,6 +37,48 @@ export function adapterPrompt(root, backend, apiOrigin, missingOperations = []) 
     `Preserve merchant source; only add adapter/config/test files. The parent CLI executes independent contract and MCP tests after you exit.\n`;
 }
 
+function mappingOperations(connector) {
+  if (!connector) return [];
+  const mappings = Array.isArray(connector.mappings) ? connector.mappings : [];
+  const declared = Array.isArray(connector.supported_operations) ? connector.supported_operations : [];
+  return [...new Set([...mappings.map(item => item?.operation), ...declared].filter(Boolean))].sort();
+}
+
+function safeJSON(path) {
+  try { return JSON.parse(readFileSync(path, 'utf8')); } catch { return null; }
+}
+
+export function adapterTelemetry(root, backend, startedOperations = []) {
+  const inventory = safeJSON(join(backend, '.auteric/capabilities.json')) || {};
+  const summary = inventory.inventory_summary || {};
+  const candidates = (inventory.capability_coverage || []).filter(item => item.status === 'candidate').map(item => item.operation);
+  const connector = safeJSON(join(backend, '.auteric/connector.json'));
+  const operations = mappingOperations(connector);
+  const added = operations.filter(operation => !startedOperations.includes(operation));
+  const validation = safeJSON(join(backend, '.auteric/local-validation.json'));
+  const ucp = safeJSON(join(root, 'public/.well-known/ucp')) || safeJSON(join(root, '.well-known/ucp'));
+  const capabilities = Object.keys(ucp?.ucp?.capabilities || {}).sort();
+  return {
+    phase: connector ? 'adapter_configured' : 'agent_reviewing_source',
+    inventory: { endpoints: summary.api_endpoints ?? summary.total_endpoints ?? inventory.api_inventory?.length ?? 0, contract_candidates: candidates.length, candidates },
+    connector: { configured: Boolean(connector), kind: connector?.kind || null, mapped_operations: operations, added_operations: added },
+    validation: validation ? { status: validation.status, tested_operations: validation.tested_operations || [] } : { status: 'pending' },
+    discovery: ucp ? { status: 'present', capabilities, mcp_operations: ucp.auteric_mcp?.operations || [] } : { status: 'not_prepared' },
+  };
+}
+
+function progressLine(seconds, telemetry) {
+  const { inventory, connector, validation, discovery } = telemetry;
+  const mapped = connector.mapped_operations.length;
+  const additions = connector.added_operations.length ? `; added ${connector.added_operations.join(', ')}` : '';
+  const wellKnown = discovery.status === 'present'
+    ? `${discovery.capabilities.length} UCP capabilities / ${discovery.mcp_operations.length} MCP operations`
+    : 'pending adapter validation and authenticated discovery';
+  return `Adapter progress (${seconds}s): inspected ${inventory.endpoints} APIs; ${inventory.contract_candidates} current contract candidates; ` +
+    `connector ${connector.configured ? `${connector.kind} with ${mapped} mapped operations${additions}` : 'not written yet'}; ` +
+    `validation ${validation.status}; well-known ${wellKnown}.`;
+}
+
 export async function prepareWithAgent(root, backend, apiOrigin, provider = 'auto', { timeoutMs = 600000, missingOperations = [] } = {}) {
   if (process.env.AUTERIC_AGENT_TASK === '1') return { status: 'recursive_agent_blocked' };
   const prompt = adapterPrompt(root, backend, apiOrigin, missingOperations);
@@ -50,8 +92,11 @@ export async function prepareWithAgent(root, backend, apiOrigin, provider = 'aut
   }
   if (!selected) return { status: 'assistant_unavailable', supported: ['codex', 'claude', 'cursor', 'copilot'] };
   journal(root, 'adapter', 'running', { assistant: selected.provider });
+  const initialTelemetry = adapterTelemetry(root, backend);
+  const startedOperations = initialTelemetry.connector.mapped_operations;
   console.log(`Preparing the missing adapter with ${selected.provider}. Your assistant account and its normal permissions apply.`);
   console.log('The assistant may send project context to its model provider. Auteric account credentials are not passed to it.');
+  console.log(progressLine(0, initialTelemetry));
   const started = Date.now();
   const result = await new Promise(resolve => {
     const env = { ...process.env, AUTERIC_AGENT_TASK: '1' };
@@ -60,7 +105,16 @@ export async function prepareWithAgent(root, backend, apiOrigin, provider = 'aut
     let timeout = false, interrupted = false, killTimer;
     // Never relay raw agent output: it can contain source, credentials or prompts.
     child.stdout.resume(); child.stderr.resume();
-    const progress = setInterval(() => console.log(`Adapter preparation still running (${Math.round((Date.now() - started) / 1000)}s).`), 30000);
+    const reportProgress = () => {
+      const telemetry = adapterTelemetry(root, backend, startedOperations);
+      const elapsedSeconds = Math.round((Date.now() - started) / 1000);
+      atomicJSON(join(root, '.auteric/assistant-run.json'), {
+        status: 'assistant_running', provider: selected.provider, duration_ms: Date.now() - started,
+        independently_validated: false, telemetry,
+      });
+      console.log(progressLine(elapsedSeconds, telemetry));
+    };
+    const progress = setInterval(reportProgress, 30000);
     const stop = () => { child.kill('SIGTERM'); killTimer = setTimeout(() => child.kill('SIGKILL'), 2000); };
     const interrupt = () => { interrupted = true; stop(); };
     const timer = setTimeout(() => { timeout = true; stop(); }, timeoutMs);
@@ -74,8 +128,9 @@ export async function prepareWithAgent(root, backend, apiOrigin, provider = 'aut
     child.once('close', code => finish({ status: interrupted ? 'assistant_interrupted' : timeout ? 'assistant_timeout' : code === 0 ? 'assistant_finished' : 'assistant_failed', exit_code: code }));
     child.stdin.on('error', () => {}); child.stdin.end(selected.stdin);
   });
+  const telemetry = adapterTelemetry(root, backend, startedOperations);
   const report = { ...result, provider: selected.provider, duration_ms: Date.now() - started,
-    connector_written: existsSync(join(backend, '.auteric/connector.json')), independently_validated: false };
+    connector_written: existsSync(join(backend, '.auteric/connector.json')), independently_validated: false, telemetry };
   atomicJSON(join(root, '.auteric/assistant-run.json'), report);
   journal(root, 'adapter', result.status);
   if (result.status === 'assistant_interrupted') throw Error('Adapter preparation was interrupted. No connection was created.');
