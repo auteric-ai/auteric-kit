@@ -369,7 +369,10 @@ async function connect(root, options) {
   journal(root, 'inspection', 'running');
   let prepared = await sdk('prepare', layout.backend, { agent: agent === 'claude' ? 'claude-code' : agent === 'copilot' ? 'codex' : agent,
     store_url: probeUrl, instructions_root: root }, { install: true });
-  const conflicts = (prepared.skill || []).filter(item => item.conflict).map(item => item.client);
+  // Older local SDKs returned one skill result while the bundled runtime
+  // returns a list.  Accept both so a current CLI can safely drive either.
+  const preparedSkills = Array.isArray(prepared.skill) ? prepared.skill : (prepared.skill ? [prepared.skill] : []);
+  const conflicts = preparedSkills.filter(item => item.conflict).map(item => item.client);
   if (conflicts.length) console.log(`Existing assistant instructions preserved for: ${conflicts.join(', ')}. Review these files manually.`);
   const summary = prepared.inventory.inventory_summary || {};
   console.log(`Inspected ${prepared.inventory.files_inspected} backend files and inventoried ${summary.api_endpoints ?? summary.total_endpoints ?? 0} APIs plus ${summary.storefront_routes ?? 0} storefront routes; ${summary.tool_candidates ?? 0} are canonical shopping-tool candidates. Capability report: ${join(layout.backend, '.auteric/capabilities.json')}`);
