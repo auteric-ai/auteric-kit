@@ -1,0 +1,42 @@
+{
+  "bindings": {
+    "auteric_mcp": "get_checkout",
+    "ucp": "dev.ucp.shopping.checkout"
+  },
+  "concurrency": {
+    "applies_to": "none",
+    "mode": "none"
+  },
+  "contract_version": "1.0.0",
+  "description": "Read an agent-owned checkout.",
+  "idempotency": "not_required",
+  "identity": "buyer_or_guest_principal",
+  "merchant_http": {
+    "method": "GET",
+    "path": "/api/auteric/v1/checkouts/{checkout_id}"
+  },
+  "operation": "get_checkout",
+  "ownership": {
+    "resource": "checkout",
+    "rule": "principal_must_own_checkout"
+  },
+  "release_stage": "current",
+  "requires": [
+    "reviewed_mapping",
+    "contract_test",
+    "policy",
+    "runtime_activation",
+    "ownership"
+  ],
+  "schemas": {
+    "input": "schemas/checkout/get_checkout.input.json",
+    "output": "schemas/checkout/get_checkout.output.json"
+  },
+  "side_effect": "read",
+  "test_scenarios": [
+    "happy: owner reads checkout state and totals",
+    "foreign principal gets FORBIDDEN or RESOURCE_NOT_FOUND",
+    "completed checkout remains readable for confirmation display",
+    "unknown checkout_id returns RESOURCE_NOT_FOUND"
+  ]
+}

@@ -1,0 +1,43 @@
+{
+  "bindings": {
+    "auteric_mcp": "create_cart",
+    "ucp": "dev.ucp.shopping.cart"
+  },
+  "concurrency": {
+    "applies_to": "none",
+    "mode": "none"
+  },
+  "contract_version": "1.0.0",
+  "description": "Create an isolated agent-owned cart.",
+  "idempotency": "required",
+  "identity": "buyer_or_guest_principal",
+  "merchant_http": {
+    "method": "POST",
+    "path": "/api/auteric/v1/carts"
+  },
+  "operation": "create_cart",
+  "ownership": {
+    "resource": "cart",
+    "rule": "cart_created_for_calling_principal"
+  },
+  "release_stage": "current",
+  "requires": [
+    "reviewed_mapping",
+    "contract_test",
+    "policy",
+    "runtime_activation",
+    "ownership",
+    "idempotency"
+  ],
+  "schemas": {
+    "input": "schemas/cart/create_cart.input.json",
+    "output": "schemas/cart/create_cart.output.json"
+  },
+  "side_effect": "write",
+  "test_scenarios": [
+    "happy: creates empty or seeded cart owned by calling principal",
+    "idempotent retry with same action_id returns original cart",
+    "same action_id with different payload returns IDEMPOTENCY_CONFLICT",
+    "unsupported currency rejected with INVALID_INPUT"
+  ]
+}

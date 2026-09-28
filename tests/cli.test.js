@@ -3,7 +3,15 @@ import assert from 'node:assert/strict';
 import { existsSync, mkdirSync, mkdtempSync, realpathSync, readFileSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { apiUrl, existingDiscoveryDigest, inspect, localStoreUrl, localTestDomain, prepareBuiltDiscovery, prepareDiscovery, resolveProjectLayout, run, uncoveredOperations, verifyLocalWithRetry } from '../src/cli.js';
+import { apiUrl, detectLocalStoreUrl, existingDiscoveryDigest, inspect, localStoreUrl, localTestDomain, nativeBindingDigest, nativeReference, NATIVE_PHASE1_OPERATIONS, prepareBuiltDiscovery, prepareDiscovery, resolveProjectLayout, run, uncoveredOperations, verifyLocalWithRetry } from '../src/cli.js';
+import { renderTerminalProgressLine, terminalColor } from '../src/progress.js';
+
+test('terminal status colours are applied only when a terminal supports them', () => {
+  assert.equal(terminalColor('success', 'green', { enabled: false }), 'success');
+  assert.equal(terminalColor('success', 'green', { enabled: true }), '\x1b[32msuccess\x1b[0m');
+  assert.equal(renderTerminalProgressLine({ elapsed_ms: 0, phase: 'Validation', state: 'complete' }, { color: true }), '\x1b[32m[00:00] Validation: complete\x1b[0m');
+  assert.equal(renderTerminalProgressLine({ elapsed_ms: 0, phase: 'Validation', state: 'failed' }, { color: true }), '\x1b[31m[00:00] Validation: failed\x1b[0m');
+});
 
 test('localhost mode permits loopback only and cloud requires HTTPS', () => {
   assert.equal(apiUrl({ localhost: true }), 'http://127.0.0.1:8100');
@@ -31,6 +39,21 @@ test('flags without a subcommand use the Connect workflow for GitHub npx', async
 test('cloud dry run accepts a merchant domain without a local API origin', async () => {
   const root = mkdtempSync(join(realpathSync(tmpdir()), 'auteric-cloud-store-'));
   await run(['connect', '--domain', 'shop.example', '--dry-run'], root);
+});
+
+test('local-storefront finds the merchant service while preserving the cloud control-plane', async () => {
+  const previous = globalThis.fetch;
+  const calls = [];
+  globalThis.fetch = async target => {
+    calls.push(String(target));
+    return new Response('', { status: String(target).endsWith(':9020/api/health') ? 200 : 404 });
+  };
+  try {
+    assert.equal(await detectLocalStoreUrl(), 'http://127.0.0.1:9020');
+    const root = mkdtempSync(join(realpathSync(tmpdir()), 'auteric-local-cloud-'));
+    await run(['connect', '--domain', 'shop.example', '--local-storefront', '--dry-run', '--no-agent'], root);
+    assert.equal(calls[0], 'http://127.0.0.1:9020/api/health');
+  } finally { globalThis.fetch = previous; }
 });
 
 test('candidate operations outside an existing connector remain completion work', () => {
@@ -207,4 +230,81 @@ test('Vite, Next, and static deployments use their public discovery directory', 
     const result = prepareDiscovery(root, framework, { ucp: { version: '2026-08-25' }, auteric_attestation: { signature: 'signed' } });
     assert.equal(result.path.includes('/public/'), framework !== 'static');
   }
+});
+
+test('native reference Connect registers and verifies Native HTTP without invoking connector flow', async () => {
+  const root = mkdtempSync(join(realpathSync(tmpdir()), 'auteric-native-reference-'));
+  mkdirSync(join(root, 'server', 'auteric'), { recursive: true });
+  writeFileSync(join(root, 'package.json'), JSON.stringify({
+    type: 'module', dependencies: { express: '4.21.2', '@auteric/merchant-node': '0.1.0' }, scripts: {},
+  }));
+  writeFileSync(join(root, 'server', 'auteric', 'runtime.js'), 'export const nativeRuntime = true;\n');
+  writeFileSync(join(root, 'server', 'app.js'), "app.use('/api/auteric/v1', nativeRouter);\n");
+  assert.equal(nativeReference(root).detected, true);
+  const digest = nativeBindingDigest(root);
+  const previousFetch = globalThis.fetch;
+  const calls = [];
+  let runtimeReachable = true;
+  let storeExists = false;
+  const storeId = 'b'.repeat(32);
+  const installationId = 'install_reference';
+  const document = { ucp: { version: '2026-08-25' }, auteric_attestation: { signature: 'service-signature' } };
+  globalThis.fetch = async (target, init = {}) => {
+    const path = new URL(target).pathname;
+    calls.push(path);
+    let body = {};
+    if (init.body) body = JSON.parse(init.body);
+    if (path.endsWith('/cli/start')) return Response.json({ authorization_url: 'https://control.auteric.com/cli/authorize?request=test', request_id: 'request', expires_at: Date.now() / 1000 + 30, interval: 0 });
+    if (path.endsWith('/cli/poll')) return Response.json({ status: 'authorized', access_token: 'token', user: { email: 'owner@example.com', organization: 'Owner' } });
+    if (path.endsWith('/stores') && (!init.method || init.method === 'GET')) {
+      return Response.json(storeExists ? [{ id: storeId, domain: 'native.example', environment: 'production' }] : []);
+    }
+    if (path.endsWith('/stores') && init.method === 'POST') {
+      storeExists = true;
+      return Response.json({ id: storeId, domain: 'native.example', environment: 'production' });
+    }
+    if (path.endsWith('/installations') && init.method === 'POST') {
+      assert.equal(body.transport, 'native_http');
+      assert.deepEqual(body.operations.map(item => item.operation), NATIVE_PHASE1_OPERATIONS);
+      assert.equal(body.native_runtime.binding_digest, digest);
+      return Response.json({ id: installationId, transport: 'native_http', endpoint: 'https://native.example', environment: 'production' });
+    }
+    if (path.endsWith('/native-runtime-config')) return Response.json({
+      config_version: 'auteric-native-runtime/v1', endpoint: 'https://native.example', release_id: 'release',
+      installation: { installationId, storeId, environment: 'production', enabled: true, bindingDigest: digest, operations: NATIVE_PHASE1_OPERATIONS },
+      trust: { issuers: ['https://control.auteric.com'], keys: { test: 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA' } },
+    });
+    if (path.endsWith(`/installations/${installationId}/verify`)) return Response.json({ reachable: runtimeReachable });
+    if (/\/capabilities\/[^/]+\/enable$/.test(path)) return Response.json({ enabled: true });
+    if (path.endsWith('/connection-health')) return Response.json({ checks: { policies: { state: 'active' } } });
+    if (path.endsWith('/discovery')) return Response.json({ document });
+    if (path.endsWith(`/stores/${storeId}/verify`)) return Response.json({ verified: true });
+    if (path.endsWith('/agent-access') && init.method === 'PUT') return Response.json({ enabled: true });
+    throw Error(`unexpected fetch ${path}`);
+  };
+  try {
+    const result = await run(['connect', '--domain', 'native.example', '--no-browser', '--no-agent'], root);
+    assert.equal(result.integration, 'native_http_verified');
+    assert.equal(result.public_discovery_verified, true);
+    assert.equal(result.status, 'connection_test_required');
+    assert.ok(existsSync(join(root, '.auteric', 'native-runtime.json')));
+    assert.ok(existsSync(join(root, '.auteric', 'native-installation.json')));
+    assert.ok(existsSync(join(root, '.well-known', 'ucp')));
+    assert.equal(calls.some(path => /\/mappings|\/mcp-credentials|\/connector/.test(path)), false);
+    assert.equal(calls.some(path => path.endsWith('/agent-access')), false);
+
+    // A newly connected clean merchant cannot be live until it deploys the
+    // generated runtime config and UCP. That expected state must still leave
+    // both artifacts ready for one deployment; it must not require Connect to
+    // be run a second time merely to obtain the signed profile.
+    runtimeReachable = false;
+    calls.length = 0;
+    const pending = await run(['connect', '--domain', 'native.example', '--no-browser', '--no-agent'], root);
+    assert.equal(pending.status, 'deployment_pending');
+    assert.equal(pending.public_discovery_verified, false);
+    assert.ok(existsSync(join(root, '.auteric', 'native-runtime.json')));
+    assert.ok(existsSync(join(root, '.well-known', 'ucp')));
+    assert.ok(calls.indexOf(`/api/commerce/stores/${storeId}/discovery`) < calls.indexOf(`/api/commerce/stores/${storeId}/installations/${installationId}/verify`));
+    assert.equal(calls.some(path => path.endsWith(`/stores/${storeId}/verify`)), false);
+  } finally { globalThis.fetch = previousFetch; }
 });

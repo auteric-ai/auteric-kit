@@ -1,0 +1,42 @@
+{
+  "bindings": {
+    "auteric_mcp": "search_products",
+    "ucp": "dev.ucp.shopping.catalog.search"
+  },
+  "concurrency": {
+    "applies_to": "none",
+    "mode": "none"
+  },
+  "contract_version": "1.0.0",
+  "description": "Search the authoritative catalog.",
+  "idempotency": "not_required",
+  "identity": "buyer_or_guest_principal",
+  "merchant_http": {
+    "method": "GET",
+    "path": "/api/auteric/v1/products/search"
+  },
+  "operation": "search_products",
+  "ownership": {
+    "resource": "none",
+    "rule": "public_catalog_read"
+  },
+  "release_stage": "current",
+  "requires": [
+    "reviewed_mapping",
+    "contract_test",
+    "policy",
+    "runtime_activation",
+    "ownership"
+  ],
+  "schemas": {
+    "input": "schemas/catalog/search_products.input.json",
+    "output": "schemas/catalog/search_products.output.json"
+  },
+  "side_effect": "read",
+  "test_scenarios": [
+    "happy: query returns matching in-catalog products with pagination",
+    "rejects unknown query arguments (INVALID_INPUT)",
+    "empty result set returns empty results with has_more=false",
+    "catalog read requires no ownership check but still requires a valid execution JWT"
+  ]
+}

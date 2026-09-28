@@ -1,0 +1,43 @@
+{
+  "bindings": {
+    "auteric_mcp": "select_shipping_option",
+    "ucp": "dev.ucp.shopping.fulfillment"
+  },
+  "concurrency": {
+    "applies_to": "checkout",
+    "mode": "resource_revision"
+  },
+  "contract_version": "1.0.0",
+  "description": "Select an authoritative checkout fulfillment option.",
+  "idempotency": "required",
+  "identity": "buyer_or_guest_principal",
+  "merchant_http": {
+    "method": "PUT",
+    "path": "/api/auteric/v1/checkouts/{checkout_id}/shipping-option"
+  },
+  "operation": "select_shipping_option",
+  "ownership": {
+    "resource": "checkout",
+    "rule": "principal_must_own_checkout"
+  },
+  "release_stage": "current",
+  "requires": [
+    "reviewed_mapping",
+    "contract_test",
+    "policy",
+    "runtime_activation",
+    "ownership",
+    "idempotency"
+  ],
+  "schemas": {
+    "input": "schemas/checkout/select_shipping_option.input.json",
+    "output": "schemas/checkout/select_shipping_option.output.json"
+  },
+  "side_effect": "write",
+  "test_scenarios": [
+    "happy: offered option selected, shipping_total applied",
+    "option_id not currently offered returns INVALID_INPUT (no agent-invented shipping)",
+    "stale expected_revision returns REVISION_CONFLICT",
+    "idempotent retry keeps the original selection"
+  ]
+}

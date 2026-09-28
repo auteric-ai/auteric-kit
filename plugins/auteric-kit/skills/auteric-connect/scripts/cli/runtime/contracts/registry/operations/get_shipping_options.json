@@ -1,0 +1,42 @@
+{
+  "bindings": {
+    "auteric_mcp": "get_shipping_options",
+    "ucp": "dev.ucp.shopping.fulfillment"
+  },
+  "concurrency": {
+    "applies_to": "none",
+    "mode": "none"
+  },
+  "contract_version": "1.0.0",
+  "description": "Read authoritative fulfillment options for an agent-owned cart.",
+  "idempotency": "not_required",
+  "identity": "buyer_or_guest_principal",
+  "merchant_http": {
+    "method": "GET",
+    "path": "/api/auteric/v1/carts/{cart_id}/shipping-options"
+  },
+  "operation": "get_shipping_options",
+  "ownership": {
+    "resource": "cart",
+    "rule": "principal_must_own_cart"
+  },
+  "release_stage": "current",
+  "requires": [
+    "reviewed_mapping",
+    "contract_test",
+    "policy",
+    "runtime_activation",
+    "ownership"
+  ],
+  "schemas": {
+    "input": "schemas/cart/get_shipping_options.input.json",
+    "output": "schemas/cart/get_shipping_options.output.json"
+  },
+  "side_effect": "read",
+  "test_scenarios": [
+    "happy: options with authoritative prices returned for the cart destination",
+    "foreign principal gets FORBIDDEN or RESOURCE_NOT_FOUND",
+    "cart without a deliverable destination returns empty options",
+    "prices come from the merchant of record, never from agent-supplied amounts"
+  ]
+}

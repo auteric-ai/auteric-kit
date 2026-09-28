@@ -1,0 +1,43 @@
+{
+  "bindings": {
+    "auteric_mcp": "update_cart_item",
+    "ucp": "dev.ucp.shopping.cart"
+  },
+  "concurrency": {
+    "applies_to": "cart",
+    "mode": "resource_revision"
+  },
+  "contract_version": "1.0.0",
+  "description": "Change an existing cart line quantity.",
+  "idempotency": "required",
+  "identity": "buyer_or_guest_principal",
+  "merchant_http": {
+    "method": "PATCH",
+    "path": "/api/auteric/v1/carts/{cart_id}/items/{line_id}"
+  },
+  "operation": "update_cart_item",
+  "ownership": {
+    "resource": "cart",
+    "rule": "principal_must_own_cart"
+  },
+  "release_stage": "current",
+  "requires": [
+    "reviewed_mapping",
+    "contract_test",
+    "policy",
+    "runtime_activation",
+    "ownership",
+    "idempotency"
+  ],
+  "schemas": {
+    "input": "schemas/cart/update_cart_item.input.json",
+    "output": "schemas/cart/update_cart_item.output.json"
+  },
+  "side_effect": "write",
+  "test_scenarios": [
+    "happy: quantity updated and totals recomputed",
+    "line_id that does not belong to the cart returns RESOURCE_NOT_FOUND (line_id != product_id)",
+    "stale expected_revision returns REVISION_CONFLICT",
+    "quantity above max or zero returns INVALID_INPUT"
+  ]
+}

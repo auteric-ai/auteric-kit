@@ -37,6 +37,29 @@ Read `.auteric/workflow.json` for the last stage, `.auteric/local-validation.jso
 for pre-authentication checks and `.auteric/health.json` for worker connectivity.
 A resumed session does not prove current runtime protection.
 
+## Installation SDK vs merchant runtime SDK
+
+Two different SDKs are involved, and they are not interchangeable:
+
+- The **installation-time SDK** is this CLI and its code generator
+  (`inventory` → `bind` → `validate` → `verify`). It reads the merchant
+  repository, generates adapters and a composition root, validates them
+  statically, and runs the contract acceptance suite in dev mode. It never
+  serves shopper traffic.
+- The **merchant runtime SDK** runs inside the merchant backend and serves the
+  Merchant Execution Protocol (MEP/1): `@auteric/merchant-node` (Node),
+  `auteric-merchant` (Python), `merchant-go` (Go). The binding planner selects
+  it from the authoritative backend's language: `native_node`,
+  `native_python`, or `native_go`.
+
+Choose the runtime per ADR-01 conditions: a backend that can receive HTTPS
+gets the native runtime in its own language; `outbound_worker` is chosen only
+on deployment constraints (private network, no ingress); a static-only
+storefront gets a limited read-only catalog or an explicit companion backend —
+never infer a backend from Vite or static hosting. See
+[the runtime matrix](../../../../docs/runtime-matrix.md) for per-framework support
+levels and what is fixture-tested versus generally available.
+
 ## 1. Inspect — read-only
 
 Work in the merchant's existing project. Identify the framework/runtime, package manager, deployment route, catalog and inventory source, product/variant model, cart flow, checkout/payment boundary, authentication boundary, and existing UCP or agent-facing interfaces. Record exact source files and routes. Preserve the storefront design and existing payment system.
@@ -79,14 +102,29 @@ Run the project's relevant tests, typecheck, build, or lint commands when availa
 
 End with these explicit sections: **Completed locally**, **Requires Auteric credentials/service**, **Requires merchant/operator action**, and **Validation results**. List created and modified files, dependencies, routes, catalog/cart/checkout status, and exact unverified boundaries. A local test, copied prompt, or public declaration is never a claim of live protection or AI-platform placement.
 
-Use the SDK capability report to cover search_products, get_product, create_cart,
-get_cart, add_to_cart, update_cart_item, remove_from_cart, replace_cart_items,
-cancel_cart, create_checkout and get_checkout. Trace every candidate to its actual
+Use the SDK capability report to cover every operation the locked contracts
+registry defines (the list below is generated from the registry; treat the
+registry, not this document, as the source of truth for the current count):
+
+<!-- auteric:capabilities:start -->
+<!-- Generated from packages/commerce-contracts/registry/operations (locked contracts registry) by kits/auteric-kit/tools/skill_capability_summary.js. Do not edit by hand; rerun the tool. -->
+The locked contracts registry defines **20 canonical operations** in 6 families:
+- cart (7): add_to_cart, cancel_cart, create_cart, get_cart, remove_from_cart, replace_cart_items, update_cart_item
+- catalog (2): get_product, search_products
+- checkout (5): cancel_checkout, complete_checkout, create_checkout, get_checkout, update_checkout
+- discount (2): apply_discount_code, remove_discount_code
+- orders (1): get_order
+- shipping (3): get_shipping_options, select_shipping_option, set_shipping_address
+<!-- auteric:capabilities:end -->
+
+Trace every candidate to its actual
 business logic. Complete factory/REST adapters and sandbox test inputs where
 supported; do not stop after catalog if real cart or checkout APIs exist.
-Unsupported and untested operations must have explicit reasons. Payments, refunds,
-orders and identity linking are not supported by this canonical runtime and must
-not be invented. Local skill installation is separate from runtime tool exposure.
+Unsupported and untested operations must have explicit reasons. Checkout completion
+requires a real merchant payment handler, encrypted sensitive-job transport,
+idempotency and an order-confirmation adapter; never infer those from a payment
+route or frontend button. Refunds and identity linking must not be invented. Local
+skill installation is separate from runtime tool exposure.
 A shared MCP process serves logical Store endpoints and filters tools by active
 mappings, capability controls and store-scoped grants. Read its signed
 `auteric_mcp.endpoint`; do not guess a new per-merchant server.

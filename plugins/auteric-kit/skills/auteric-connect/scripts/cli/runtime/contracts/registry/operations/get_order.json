@@ -1,0 +1,42 @@
+{
+  "bindings": {
+    "auteric_mcp": "get_order",
+    "ucp": "dev.ucp.shopping.order"
+  },
+  "concurrency": {
+    "applies_to": "none",
+    "mode": "none"
+  },
+  "contract_version": "1.0.0",
+  "description": "Read the order confirmation created by checkout completion.",
+  "idempotency": "not_required",
+  "identity": "buyer_principal",
+  "merchant_http": {
+    "method": "GET",
+    "path": "/api/auteric/v1/orders/{order_id}"
+  },
+  "operation": "get_order",
+  "ownership": {
+    "resource": "order",
+    "rule": "principal_must_own_order"
+  },
+  "release_stage": "current",
+  "requires": [
+    "reviewed_mapping",
+    "contract_test",
+    "policy",
+    "runtime_activation",
+    "ownership"
+  ],
+  "schemas": {
+    "input": "schemas/order/get_order.input.json",
+    "output": "schemas/order/get_order.output.json"
+  },
+  "side_effect": "read",
+  "test_scenarios": [
+    "happy: owning buyer reads order confirmation",
+    "guest principal rejected (buyer account required) with FORBIDDEN",
+    "foreign buyer gets FORBIDDEN or RESOURCE_NOT_FOUND per store policy",
+    "unknown order_id returns RESOURCE_NOT_FOUND"
+  ]
+}

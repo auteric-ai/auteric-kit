@@ -36,6 +36,14 @@ export function journal(root, phase, status, extra = {}) {
   return value;
 }
 
+export function connectionStatus(root, update = {}) {
+  const path = join(root, '.auteric/connection-status.json');
+  const previous = readJSON(path) || { version: 1 };
+  const value = { ...previous, ...update, updated_at: new Date().toISOString() };
+  atomicJSON(path, value);
+  return value;
+}
+
 export function lockProject(root) {
   const path = safePath(join(root, '.auteric/connect.lock'));
   mkdirSync(dirname(path), { recursive: true, mode: 0o700 });

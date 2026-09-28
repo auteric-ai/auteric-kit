@@ -21,6 +21,15 @@ Operation = Literal[
     "cancel_cart",
     "create_checkout",
     "get_checkout",
+    "update_checkout",
+    "complete_checkout",
+    "cancel_checkout",
+    "get_order",
+    "apply_discount_code",
+    "remove_discount_code",
+    "get_shipping_options",
+    "set_shipping_address",
+    "select_shipping_option",
 ]
 OPERATIONS = frozenset(Operation.__args__)
 Text = Annotated[str, Field(min_length=1, max_length=2000)]
@@ -95,7 +104,7 @@ class IntegrationPlan(Artifact):
     plan_id: str = Field(pattern=r"^[A-Za-z0-9_-]{1,100}$")
     version: int = Field(ge=1, strict=True)
     repository_revision: Text
-    operations: tuple[OperationPlan, ...] = Field(min_length=11, max_length=11)
+    operations: tuple[OperationPlan, ...] = Field(min_length=20, max_length=20)
     proposed_files: tuple[str, ...] = Field(default=(), max_length=200)
     data_egress: tuple[Text, ...] = Field(default=(), max_length=100)
 
@@ -111,7 +120,7 @@ class IntegrationPlan(Artifact):
     @model_validator(mode="after")
     def complete_operations(self):
         if {item.operation for item in self.operations} != OPERATIONS:
-            raise ValueError("Include each of the eleven canonical operations exactly once")
+            raise ValueError("Include each canonical operation exactly once")
         return self
 
 
@@ -172,7 +181,7 @@ class OperationResult(Artifact):
 
 class ValidationReport(PlanBinding):
     environment: Literal["mock", "local", "staging", "production"]
-    results: tuple[OperationResult, ...] = Field(min_length=11, max_length=11)
+    results: tuple[OperationResult, ...] = Field(min_length=20, max_length=20)
     production_ready: Literal[False] = False
 
     @model_validator(mode="after")

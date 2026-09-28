@@ -81,6 +81,21 @@ does not require a clone, a Codex cache path, or a global installation:
 npx --yes github:auteric-ai/auteric-kit --localhost --store-url http://127.0.0.1:5173 --serve
 ```
 
+To debug a running local storefront against the hosted Auteric control plane,
+use `--local-storefront` with its public merchant hostname. Connect discovers a
+loopback storefront automatically (including port 9020), keeps the control plane
+on HTTPS, and creates a sandbox connection. This is not production publication
+or public discovery verification.
+
+```bash
+auteric connect --domain store.example.com --local-storefront
+```
+
+Every connection attempt writes a credential-free status record at
+`.auteric/connection-status.json`; use `auteric connect-status` to display it.
+The persistent connector also updates `.auteric/health.json` with heartbeat,
+failure category, and the recommended next action.
+
 The flags-without-a-subcommand form means `connect`. It installs project instructions
 for Codex and GitHub Copilot (`.agents/skills`), Claude Code (`.claude/skills`),
 and Cursor (`.cursor/rules`) without depending on which editor is running.
@@ -153,6 +168,27 @@ The CLI prepares and tests supported local connectors, but it does not publish a
 merchant site, issue production credentials, or enable production traffic. The local
 Commerce API must be running separately. Do not advertise `npx @auteric/cli` until
 the package and corresponding API are published and validated together.
+
+## Installation pipeline: inventory, bind, validate, verify
+
+Independent of the Connect flow, the CLI runs the local installation pipeline
+against a custom backend:
+
+```sh
+node bin/auteric.js inventory [path]   # read-only API/capability inventory (JSON)
+node bin/auteric.js bind [path]        # plan + generate adapters, composition root, manifest
+node bin/auteric.js validate [path]    # independent static re-validation of the generated tree
+node bin/auteric.js verify [path] [--port N]   # validate, then contract acceptance over real HTTP
+```
+
+`verify` copies the project to a temporary workspace (the source tree is never
+mutated), boots the generated composition root in dev mode with an ephemeral
+Ed25519 gateway key, and executes the locked-contract scenarios — happy-path
+lifecycle checks through follow-up state reads, authorization denial,
+error-envelope mapping, and duplicate-`action_id` idempotency for writes.
+Evidence lands in `.auteric/acceptance-report.json`; the exit code is 2 when
+any operation is not verified. Progress events (plan §18 style) go to stderr;
+`--quiet` suppresses them and `--json` emits the structured event stream.
 
 Auteric Kit is a coding-agent plugin for **custom commerce sites**. It helps a store team map its real catalog, prepare merchant-controlled UCP discovery, and check public exposure without moving checkout or payment away from the store. The kit contains skills, the executable connect CLI, the bundled connector SDK and read-only public verification tools. It does **not** contain a hosted Auteric Gateway, merchant account, signing key, or automatic runtime protection.
 

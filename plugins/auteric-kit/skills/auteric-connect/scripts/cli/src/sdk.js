@@ -46,7 +46,10 @@ export function sdk(command, root, values = {}, { install = false } = {}) {
     const child = spawn(python, ['-m', 'auteric_edge.onboarding'], { stdio: ['pipe', 'pipe', 'pipe'] });
     let output = '', stopping = false;
     const timeout = command === 'serve' ? null : setTimeout(() => { child.kill('SIGTERM'); reject(Error('Auteric setup timed out; inspect .auteric/validation.json before retrying.')); }, 180000);
-    child.stdout.on('data', data => { output += data; });
+    child.stdout.on('data', data => {
+      if (command === 'serve') process.stdout.write(data);
+      else output += data;
+    });
     child.stderr.on('data', () => {});
     child.on('error', error => { clearTimeout(timeout); reject(error); });
     child.on('close', code => {

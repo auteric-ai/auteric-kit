@@ -1,0 +1,43 @@
+{
+  "bindings": {
+    "auteric_mcp": "cancel_checkout",
+    "ucp": "dev.ucp.shopping.checkout"
+  },
+  "concurrency": {
+    "applies_to": "checkout",
+    "mode": "resource_revision"
+  },
+  "contract_version": "1.0.0",
+  "description": "Cancel a non-terminal agent-owned checkout.",
+  "idempotency": "required",
+  "identity": "buyer_or_guest_principal",
+  "merchant_http": {
+    "method": "POST",
+    "path": "/api/auteric/v1/checkouts/{checkout_id}/cancel"
+  },
+  "operation": "cancel_checkout",
+  "ownership": {
+    "resource": "checkout",
+    "rule": "principal_must_own_checkout"
+  },
+  "release_stage": "current",
+  "requires": [
+    "reviewed_mapping",
+    "contract_test",
+    "policy",
+    "runtime_activation",
+    "ownership",
+    "idempotency"
+  ],
+  "schemas": {
+    "input": "schemas/checkout/cancel_checkout.input.json",
+    "output": "schemas/checkout/cancel_checkout.output.json"
+  },
+  "side_effect": "write",
+  "test_scenarios": [
+    "happy: pending checkout transitions to cancelled",
+    "completed checkout cannot be cancelled (INVALID_INPUT)",
+    "idempotent retry returns stored cancelled checkout",
+    "foreign principal cannot cancel the checkout"
+  ]
+}

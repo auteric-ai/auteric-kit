@@ -1,0 +1,43 @@
+{
+  "bindings": {
+    "auteric_mcp": "create_checkout",
+    "ucp": "dev.ucp.shopping.checkout"
+  },
+  "concurrency": {
+    "applies_to": "cart",
+    "mode": "resource_revision"
+  },
+  "contract_version": "1.0.0",
+  "description": "Create an agent-owned checkout from an authoritative cart.",
+  "idempotency": "required",
+  "identity": "buyer_or_guest_principal",
+  "merchant_http": {
+    "method": "POST",
+    "path": "/api/auteric/v1/checkouts"
+  },
+  "operation": "create_checkout",
+  "ownership": {
+    "resource": "checkout",
+    "rule": "checkout_created_from_owned_cart"
+  },
+  "release_stage": "current",
+  "requires": [
+    "reviewed_mapping",
+    "contract_test",
+    "policy",
+    "runtime_activation",
+    "ownership",
+    "idempotency"
+  ],
+  "schemas": {
+    "input": "schemas/checkout/create_checkout.input.json",
+    "output": "schemas/checkout/create_checkout.output.json"
+  },
+  "side_effect": "write",
+  "test_scenarios": [
+    "happy: checkout created from active owned cart",
+    "cart belonging to another principal returns FORBIDDEN/RESOURCE_NOT_FOUND",
+    "expected_cart_revision mismatch returns REVISION_CONFLICT",
+    "idempotent retry returns the originally created checkout"
+  ]
+}

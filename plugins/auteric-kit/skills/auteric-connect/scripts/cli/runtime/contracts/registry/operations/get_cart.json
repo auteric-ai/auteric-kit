@@ -1,0 +1,42 @@
+{
+  "bindings": {
+    "auteric_mcp": "get_cart",
+    "ucp": "dev.ucp.shopping.cart"
+  },
+  "concurrency": {
+    "applies_to": "none",
+    "mode": "none"
+  },
+  "contract_version": "1.0.0",
+  "description": "Read an agent-owned cart.",
+  "idempotency": "not_required",
+  "identity": "buyer_or_guest_principal",
+  "merchant_http": {
+    "method": "GET",
+    "path": "/api/auteric/v1/carts/{cart_id}"
+  },
+  "operation": "get_cart",
+  "ownership": {
+    "resource": "cart",
+    "rule": "principal_must_own_cart"
+  },
+  "release_stage": "current",
+  "requires": [
+    "reviewed_mapping",
+    "contract_test",
+    "policy",
+    "runtime_activation",
+    "ownership"
+  ],
+  "schemas": {
+    "input": "schemas/cart/get_cart.input.json",
+    "output": "schemas/cart/get_cart.output.json"
+  },
+  "side_effect": "read",
+  "test_scenarios": [
+    "happy: owner reads cart with current resource_revision",
+    "foreign principal gets FORBIDDEN or RESOURCE_NOT_FOUND per store policy",
+    "cancelled cart remains readable with status=cancelled",
+    "unknown cart_id returns RESOURCE_NOT_FOUND"
+  ]
+}

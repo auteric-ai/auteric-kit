@@ -33,6 +33,33 @@ class CommerceConnector(ABC):
     async def cancel_cart(self, request):
         raise NotImplementedError("Cart cancellation is not connected")
 
+    async def update_checkout(self, request):
+        raise NotImplementedError("Checkout update is not connected")
+
+    async def complete_checkout(self, request):
+        raise NotImplementedError("Checkout completion is not connected")
+
+    async def cancel_checkout(self, request):
+        raise NotImplementedError("Checkout cancellation is not connected")
+
+    async def get_order(self, request):
+        raise NotImplementedError("Order lookup is not connected")
+
+    async def apply_discount_code(self, request):
+        raise NotImplementedError("Discount application is not connected")
+
+    async def remove_discount_code(self, request):
+        raise NotImplementedError("Discount removal is not connected")
+
+    async def get_shipping_options(self, request):
+        raise NotImplementedError("Shipping option lookup is not connected")
+
+    async def set_shipping_address(self, request):
+        raise NotImplementedError("Shipping address update is not connected")
+
+    async def select_shipping_option(self, request):
+        raise NotImplementedError("Shipping option selection is not connected")
+
     async def execute(self, operation, request, mapping=None):
         data = validate_input(operation, request)
         result = await getattr(self, operation)(data)
@@ -54,7 +81,7 @@ class MockConnector(CommerceConnector):
                 "inventory": 4200,
             }
         }
-        self.carts, self.checkouts = {}, {}
+        self.carts, self.checkouts, self.orders = {}, {}, {}
 
     async def search_products(self, request):
         return [p.copy() for p in self.products.values() if request["query"].lower() in p["title"].lower()][
@@ -78,7 +105,8 @@ class MockConnector(CommerceConnector):
 
     def _total(self, cart):
         total = sum((Decimal(i["total_price"]) for i in cart["items"]), Decimal("0"))
-        cart["subtotal"] = cart["total"] = str(total)
+        discount = min(Decimal(str(cart.get("discounts", "0"))), total)
+        cart["subtotal"], cart["total"] = str(total), str(total - discount)
         return cart
 
     def _active(self, cart_id):
@@ -170,3 +198,72 @@ class MockConnector(CommerceConnector):
 
     async def get_checkout(self, request):
         return self.checkouts[request["checkout_id"]]
+
+    async def update_checkout(self, request):
+        checkout = self.checkouts[request["checkout_id"]]
+        if checkout["status"] in {"completed", "canceled"}:
+            raise ValueError("Checkout is terminal")
+        cart = self._active(checkout["cart_id"])
+        cart["items"] = self._items(request.get("items", []))
+        self._total(cart)
+        checkout.update(
+            total=cart["total"], status="ready_for_complete",
+            customer_context=request.get("buyer", {}),
+            shipping_context={"context": request.get("context", {}), "fulfillment": request.get("fulfillment", {})},
+        )
+        return checkout
+
+    async def complete_checkout(self, request):
+        checkout = self.checkouts[request["checkout_id"]]
+        if checkout["status"] != "ready_for_complete" or not request.get("payment"):
+            raise ValueError("Checkout is not ready or payment is absent")
+        order_id = str(uuid4())
+        checkout["status"] = "completed"
+        checkout.setdefault("metadata", {})["order_id"] = order_id
+        cart = self.carts[checkout["cart_id"]]
+        self.orders[order_id] = {
+            "id": order_id, "checkout_id": checkout["id"], "status": "confirmed",
+            "items": [item.copy() for item in cart["items"]], "total": checkout["total"],
+            "currency": checkout["currency"], "order_url": "https://example.com/demo-order/" + order_id,
+        }
+        return checkout
+
+    async def cancel_checkout(self, request):
+        checkout = self.checkouts[request["checkout_id"]]
+        if checkout["status"] == "completed":
+            raise ValueError("Completed checkout cannot be canceled")
+        checkout["status"] = "canceled"
+        return checkout
+
+    async def get_order(self, request):
+        return self.orders[request["order_id"]]
+
+    async def apply_discount_code(self, request):
+        cart = self._active(request["cart_id"])
+        codes = cart.setdefault("metadata", {}).setdefault("discount_codes", [])
+        if request["code"] not in codes:
+            codes.append(request["code"])
+        cart["discounts"] = "10.00" if codes else "0"
+        return self._total(cart)
+
+    async def remove_discount_code(self, request):
+        cart = self._active(request["cart_id"])
+        codes = cart.setdefault("metadata", {}).setdefault("discount_codes", [])
+        cart["metadata"]["discount_codes"] = [code for code in codes if code != request["code"]]
+        cart["discounts"] = "10.00" if cart["metadata"]["discount_codes"] else "0"
+        return self._total(cart)
+
+    async def get_shipping_options(self, request):
+        self._active(request["cart_id"])
+        return [{"id": "standard", "title": "Standard shipping", "amount": 500, "currency": "USD"}]
+
+    async def set_shipping_address(self, request):
+        checkout = self.checkouts[request["checkout_id"]]
+        checkout["shipping_context"] = {**checkout.get("shipping_context", {}), "address": request["address"]}
+        return checkout
+
+    async def select_shipping_option(self, request):
+        checkout = self.checkouts[request["checkout_id"]]
+        checkout["shipping_context"] = {**checkout.get("shipping_context", {}), "selected_option_id": request["option_id"]}
+        checkout["status"] = "ready_for_complete"
+        return checkout
