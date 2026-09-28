@@ -1,0 +1,206 @@
+{
+  "merchant_protocol": "1",
+  "operations": [
+    {
+      "contract_version": "1.0.0",
+      "digest": "sha256:d5a1be714e4358d987bf603e223eff66f0e45429ae1ca4d57364903cffc1d590",
+      "idempotency": "required",
+      "method": "POST",
+      "operation": "add_to_cart",
+      "path": "/api/auteric/v1/carts/{cart_id}/items",
+      "release_stage": "current",
+      "side_effect": "write"
+    },
+    {
+      "contract_version": "1.0.0",
+      "digest": "sha256:6bf526216d96c43dd84f8444f7c6495ea11cf6f4b5716de298ebdeaae4ad9407",
+      "idempotency": "required",
+      "method": "POST",
+      "operation": "apply_discount_code",
+      "path": "/api/auteric/v1/carts/{cart_id}/discount-codes",
+      "release_stage": "current",
+      "side_effect": "write"
+    },
+    {
+      "contract_version": "1.0.0",
+      "digest": "sha256:ff7a0e3909c1639264711a9afa28f407dc9fa169300f9f0ae86f98d7df2edf4b",
+      "idempotency": "required",
+      "method": "POST",
+      "operation": "cancel_cart",
+      "path": "/api/auteric/v1/carts/{cart_id}/cancel",
+      "release_stage": "current",
+      "side_effect": "write"
+    },
+    {
+      "contract_version": "1.0.0",
+      "digest": "sha256:ac4f4299f6cbde69e4a21714656bf236f119047051c6da7552a78a6f995c07dc",
+      "idempotency": "required",
+      "method": "POST",
+      "operation": "cancel_checkout",
+      "path": "/api/auteric/v1/checkouts/{checkout_id}/cancel",
+      "release_stage": "current",
+      "side_effect": "write"
+    },
+    {
+      "contract_version": "1.0.0",
+      "digest": "sha256:86a852119352e71bd50c2ebcf49bc332eed1debb4aa0b9efb3636821fdd3ced4",
+      "idempotency": "required",
+      "method": "POST",
+      "operation": "complete_checkout",
+      "path": "/api/auteric/v1/checkouts/{checkout_id}/complete",
+      "release_stage": "current",
+      "side_effect": "write"
+    },
+    {
+      "contract_version": "1.0.0",
+      "digest": "sha256:5bdb2fcef66cc36046e952d4c04ed29b224c1b3707105da31fea0cd696061ef5",
+      "idempotency": "required",
+      "method": "POST",
+      "operation": "create_cart",
+      "path": "/api/auteric/v1/carts",
+      "release_stage": "current",
+      "side_effect": "write"
+    },
+    {
+      "contract_version": "1.0.0",
+      "digest": "sha256:dc0e7a908691cd5280600a036cb3fb2f0f44f5afd6287ca0097656048df0bb78",
+      "idempotency": "required",
+      "method": "POST",
+      "operation": "create_checkout",
+      "path": "/api/auteric/v1/checkouts",
+      "release_stage": "current",
+      "side_effect": "write"
+    },
+    {
+      "contract_version": "1.0.0",
+      "digest": "sha256:e0287cdbfae04b7dbe491abc1f7b84e8b05f3852d48e62dd84533e602d27f304",
+      "idempotency": "not_required",
+      "method": "GET",
+      "operation": "get_cart",
+      "path": "/api/auteric/v1/carts/{cart_id}",
+      "release_stage": "current",
+      "side_effect": "read"
+    },
+    {
+      "contract_version": "1.0.0",
+      "digest": "sha256:511452310526abbf9a85b38e7424199a9906df4d7cbc25f0548c23ff2ecdcbdc",
+      "idempotency": "not_required",
+      "method": "GET",
+      "operation": "get_checkout",
+      "path": "/api/auteric/v1/checkouts/{checkout_id}",
+      "release_stage": "current",
+      "side_effect": "read"
+    },
+    {
+      "contract_version": "1.0.0",
+      "digest": "sha256:48ec3622a353e8a0ffeb53fa3f15b34f029611a319febd75c3668abbd2b43414",
+      "idempotency": "not_required",
+      "method": "GET",
+      "operation": "get_order",
+      "path": "/api/auteric/v1/orders/{order_id}",
+      "release_stage": "current",
+      "side_effect": "read"
+    },
+    {
+      "contract_version": "1.0.0",
+      "digest": "sha256:cb19ac6868b5a7cc1ad1f2dac9ece745384319c15fb4cb6b7d275b4987576817",
+      "idempotency": "not_required",
+      "method": "GET",
+      "operation": "get_product",
+      "path": "/api/auteric/v1/products/{product_id}",
+      "release_stage": "current",
+      "side_effect": "read"
+    },
+    {
+      "contract_version": "1.0.0",
+      "digest": "sha256:93586d0b4afb6032c7afdf171ffd3dfd8e6f952c6b5539f2b8e4821d1383bd45",
+      "idempotency": "not_required",
+      "method": "GET",
+      "operation": "get_shipping_options",
+      "path": "/api/auteric/v1/carts/{cart_id}/shipping-options",
+      "release_stage": "current",
+      "side_effect": "read"
+    },
+    {
+      "contract_version": "1.0.0",
+      "digest": "sha256:657bc3c5e91ab6a4d0d6d29eaf87bb9c1d3f55f08fa74c2885923a9b9eb358c2",
+      "idempotency": "required",
+      "method": "DELETE",
+      "operation": "remove_discount_code",
+      "path": "/api/auteric/v1/carts/{cart_id}/discount-codes/{code}",
+      "release_stage": "current",
+      "side_effect": "write"
+    },
+    {
+      "contract_version": "1.0.0",
+      "digest": "sha256:0d5dd9baebcad74f2cec8cf9f5eca468e21c061a7c8de1e2b8cf5d31a1cb67e1",
+      "idempotency": "required",
+      "method": "DELETE",
+      "operation": "remove_from_cart",
+      "path": "/api/auteric/v1/carts/{cart_id}/items/{line_id}",
+      "release_stage": "current",
+      "side_effect": "write"
+    },
+    {
+      "contract_version": "1.0.0",
+      "digest": "sha256:49bbfb0160b1e93e45d3a96a781e7760361bee1873b0d76346381b9adbff6f9b",
+      "idempotency": "required",
+      "method": "PUT",
+      "operation": "replace_cart_items",
+      "path": "/api/auteric/v1/carts/{cart_id}/items",
+      "release_stage": "current",
+      "side_effect": "write"
+    },
+    {
+      "contract_version": "1.0.0",
+      "digest": "sha256:ca0a0b9320506847ba79e6f864c735570cff8e1cbda9921d9b5163728039f80f",
+      "idempotency": "not_required",
+      "method": "GET",
+      "operation": "search_products",
+      "path": "/api/auteric/v1/products/search",
+      "release_stage": "current",
+      "side_effect": "read"
+    },
+    {
+      "contract_version": "1.0.0",
+      "digest": "sha256:12496dcd3e58a094738be41885067d1c80b93436f45f3b23e21a740f76dabde4",
+      "idempotency": "required",
+      "method": "PUT",
+      "operation": "select_shipping_option",
+      "path": "/api/auteric/v1/checkouts/{checkout_id}/shipping-option",
+      "release_stage": "current",
+      "side_effect": "write"
+    },
+    {
+      "contract_version": "1.0.0",
+      "digest": "sha256:e646fe52755849952e524c715e88db8bf987496cb953bd797d80a751091ac0a9",
+      "idempotency": "required",
+      "method": "PUT",
+      "operation": "set_shipping_address",
+      "path": "/api/auteric/v1/checkouts/{checkout_id}/shipping-address",
+      "release_stage": "current",
+      "side_effect": "write"
+    },
+    {
+      "contract_version": "1.0.0",
+      "digest": "sha256:4b8d33005742920a938b24dc5b290a279fc452f8ca9d1f10bbaf4bf7f300719a",
+      "idempotency": "required",
+      "method": "PATCH",
+      "operation": "update_cart_item",
+      "path": "/api/auteric/v1/carts/{cart_id}/items/{line_id}",
+      "release_stage": "current",
+      "side_effect": "write"
+    },
+    {
+      "contract_version": "1.0.0",
+      "digest": "sha256:6d198a55a46e7a8e6523a4b4fdc812fd32b475fcb0cba72e117409e947c87dd2",
+      "idempotency": "required",
+      "method": "PATCH",
+      "operation": "update_checkout",
+      "path": "/api/auteric/v1/checkouts/{checkout_id}",
+      "release_stage": "current",
+      "side_effect": "write"
+    }
+  ],
+  "registry_version": "1.0.0"
+}

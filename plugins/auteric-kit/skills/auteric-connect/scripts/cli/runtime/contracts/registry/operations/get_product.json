@@ -1,0 +1,42 @@
+{
+  "bindings": {
+    "auteric_mcp": "get_product",
+    "ucp": "dev.ucp.shopping.catalog.lookup"
+  },
+  "concurrency": {
+    "applies_to": "none",
+    "mode": "none"
+  },
+  "contract_version": "1.0.0",
+  "description": "Read one current product or variant.",
+  "idempotency": "not_required",
+  "identity": "buyer_or_guest_principal",
+  "merchant_http": {
+    "method": "GET",
+    "path": "/api/auteric/v1/products/{product_id}"
+  },
+  "operation": "get_product",
+  "ownership": {
+    "resource": "none",
+    "rule": "public_catalog_read"
+  },
+  "release_stage": "current",
+  "requires": [
+    "reviewed_mapping",
+    "contract_test",
+    "policy",
+    "runtime_activation",
+    "ownership"
+  ],
+  "schemas": {
+    "input": "schemas/catalog/get_product.input.json",
+    "output": "schemas/catalog/get_product.output.json"
+  },
+  "side_effect": "read",
+  "test_scenarios": [
+    "happy: existing product returns authoritative product document",
+    "unknown product_id returns RESOURCE_NOT_FOUND",
+    "product_id path binding rejects malformed ids",
+    "hidden/unpublished products are not leaked to agents"
+  ]
+}

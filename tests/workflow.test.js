@@ -1,10 +1,10 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtempSync, realpathSync, chmodSync, symlinkSync, statSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, realpathSync, chmodSync, symlinkSync, statSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { atomicJSON, readJSON, cachedSession, lockProject, journal, sessionPath } from '../src/workflow.js';
-import { agentCommand, prepareWithAgent } from '../src/agent.js';
+import { atomicJSON, readJSON, cachedSession, connectionStatus, lockProject, journal, sessionPath } from '../src/workflow.js';
+import { adapterTelemetry, agentCommand, prepareWithAgent } from '../src/agent.js';
 const temporary = () => mkdtempSync(join(realpathSync(tmpdir()), 'auteric-workflow-'));
 test('private sessions reject expiration and broad permissions', () => {
   const path = join(temporary(), 'session.json');
@@ -22,6 +22,14 @@ test('state rejects symlink and preserves completed stages', () => {
   const target = join(root, 'target'); atomicJSON(target, {});
   const link = join(root, 'link'); symlinkSync(target, link);
   assert.throws(() => atomicJSON(link, {}), /symlink/);
+});
+test('connection status keeps a merchant-safe terminal diagnosis', () => {
+  const root = temporary();
+  connectionStatus(root, { status: 'running', phase: 'authentication', control_plane: 'https://control.example' });
+  const status = connectionStatus(root, { status: 'failed', failure_code: 'timeout', next_action: 'Retry after health checks.' });
+  assert.equal(status.phase, 'authentication');
+  assert.equal(status.failure_code, 'timeout');
+  assert.equal(readJSON(join(root, '.auteric/connection-status.json')).status, 'failed');
 });
 test('exclusive project lock prevents overlapping provisioning and releases', () => {
   const root = temporary(); const release = lockProject(root);
@@ -41,6 +49,24 @@ test('adapter prompt asks for uncovered operations while preserving verified cov
   assert.match(prompt, /api_inventory is the complete discovered API surface/);
   assert.match(prompt, /tool_eligible=true/);
   assert.match(prompt, /Never turn inventory_only, internal_dependency or blocked_by_policy entries into agent tools/);
+});
+test('adapter telemetry reports inventory, mappings, validation and discovery separately', () => {
+  const root = temporary(); const backend = join(root, 'api');
+  writeFileSync(join(root, 'placeholder'), '');
+  mkdirSync(join(backend, '.auteric'), { recursive: true });
+  mkdirSync(join(root, 'public/.well-known'), { recursive: true });
+  writeFileSync(join(backend, '.auteric/capabilities.json'), JSON.stringify({
+    inventory_summary: { api_endpoints: 57 },
+    capability_coverage: [{ operation: 'search_products', status: 'candidate' }, { operation: 'create_cart', status: 'candidate' }],
+  }));
+  writeFileSync(join(backend, '.auteric/connector.json'), JSON.stringify({ kind: 'rest', mappings: [{ operation: 'search_products' }, { operation: 'create_cart' }] }));
+  writeFileSync(join(backend, '.auteric/local-validation.json'), JSON.stringify({ status: 'local_contract_passed', tested_operations: ['search_products'] }));
+  writeFileSync(join(root, 'public/.well-known/ucp'), JSON.stringify({ ucp: { capabilities: { 'catalog.search': [{}] } }, auteric_mcp: { operations: ['search_products'] } }));
+  const telemetry = adapterTelemetry(root, backend, ['search_products']);
+  assert.equal(telemetry.inventory.endpoints, 57);
+  assert.deepEqual(telemetry.connector.added_operations, ['create_cart']);
+  assert.equal(telemetry.validation.status, 'local_contract_passed');
+  assert.deepEqual(telemetry.discovery.mcp_operations, ['search_products']);
 });
 test('missing assistant returns an actionable terminal result', async () => {
   const path = process.env.PATH; process.env.PATH = '';

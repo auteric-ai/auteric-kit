@@ -1,0 +1,43 @@
+{
+  "bindings": {
+    "auteric_mcp": "remove_from_cart",
+    "ucp": "dev.ucp.shopping.cart"
+  },
+  "concurrency": {
+    "applies_to": "cart",
+    "mode": "resource_revision"
+  },
+  "contract_version": "1.0.0",
+  "description": "Remove an existing cart line.",
+  "idempotency": "required",
+  "identity": "buyer_or_guest_principal",
+  "merchant_http": {
+    "method": "DELETE",
+    "path": "/api/auteric/v1/carts/{cart_id}/items/{line_id}"
+  },
+  "operation": "remove_from_cart",
+  "ownership": {
+    "resource": "cart",
+    "rule": "principal_must_own_cart"
+  },
+  "release_stage": "current",
+  "requires": [
+    "reviewed_mapping",
+    "contract_test",
+    "policy",
+    "runtime_activation",
+    "ownership",
+    "idempotency"
+  ],
+  "schemas": {
+    "input": "schemas/cart/remove_from_cart.input.json",
+    "output": "schemas/cart/remove_from_cart.output.json"
+  },
+  "side_effect": "write",
+  "test_scenarios": [
+    "happy: line removed and totals recomputed",
+    "idempotent retry after success returns stored result, not an error",
+    "foreign line_id returns RESOURCE_NOT_FOUND",
+    "stale expected_revision returns REVISION_CONFLICT"
+  ]
+}

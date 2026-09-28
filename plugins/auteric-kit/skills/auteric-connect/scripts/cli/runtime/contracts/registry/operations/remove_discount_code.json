@@ -1,0 +1,43 @@
+{
+  "bindings": {
+    "auteric_mcp": "remove_discount_code",
+    "ucp": "dev.ucp.shopping.discount"
+  },
+  "concurrency": {
+    "applies_to": "cart",
+    "mode": "resource_revision"
+  },
+  "contract_version": "1.0.0",
+  "description": "Remove a discount code from an agent-owned cart.",
+  "idempotency": "required",
+  "identity": "buyer_or_guest_principal",
+  "merchant_http": {
+    "method": "DELETE",
+    "path": "/api/auteric/v1/carts/{cart_id}/discount-codes/{code}"
+  },
+  "operation": "remove_discount_code",
+  "ownership": {
+    "resource": "cart",
+    "rule": "principal_must_own_cart"
+  },
+  "release_stage": "current",
+  "requires": [
+    "reviewed_mapping",
+    "contract_test",
+    "policy",
+    "runtime_activation",
+    "ownership",
+    "idempotency"
+  ],
+  "schemas": {
+    "input": "schemas/cart/remove_discount_code.input.json",
+    "output": "schemas/cart/remove_discount_code.output.json"
+  },
+  "side_effect": "write",
+  "test_scenarios": [
+    "happy: code removed and totals recomputed",
+    "code not present on cart returns RESOURCE_NOT_FOUND",
+    "stale expected_revision returns REVISION_CONFLICT",
+    "idempotent retry returns stored result"
+  ]
+}

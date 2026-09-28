@@ -1,0 +1,43 @@
+{
+  "bindings": {
+    "auteric_mcp": "apply_discount_code",
+    "ucp": "dev.ucp.shopping.discount"
+  },
+  "concurrency": {
+    "applies_to": "cart",
+    "mode": "resource_revision"
+  },
+  "contract_version": "1.0.0",
+  "description": "Apply a merchant-validated discount code to an agent-owned cart.",
+  "idempotency": "required",
+  "identity": "buyer_or_guest_principal",
+  "merchant_http": {
+    "method": "POST",
+    "path": "/api/auteric/v1/carts/{cart_id}/discount-codes"
+  },
+  "operation": "apply_discount_code",
+  "ownership": {
+    "resource": "cart",
+    "rule": "principal_must_own_cart"
+  },
+  "release_stage": "current",
+  "requires": [
+    "reviewed_mapping",
+    "contract_test",
+    "policy",
+    "runtime_activation",
+    "ownership",
+    "idempotency"
+  ],
+  "schemas": {
+    "input": "schemas/cart/apply_discount_code.input.json",
+    "output": "schemas/cart/apply_discount_code.output.json"
+  },
+  "side_effect": "write",
+  "test_scenarios": [
+    "happy: valid code applied, discount_total and total recomputed",
+    "invalid/expired code returns INVALID_INPUT with no state change",
+    "merchant policy may disable discounts: CAPABILITY_DISABLED",
+    "idempotent retry does not stack the discount twice"
+  ]
+}

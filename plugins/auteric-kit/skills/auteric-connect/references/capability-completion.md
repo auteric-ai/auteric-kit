@@ -20,7 +20,9 @@ operation, test result and publication status. Distinguish:
 - present in merchant code but unsupported by the current Auteric protocol runtime;
 - sandbox-only or not present.
 
-The current runtime supports eleven canonical operations, not every UCP domain.
+The current runtime supports twenty canonical operations spanning catalog, cart,
+checkout completion, order confirmation, discount and fulfillment. It still does
+not claim every optional UCP extension.
 Do not stop after catalog if safe cart APIs can be mapped, but do not claim order,
 refund, discount, fulfillment or payment protocol support merely because the store
 has routes for them. Explain platform gaps as platform gaps.

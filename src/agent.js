@@ -2,7 +2,7 @@ import { spawn } from 'node:child_process';
 import { accessSync, constants, readFileSync, existsSync } from 'node:fs';
 import { join, delimiter } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { atomicJSON, journal } from './workflow.js';
+import { atomicJSON, connectionStatus, journal } from './workflow.js';
 
 export function availableCommand(name, env = process.env) {
   return (env.PATH || '').split(delimiter).map(dir => join(dir, name)).find(path => {
@@ -25,8 +25,8 @@ export function adapterPrompt(root, backend, apiOrigin, missingOperations = []) 
   return `${skill}\n\nAUTERIC CONNECT AUTOMATED ADAPTER TASK\n` +
     `Repository: ${JSON.stringify(root)}\nBackend: ${JSON.stringify(backend)}\nMerchant API origin: ${JSON.stringify(apiOrigin)}\n` +
     `The owner asked to connect this store. Prepare a real adapter now; do not stop at a plan.\n` +
-    `Read the capability report at ${JSON.stringify(join(backend, '.auteric/capabilities.json'))}. Its api_inventory is the complete discovered API surface; use it to understand dependencies and boundaries, but create mappings only from candidates explicitly carrying a supported canonical operation and tool_eligible=true.\n` +
-    `Never turn inventory_only, internal_dependency or blocked_by_policy entries into agent tools. Auth/session APIs may be used internally for ownership, while admin, payment, refund, webhook and sandbox-completion APIs stay unexposed.\n` +
+    `Read the capability report at ${JSON.stringify(join(backend, '.auteric/capabilities.json'))}, including capability_contract_pool. Its api_inventory is the complete discovered API surface; select only current registry contracts from candidates explicitly carrying a supported canonical operation and tool_eligible=true. Planned contracts are inventory only.\n` +
+    `Never turn inventory_only, internal_dependency or blocked_by_policy entries into agent tools. Auth/session APIs may be used internally for ownership, while admin, standalone payment, refund, webhook and sandbox-only completion APIs stay unexposed. A real complete_checkout binding needs an existing configured payment handler and must produce an order readable through get_order.\n` +
     `An existing connector may cover only part of the store. Preserve its verified operations and complete every additionally supportable canonical operation. Requested gaps: ${JSON.stringify(missingOperations)}.\n` +
     `Write ${JSON.stringify(join(backend, '.auteric/connector.json'))} with kind=rest, base_url, allowed_paths, approved_mapping_digests (may be empty; deterministic validation will pin them), mappings and test_inputs.\n` +
     `REST mappings use operation, method, path, request:{path/query/body:{target:{source:canonical_field}}}, response_root (optional), response:{canonical_field:{source:merchant_field}}.\n` +
@@ -37,8 +37,53 @@ export function adapterPrompt(root, backend, apiOrigin, missingOperations = []) 
     `Preserve merchant source; only add adapter/config/test files. The parent CLI executes independent contract and MCP tests after you exit.\n`;
 }
 
+function mappingOperations(connector) {
+  if (!connector) return [];
+  const mappings = Array.isArray(connector.mappings) ? connector.mappings : [];
+  const declared = Array.isArray(connector.supported_operations) ? connector.supported_operations : [];
+  return [...new Set([...mappings.map(item => item?.operation), ...declared].filter(Boolean))].sort();
+}
+
+function safeJSON(path) {
+  try { return JSON.parse(readFileSync(path, 'utf8')); } catch { return null; }
+}
+
+export function adapterTelemetry(root, backend, startedOperations = []) {
+  const inventory = safeJSON(join(backend, '.auteric/capabilities.json')) || {};
+  const summary = inventory.inventory_summary || {};
+  const candidates = (inventory.capability_coverage || []).filter(item => item.status === 'candidate').map(item => item.operation);
+  const connector = safeJSON(join(backend, '.auteric/connector.json'));
+  const operations = mappingOperations(connector);
+  const added = operations.filter(operation => !startedOperations.includes(operation));
+  const validation = safeJSON(join(backend, '.auteric/local-validation.json'));
+  const ucp = safeJSON(join(root, 'public/.well-known/ucp')) || safeJSON(join(root, '.well-known/ucp'));
+  const capabilities = Object.keys(ucp?.ucp?.capabilities || {}).sort();
+  return {
+    phase: connector ? 'adapter_configured' : 'agent_reviewing_source',
+    inventory: { endpoints: summary.api_endpoints ?? summary.total_endpoints ?? inventory.api_inventory?.length ?? 0, contract_candidates: candidates.length, candidates },
+    connector: { configured: Boolean(connector), kind: connector?.kind || null, mapped_operations: operations, added_operations: added },
+    validation: validation ? { status: validation.status, tested_operations: validation.tested_operations || [] } : { status: 'pending' },
+    discovery: ucp ? { status: 'present', capabilities, mcp_operations: ucp.auteric_mcp?.operations || [] } : { status: 'not_prepared' },
+  };
+}
+
+function progressLine(seconds, telemetry) {
+  const { inventory, connector, validation, discovery } = telemetry;
+  const mapped = connector.mapped_operations.length;
+  const additions = connector.added_operations.length ? `; added ${connector.added_operations.join(', ')}` : '';
+  const wellKnown = discovery.status === 'present'
+    ? `${discovery.capabilities.length} UCP capabilities / ${discovery.mcp_operations.length} MCP operations`
+    : 'pending adapter validation and authenticated discovery';
+  return `Adapter progress (${seconds}s): inspected ${inventory.endpoints} APIs; ${inventory.contract_candidates} current contract candidates; ` +
+    `connector ${connector.configured ? `${connector.kind} with ${mapped} mapped operations${additions}` : 'not written yet'}; ` +
+    `validation ${validation.status}; well-known ${wellKnown}.`;
+}
+
 export async function prepareWithAgent(root, backend, apiOrigin, provider = 'auto', { timeoutMs = 600000, missingOperations = [] } = {}) {
-  if (process.env.AUTERIC_AGENT_TASK === '1') return { status: 'recursive_agent_blocked' };
+  if (process.env.AUTERIC_AGENT_TASK === '1') {
+    connectionStatus(root, { phase: 'adapter', status: 'recursive_agent_blocked', outcome: 'incomplete', next_action: 'Finish the current coding-agent task, then rerun Connect.' });
+    return { status: 'recursive_agent_blocked' };
+  }
   const prompt = adapterPrompt(root, backend, apiOrigin, missingOperations);
   const providers = provider === 'auto' ? ['codex', 'claude', 'cursor', 'copilot'] : [provider];
   let selected;
@@ -48,10 +93,17 @@ export async function prepareWithAgent(root, backend, apiOrigin, provider = 'aut
     const executable = command.names.map(n => availableCommand(n)).find(Boolean);
     if (executable) { selected = { ...command, executable, provider: name }; break; }
   }
-  if (!selected) return { status: 'assistant_unavailable', supported: ['codex', 'claude', 'cursor', 'copilot'] };
+  if (!selected) {
+    connectionStatus(root, { phase: 'adapter', status: 'assistant_unavailable', outcome: 'incomplete', next_action: 'Install or select a supported coding assistant, or add the connector manually.' });
+    return { status: 'assistant_unavailable', supported: ['codex', 'claude', 'cursor', 'copilot'] };
+  }
   journal(root, 'adapter', 'running', { assistant: selected.provider });
+  connectionStatus(root, { phase: 'adapter', status: 'assistant_running', assistant: selected.provider, next_action: 'The coding assistant is inspecting the merchant API and preparing an adapter.' });
+  const initialTelemetry = adapterTelemetry(root, backend);
+  const startedOperations = initialTelemetry.connector.mapped_operations;
   console.log(`Preparing the missing adapter with ${selected.provider}. Your assistant account and its normal permissions apply.`);
   console.log('The assistant may send project context to its model provider. Auteric account credentials are not passed to it.');
+  console.log(progressLine(0, initialTelemetry));
   const started = Date.now();
   const result = await new Promise(resolve => {
     const env = { ...process.env, AUTERIC_AGENT_TASK: '1' };
@@ -60,7 +112,19 @@ export async function prepareWithAgent(root, backend, apiOrigin, provider = 'aut
     let timeout = false, interrupted = false, killTimer;
     // Never relay raw agent output: it can contain source, credentials or prompts.
     child.stdout.resume(); child.stderr.resume();
-    const progress = setInterval(() => console.log(`Adapter preparation still running (${Math.round((Date.now() - started) / 1000)}s).`), 30000);
+    const reportProgress = () => {
+      const telemetry = adapterTelemetry(root, backend, startedOperations);
+      const elapsedSeconds = Math.round((Date.now() - started) / 1000);
+      atomicJSON(join(root, '.auteric/assistant-run.json'), {
+        status: 'assistant_running', provider: selected.provider, duration_ms: Date.now() - started,
+        independently_validated: false, telemetry,
+      });
+      connectionStatus(root, { phase: 'adapter', status: 'assistant_running', assistant: selected.provider,
+        assistant_duration_ms: Date.now() - started, adapter_telemetry: telemetry,
+        next_action: 'The coding assistant is still preparing the adapter; wait for a terminal status.' });
+      console.log(progressLine(elapsedSeconds, telemetry));
+    };
+    const progress = setInterval(reportProgress, 30000);
     const stop = () => { child.kill('SIGTERM'); killTimer = setTimeout(() => child.kill('SIGKILL'), 2000); };
     const interrupt = () => { interrupted = true; stop(); };
     const timer = setTimeout(() => { timeout = true; stop(); }, timeoutMs);
@@ -74,10 +138,21 @@ export async function prepareWithAgent(root, backend, apiOrigin, provider = 'aut
     child.once('close', code => finish({ status: interrupted ? 'assistant_interrupted' : timeout ? 'assistant_timeout' : code === 0 ? 'assistant_finished' : 'assistant_failed', exit_code: code }));
     child.stdin.on('error', () => {}); child.stdin.end(selected.stdin);
   });
+  const telemetry = adapterTelemetry(root, backend, startedOperations);
   const report = { ...result, provider: selected.provider, duration_ms: Date.now() - started,
-    connector_written: existsSync(join(backend, '.auteric/connector.json')), independently_validated: false };
+    connector_written: existsSync(join(backend, '.auteric/connector.json')), independently_validated: false, telemetry };
   atomicJSON(join(root, '.auteric/assistant-run.json'), report);
   journal(root, 'adapter', result.status);
+  connectionStatus(root, {
+    phase: 'adapter', status: result.status, assistant: selected.provider,
+    assistant_duration_ms: report.duration_ms, adapter_telemetry: telemetry,
+    outcome: result.status === 'assistant_finished' ? 'adapter_pending_validation' : 'incomplete',
+    next_action: result.status === 'assistant_timeout'
+      ? 'The coding assistant timed out. Inspect .auteric/assistant-run.json and rerun Connect after addressing the incomplete adapter.'
+      : result.status === 'assistant_finished'
+        ? 'Connect will now validate the adapter independently.'
+        : 'Inspect .auteric/assistant-run.json before retrying the adapter step.',
+  });
   if (result.status === 'assistant_interrupted') throw Error('Adapter preparation was interrupted. No connection was created.');
   return report;
 }

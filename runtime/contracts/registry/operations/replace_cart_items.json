@@ -1,0 +1,43 @@
+{
+  "bindings": {
+    "auteric_mcp": "replace_cart_items",
+    "ucp": "dev.ucp.shopping.cart"
+  },
+  "concurrency": {
+    "applies_to": "cart",
+    "mode": "resource_revision"
+  },
+  "contract_version": "1.0.0",
+  "description": "Atomically replace cart contents.",
+  "idempotency": "required",
+  "identity": "buyer_or_guest_principal",
+  "merchant_http": {
+    "method": "PUT",
+    "path": "/api/auteric/v1/carts/{cart_id}/items"
+  },
+  "operation": "replace_cart_items",
+  "ownership": {
+    "resource": "cart",
+    "rule": "principal_must_own_cart"
+  },
+  "release_stage": "current",
+  "requires": [
+    "reviewed_mapping",
+    "contract_test",
+    "policy",
+    "runtime_activation",
+    "ownership",
+    "idempotency"
+  ],
+  "schemas": {
+    "input": "schemas/cart/replace_cart_items.input.json",
+    "output": "schemas/cart/replace_cart_items.output.json"
+  },
+  "side_effect": "write",
+  "test_scenarios": [
+    "happy: cart contents replaced atomically",
+    "any unavailable item fails the whole replace (no partial mutation)",
+    "stale expected_revision returns REVISION_CONFLICT",
+    "idempotent retry with same action_id returns the same cart state"
+  ]
+}
