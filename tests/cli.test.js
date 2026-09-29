@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { existsSync, mkdirSync, mkdtempSync, realpathSync, readFileSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { apiUrl, detectLocalStoreUrl, existingDiscoveryDigest, inspect, localStoreUrl, localTestDomain, nativeBindingDigest, nativeReference, NATIVE_PHASE1_OPERATIONS, prepareBuiltDiscovery, prepareDiscovery, resolveProjectLayout, run, uncoveredOperations, verifyLocalWithRetry } from '../src/cli.js';
+import { apiUrl, detectLocalStoreUrl, existingDiscoveryDigest, inspect, localStoreUrl, localTestDomain, nativeBindingDigest, nativeReference, NATIVE_PHASE1_OPERATIONS, prepareBuiltDiscovery, prepareDiscovery, resolveProjectLayout, run, serviceErrorMessage, uncoveredOperations, validateConnectOptions, verifyLocalWithRetry } from '../src/cli.js';
 import { renderTerminalProgressLine, terminalColor } from '../src/progress.js';
 
 test('terminal status colours are applied only when a terminal supports them', () => {
@@ -21,6 +21,22 @@ test('localhost mode permits loopback only and cloud requires HTTPS', () => {
   assert.throws(() => apiUrl({ localhost: true, 'api-url': 'http://localhost:8100/path' }), /origin/);
   assert.equal(localStoreUrl('http://127.0.0.1:5500'), 'http://127.0.0.1:5500');
   assert.throws(() => localStoreUrl('http://example.com:5500'), /loopback/);
+});
+
+test('service errors preserve FastAPI validation details', () => {
+  assert.equal(serviceErrorMessage({ detail: [{ loc: ['body', 'approval_mode'], msg: 'Extra inputs are not permitted' }] }),
+    'body.approval_mode: Extra inputs are not permitted');
+  assert.equal(serviceErrorMessage({ detail: 'Not authorized' }), 'Not authorized');
+});
+
+test('public-store option errors leave no Connect state behind', async () => {
+  const root = mkdtempSync(join(realpathSync(tmpdir()), 'auteric-public-options-'));
+  assert.throws(() => validateConnectOptions({ domain: 'shop.example', 'store-url': 'https://shop.example' }), /local-only/);
+  await assert.rejects(
+    run(['connect', '--domain', 'shop.example', '--store-url', 'https://shop.example'], root),
+    /local-only/
+  );
+  assert.equal(existsSync(join(root, '.auteric', 'connection-status.json')), false);
 });
 
 test('local store has a stable non-public test identifier without a domain', async () => {

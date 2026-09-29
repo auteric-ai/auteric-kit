@@ -91,6 +91,13 @@ export function localStoreUrl(value) {
   return url.origin;
 }
 
+export function validateConnectOptions(options = {}) {
+  const localSession = Boolean(options.localhost || options['local-storefront']);
+  if (options['store-url'] && !localSession)
+    throw Error('--store-url is local-only. Remove it for a public store and use --domain store.example.com.');
+  return localSession;
+}
+
 const LOCAL_STOREFRONT_PORTS = [9020, 5173, 3000, 3001, 8080, 8000, 5500];
 
 /** Find one running merchant origin without accepting any non-loopback host. */
@@ -286,8 +293,23 @@ async function request(base, path, { method = 'GET', body, token } = {}) {
     }, body: body ? JSON.stringify(body) : undefined, signal: AbortSignal.timeout(12000), redirect: 'error' });
   } catch { throw Error(`Cannot contact ${base}. Start the Commerce service or check its URL.`); }
   const data = await response.json().catch(() => ({}));
-  if (!response.ok) throw Error(`${response.status} ${typeof data.detail === 'string' ? data.detail : 'Service request failed'}`);
+  if (!response.ok) throw Error(`${response.status} ${serviceErrorMessage(data)}`);
   return data;
+}
+
+export function serviceErrorMessage(data = {}) {
+  if (typeof data.detail === 'string' && data.detail) return data.detail;
+  if (Array.isArray(data.detail)) {
+    const detail = data.detail
+      .map(issue => {
+        const location = Array.isArray(issue?.loc) ? issue.loc.join('.') : '';
+        return [location, issue?.msg].filter(Boolean).join(': ');
+      })
+      .filter(Boolean)
+      .join('; ');
+    if (detail) return detail;
+  }
+  return 'Service request failed';
 }
 
 function activityEnabled(options = {}) {
@@ -875,11 +897,10 @@ async function connectServiceFirst(root, options, context) {
 async function connect(root, options) {
   const base = apiUrl(options);
   const platform = normalizeStorePlatform(options.platform || 'custom');
-  const localSession = Boolean(options.localhost || options['local-storefront']);
+  const localSession = validateConnectOptions(options);
   const storeUrl = options['store-url']
     ? localStoreUrl(options['store-url'])
     : options['local-storefront'] ? await detectLocalStoreUrl() : null;
-  if (storeUrl && !localSession) throw Error('--store-url is only available with --localhost or --local-storefront');
   connectionStatus(root, { control_plane: base, local_storefront: storeUrl, mode: localSession ? 'local_sandbox' : 'cloud' });
   const layout = resolveProjectLayout(root, options);
   const project = inspect(layout.frontend);
@@ -1207,6 +1228,7 @@ export async function run(argv, root = process.cwd()) {
   }
   if (command === 'connect') {
     if (options['dry-run']) return connect(root, options);
+    validateConnectOptions(options);
     connectionStatus(root, { version: 1, run_id: randomBytes(12).toString('hex'), status: 'running', phase: 'starting', outcome: 'pending', started_at: new Date().toISOString(), next_action: 'Connect is running. Follow the current phase and complete pairing when requested.' });
     const release = lockProject(root);
     try { return await connect(root, options); }
