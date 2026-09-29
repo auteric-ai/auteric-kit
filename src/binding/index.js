@@ -9,6 +9,11 @@ import { generateGo } from './generators/go.js';
 import { buildManifest, readManifest, writeManifestIfChanged, MANIFEST_PATH } from './manifest.js';
 import { reconcile } from './reconcile.js';
 import { validateInstallation } from './validate.js';
+import {
+  ADAPTER_CANDIDATES_PATH, ADAPTER_SELECTION_PATH, approveCandidateSet,
+  buildCandidateSet, normalizeStorePlatform, readAdapterSelection,
+  validateAdapterSelection, writeJsonIfChanged,
+} from './selection.js';
 
 export { planBindings } from './plan.js';
 export { generateNode } from './generators/node.js';
@@ -18,6 +23,11 @@ export { buildManifest, readManifest, writeManifestIfChanged, MANIFEST_PATH, sdk
 export { reconcile, symbolDrift } from './reconcile.js';
 export { validateInstallation } from './validate.js';
 export { addMarker, splitMarker, markerValid, bindingDigest, sha256Hex } from './util.js';
+export {
+  ADAPTER_CANDIDATES_PATH, ADAPTER_SELECTION_PATH, STORE_PLATFORMS,
+  approveCandidateSet, buildCandidateSet, normalizeStorePlatform,
+  platformAdapter, readAdapterSelection, validateAdapterSelection,
+} from './selection.js';
 
 const GENERATORS = { node: generateNode, python: generatePython, go: generateGo };
 
@@ -30,14 +40,27 @@ export function generate(plan, context = {}) {
 export async function bindRepo(root, options = {}) {
   root = resolve(root);
   const report = options.report || await inventoryRepo(root, { backendDir: options.backendDir, registryDir: options.registryDir });
-  const plan = planBindings(report, { root, registryDir: options.registryDir });
+  const platform = normalizeStorePlatform(options.platform || 'custom');
+  const proposedPlan = planBindings(report, { root, registryDir: options.registryDir });
+  const candidateSet = buildCandidateSet(proposedPlan, { platform });
+  const candidatesWritten = writeJsonIfChanged(root, ADAPTER_CANDIDATES_PATH, candidateSet);
+  let selection = options.selection || readAdapterSelection(root);
+  if (options.approveCandidates) {
+    selection = approveCandidateSet(candidateSet, options.approvedBy || 'merchant-cli');
+    writeJsonIfChanged(root, ADAPTER_SELECTION_PATH, selection, 0o600);
+  }
+  const selectionValidation = validateAdapterSelection(selection, candidateSet);
+  const approvedCandidateIds = selectionValidation.ok ? selectionValidation.approved : new Set();
+  const plan = options.requireMerchantSelection
+    ? planBindings(report, { root, registryDir: options.registryDir, requireMerchantSelection: true, approvedCandidateIds })
+    : proposedPlan;
   const artifacts = generate(plan, { root });
   const previous = readManifest(root);
   const reconciliation = reconcile(root, artifacts, previous, plan);
   const manifest = buildManifest(plan, { root, reconcileActions: reconciliation.actions });
   const manifestWritten = writeManifestIfChanged(root, manifest);
   const validation = validateInstallation(root, { registryDir: options.registryDir });
-  const writes = reconciliation.actions.filter(action => ['written', 'regenerated'].includes(action.action)).length + (manifestWritten ? 1 : 0);
+  const writes = reconciliation.actions.filter(action => ['written', 'regenerated'].includes(action.action)).length + (manifestWritten ? 1 : 0) + (candidatesWritten ? 1 : 0);
   return {
     report,
     plan,
@@ -52,7 +75,11 @@ export async function bindRepo(root, options = {}) {
       files_written: writes,
       revalidation_required: reconciliation.revalidation_required,
       pending: plan.decisions.length > 0 || !validation.ok,
+      platform,
+      selection_required: Boolean(options.requireMerchantSelection && !selectionValidation.ok),
     },
+    candidateSet,
+    selection: { present: Boolean(selection), ...selectionValidation, approved: [...approvedCandidateIds] },
   };
 }
 

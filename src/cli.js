@@ -2,9 +2,13 @@ import { prepareWithAgent } from './agent.js';
 import { atomicJSON, journal, lockProject, sessionPath, cachedSession, projectDigest, readJSON, connectionStatus } from './workflow.js';
 import { sdk } from './sdk.js';
 import { inventoryRepo } from './inventory/index.js';
-import { bindRepo, bindingSummaryLines, validateInstallation } from './binding/index.js';
+import { bindRepo, bindingSummaryLines, normalizeStorePlatform, platformAdapter, validateInstallation } from './binding/index.js';
 import { loadOperationsRegistry } from './inventory/operations.js';
 import { runAcceptance, acceptanceSummaryLines } from './acceptance/index.js';
+import {
+  CUSTOM_MVP_OPERATIONS, prepareServiceFirstBundle, serviceFirstBindingDigest,
+  serviceFirstOperationEvidence, serviceFirstSupport, verifyStandardMerchantBridge,
+} from './sidecar/bundle.js';
 import { cliProgress, fraction, terminalColor } from './progress.js';
 import { createHash, randomBytes } from 'node:crypto';
 import { existsSync, lstatSync, mkdirSync, readFileSync, readdirSync, realpathSync, writeFileSync, unlinkSync } from 'node:fs';
@@ -55,9 +59,9 @@ function parse(argv) {
       throw Error(`Unknown argument: ${arg}`);
     }
     const [name, value] = arg.slice(2).split('=', 2);
-    if (['localhost', 'local-storefront', 'approve-publication', 'dry-run', 'yes', 'no-browser', 'serve', 'no-agent', 'skip-project-checks', 'quiet', 'json'].includes(name)) {
+    if (['localhost', 'local-storefront', 'approve-publication', 'approve-adapters', 'dry-run', 'yes', 'no-browser', 'serve', 'no-agent', 'skip-project-checks', 'quiet', 'json'].includes(name)) {
       options[name] = true;
-    } else if (['api-url', 'domain', 'agent', 'store-url', 'backend', 'frontend', 'backend-url', 'port'].includes(name)) {
+    } else if (['api-url', 'domain', 'agent', 'store-url', 'backend', 'frontend', 'backend-url', 'port', 'platform', 'approved-by'].includes(name)) {
       options[name] = value ?? tail[++i];
       if (!options[name]) throw Error(`--${name} needs a value`);
     } else throw Error(`Unknown flag: --${name}`);
@@ -411,15 +415,16 @@ async function authenticate(base, options) {
   const verifier = randomBytes(32).toString('base64url');
   const state = randomBytes(32).toString('base64url');
   const challenge = createHash('sha256').update(verifier).digest('base64url');
-  const session = await request(base, '/api/commerce/cli/start', { method: 'POST', body: { challenge, state } });
+  const approvalMode = options['no-browser'] ? 'device' : 'browser';
+  const session = await request(base, '/api/commerce/cli/start', {
+    method: 'POST', body: { challenge, state, approval_mode: approvalMode },
+  });
   const link = new URL(session.authorization_url);
   if (link.origin !== base || link.pathname !== '/cli/authorize') throw Error('Unexpected authorization URL from control plane');
-  console.log(`Open this Auteric sign-in page:\n${link.href}`);
-  if (session.user_code) {
+  console.log(`${options['no-browser'] ? 'Open' : 'Opening'} this Auteric sign-in page:\n${link.href}`);
+  if (approvalMode === 'device') {
     if (!/^\d{4}-\d{4}$/.test(session.user_code)) throw Error('Invalid pairing code from control plane');
     console.log(`Merchant ID (one-time pairing code): ${session.user_code}`);
-  } else {
-    console.log('This control plane has not enabled CLI pairing codes yet.');
   }
   if (!options['no-browser']) openBrowser(link.href);
   const deadline = Math.min(session.expires_at * 1000, Date.now() + 300000);
@@ -570,6 +575,7 @@ function assertNativeRuntimeConfig(config, { storeId, environment, endpoint, bin
 }
 
 async function authenticatedStore(base, root, domain, project, layout, options, localSession) {
+  const platform = normalizeStorePlatform(options.platform || 'custom');
   const authPath = sessionPath(root, base, domain);
   let auth = cachedSession(authPath);
   if (auth) {
@@ -592,14 +598,15 @@ async function authenticatedStore(base, root, domain, project, layout, options, 
   if (!store) {
     store = await activity('Creating the Auteric Store', () => request(base, '/api/commerce/stores', {
       method: 'POST', token: auth.access_token,
-      body: { domain, name: domain, platform: 'custom', environment: localSession ? 'sandbox' : 'production' },
+      body: { domain, name: domain, platform, environment: localSession ? 'sandbox' : 'production' },
     }), options);
   }
+  if ((store.platform || 'custom') !== platform) throw Error(`Saved Store platform is ${store.platform || 'custom'}, not ${platform}`);
   const state = {
     ...previous, api_url: base, domain, store_id: store.id, framework: project.framework,
     backend_dir: layout.backendRelative, frontend_dir: layout.frontendRelative,
     mode: localSession ? 'local' : 'cloud', local_only: Boolean(localSession && !options.domain),
-    status: 'store_registered',
+    status: 'store_registered', platform, adapter: platformAdapter(platform),
   };
   mkdirSync(resolve(configPath(root), '..'), { recursive: true });
   atomicJSON(configPath(root), state);
@@ -781,8 +788,93 @@ async function connectNativeReference(root, options, { base, layout, project, do
   return state;
 }
 
+async function connectServiceFirst(root, options, context) {
+  const { base, layout, project, domain, localSession, storeUrl, backendUrl, inventory } = context;
+  if (options['skip-project-checks']) throw Error('Service-First installation requires merchant test and build validation; --skip-project-checks is not allowed.');
+  const checks = await runProjectValidation(layout, options);
+  recordConnection(root, 'service_first_validation', 'running', { operations: CUSTOM_MVP_OPERATIONS });
+  let verification = [];
+  if (localSession) {
+    if (!storeUrl) throw Error('Service-First sandbox verification requires --store-url or --local-storefront');
+    verification = await activity('Testing catalog, cart and pre-payment checkout through the merchant API',
+      () => verifyStandardMerchantBridge(storeUrl), options);
+  }
+  const { auth, store, state } = await authenticatedStore(base, root, domain, project, layout, options, localSession);
+  const bindingDigest = serviceFirstBindingDigest();
+  // The registered endpoint is the merchant origin that will reverse-proxy
+  // /api/auteric/v1 after deployment. Even a local sandbox registration uses
+  // its non-public test hostname; loopback execution is verification evidence,
+  // not the deployment identity.
+  const endpoint = `https://${domain}`;
+  const operations = serviceFirstOperationEvidence(bindingDigest);
+  const installation = await activity('Registering the Service-First sidecar installation', () => request(
+    base, `/api/commerce/stores/${encodeURIComponent(store.id)}/installations`, {
+      method: 'POST', token: auth.access_token,
+      body: {
+        environment: store.environment || (localSession ? 'sandbox' : 'production'),
+        transport: 'native_http', endpoint,
+        native_runtime: { runtime_kind: 'sidecar', binding_digest: bindingDigest, trusted_proxy_prefix: null, max_body_bytes: 1048576 },
+        protocol_version: '1', sdk_version: 'merchant-sidecar/0.1.0',
+        release_id: bindingDigest.slice(7, 31), operations,
+      },
+    }), options);
+  const runtimeConfig = await activity('Fetching pinned sidecar trust configuration', () => request(
+    base, `/api/commerce/stores/${encodeURIComponent(store.id)}/installations/${encodeURIComponent(installation.id)}/native-runtime-config`,
+    { token: auth.access_token },
+  ), options);
+  if (runtimeConfig?.installation?.bindingDigest !== bindingDigest || runtimeConfig?.installation?.storeId !== store.id) {
+    throw Error('Control plane returned a sidecar runtime configuration for a different binding or Store');
+  }
+  const bundle = prepareServiceFirstBundle(layout.backend, {
+    runtimeConfig, merchantBaseUrl: backendUrl, operations: CUSTOM_MVP_OPERATIONS, verification,
+    releaseId: installation.release_id,
+  });
+  for (const operation of CUSTOM_MVP_OPERATIONS) {
+    await request(base, `/api/commerce/stores/${encodeURIComponent(store.id)}/capabilities/${encodeURIComponent(operation)}/enable`, {
+      method: 'POST', token: auth.access_token,
+    });
+  }
+  const health = await request(base, `/api/commerce/stores/${encodeURIComponent(store.id)}/connection-health`, { token: auth.access_token });
+  if (health?.checks?.policies?.state !== 'active') {
+    const policy = await request(base, `/api/commerce/stores/${encodeURIComponent(store.id)}/policy`, { token: auth.access_token });
+    await request(base, `/api/commerce/stores/${encodeURIComponent(store.id)}/policy`, {
+      method: 'PUT', token: auth.access_token, body: policy,
+    });
+  }
+  const discovery = await activity('Preparing signed UCP for the deployable sidecar', () => request(
+    base, `/api/commerce/stores/${encodeURIComponent(store.id)}/discovery`, { token: auth.access_token },
+  ), options);
+  const previousDigest = state.discovery_digest || existingDiscoveryDigest(layout.frontend, project.framework, store.id);
+  const prepared = prepareDiscovery(layout.frontend, project.framework, discovery.document, { previousDigest });
+  const built = prepareBuiltDiscovery(layout.frontend, discovery.document, previousDigest);
+  Object.assign(state, {
+    discovery_digest: createHash('sha256').update(JSON.stringify(discovery.document, null, 2) + '\n').digest('hex'),
+    mcp_url: discovery.document.auteric_mcp?.endpoint,
+    integration: 'service_first_sidecar', status: 'deployment_pending',
+    tested_operations: verification.map(item => item.operation),
+    sidecar_installation_id: installation.id, sidecar_bundle: bundle.directory,
+    project_validation: checks.status, adapter_profile: serviceFirstSupport(inventory).profile,
+    public_discovery_verified: false,
+  });
+  atomicJSON(configPath(root), state);
+  recordConnection(root, 'deployment', 'pending', {
+    outcome: 'deployment_pending', transport: 'native_http', installation_id: installation.id,
+    bundle: bundle.directory, ucp: prepared.path,
+    next_action: 'Deploy the generated bridge and sidecar bundle with this merchant release, then run Connection Test.',
+  });
+  try { await completeBrowserPairing(base, auth, store.id); } catch (error) {
+    console.log(`Dashboard handoff is unavailable; open ${base}/console?store=${encodeURIComponent(store.id)}&onboarding=connection-test`);
+  }
+  console.log(`Service-First bundle prepared at ${bundle.directory}.`);
+  console.log(`Signed UCP prepared at ${prepared.path}.${built ? ` Built copy: ${built.path}.` : ''}`);
+  console.log(`Verified without payment: ${state.tested_operations.join(', ') || 'none (production verification remains required)'}.`);
+  console.log('Deploy once, expose only the sidecar at /api/auteric/v1, then run Connection Test. Payment and complete_checkout remain disabled.');
+  return state;
+}
+
 async function connect(root, options) {
   const base = apiUrl(options);
+  const platform = normalizeStorePlatform(options.platform || 'custom');
   const localSession = Boolean(options.localhost || options['local-storefront']);
   const storeUrl = options['store-url']
     ? localStoreUrl(options['store-url'])
@@ -801,18 +893,39 @@ async function connect(root, options) {
     throw Error(`UCP already exists: ${project.existingUcp.join(', ')}. Review before connecting.`);
   const agent = options['no-agent'] ? 'none' : options.agent || 'auto';
   if (!['codex', 'claude', 'cursor', 'copilot', 'none', 'auto'].includes(agent)) throw Error('Use --agent codex|claude|cursor|auto|none');
-  console.log(`Store: ${domain} | Frontend: ${layout.frontendRelative} | Backend: ${layout.backendRelative} | Framework: ${project.framework} | Instructions: ${agent === 'auto' ? 'Codex/Copilot, Claude, Cursor' : agent}`);
+  console.log(`Store: ${domain} | Platform: ${platform} | Frontend: ${layout.frontendRelative} | Backend: ${layout.backendRelative} | Framework: ${project.framework} | Instructions: ${agent === 'auto' ? 'Codex/Copilot, Claude, Cursor' : agent}`);
   if (localOnly) console.log('This is a local test identifier, not a public domain or ownership proof.');
   if (options['local-storefront']) console.log(`Local storefront detected at ${storeUrl}; using the remote Auteric control plane in sandbox mode.`);
   console.log('Connect inventories the full API surface, selects supported shopping capabilities, prepares their adapters and tests them in the selected sandbox.');
   console.log('Candidate commerce libraries:', project.catalogCandidate.join(', ') || 'none detected');
   if (options['dry-run']) { console.log('Dry run: no authentication, store creation or file changes.'); return; }
+  if (platform !== 'custom') {
+    if (localSession) throw Error('Official platform connectors require cloud onboarding and a real store domain.');
+    const { auth, store, state } = await authenticatedStore(base, root, domain, project, layout, options, false);
+    state.integration = platform === 'shopify' ? 'platform_install_required' : 'connector_not_shipped';
+    state.status = 'platform_connection_pending';
+    atomicJSON(configPath(root), state);
+    try { await completeBrowserPairing(base, auth, store.id); }
+    catch (error) { if (!/^404\b/.test(error.message)) throw error; }
+    console.log(platform === 'shopify'
+      ? `Shopify Store registered. Continue the official app installation at ${base}/console?store=${encodeURIComponent(store.id)}&onboarding=connection.`
+      : `${platformAdapter(platform).adapter_family} is selected, but this connector is not shipped in this release. No custom adapter or production capability was activated.`);
+    return state;
+  }
   // Native reference detection has priority over legacy connector state.  This
   // branch must stay before `sdk('prepare', ...)`: the bundled Python SDK is
   // the outbound connector installer and is not part of native commerce.
   if (nativeReference(layout.backend).detected) {
     console.log(`Native reference detected: Node/Express Native HTTP (${NATIVE_PHASE1_OPERATIONS.join(', ')}).`);
     return connectNativeReference(root, options, { base, layout, project, domain, localSession });
+  }
+  const serviceInventory = await inventoryRepo(layout.backend, { backendDir: options.backend });
+  const serviceFirst = serviceFirstSupport(serviceInventory);
+  if (serviceFirst.supported) {
+    console.log(`Service-First bridge profile detected (${CUSTOM_MVP_OPERATIONS.length} catalog/cart/checkout operations; payment excluded).`);
+    return connectServiceFirst(root, options, {
+      base, layout, project, domain, localSession, storeUrl, backendUrl, inventory: serviceInventory,
+    });
   }
   recordConnection(root, 'inspection', 'running');
   let prepared = await activity('Inspecting APIs and preparing adapter evidence', () => sdk('prepare', layout.backend, { agent: agent === 'claude' ? 'claude-code' : agent === 'copilot' ? 'codex' : agent,
@@ -881,9 +994,10 @@ async function connect(root, options) {
   let store = stores.find(item => item.domain === domain && (!previous?.store_id || item.id === previous.store_id));
   if (!store) {
     store = await activity('Creating the Auteric Store', () => request(base, '/api/commerce/stores', { method: 'POST', token: auth.access_token,
-      body: { domain, name: domain, platform: 'custom', environment: localSession ? 'sandbox' : 'production' } }), options);
+      body: { domain, name: domain, platform, environment: localSession ? 'sandbox' : 'production' } }), options);
   }
-  const state = { ...previous, discovery_digest: readConfig(root)?.discovery_digest, api_url: base, domain, store_id: store.id, framework: project.framework, backend_dir: layout.backendRelative, frontend_dir: layout.frontendRelative, mode: localSession ? 'local' : 'cloud', local_only: localOnly, status: 'store_registered' };
+  if ((store.platform || 'custom') !== platform) throw Error(`Saved Store platform is ${store.platform || 'custom'}, not ${platform}`);
+  const state = { ...previous, discovery_digest: readConfig(root)?.discovery_digest, api_url: base, domain, store_id: store.id, platform, adapter: platformAdapter(platform), framework: project.framework, backend_dir: layout.backendRelative, frontend_dir: layout.frontendRelative, mode: localSession ? 'local' : 'cloud', local_only: localOnly, status: 'store_registered' };
   mkdirSync(resolve(configPath(root), '..'), { recursive: true });
   atomicJSON(configPath(root), state);
   // Production traffic is intentionally blocked until the merchant domain
@@ -1044,7 +1158,13 @@ export async function run(argv, root = process.cwd()) {
     const target = resolve(root, options._path || '.');
     if (!isDirectory(target)) throw Error(`Bind target is not a directory: ${options._path || '.'}`);
     progress.phase('Binding', 'started', { detail: 'Binding: inventory, plan, generate, reconcile, validate' });
-    const result = await bindRepo(target, { backendDir: options.backend });
+    const result = await bindRepo(target, {
+      backendDir: options.backend,
+      platform: options.platform || 'custom',
+      requireMerchantSelection: true,
+      approveCandidates: Boolean(options['approve-adapters']),
+      approvedBy: options['approved-by'] || 'merchant-cli',
+    });
     const registry = loadOperationsRegistry(result.plan.registry?.path);
     for (const binding of result.plan.bindings) {
       const symbol = binding.symbol || binding.proposed_symbol;
@@ -1130,7 +1250,30 @@ export async function run(argv, root = process.cwd()) {
     return;
   }
   if (command === 'disconnect') {
-    throw Error('Disconnect is unavailable in this version. Disable agent access in Auteric Console; no repository files were deleted.');
+    const state = readConfig(root);
+    if (!state?.store_id || !state?.api_url) throw Error('No connected Auteric Store was found in this project.');
+    const authFile = sessionPath(root, state.api_url, state.domain);
+    let auth = cachedSession(authFile);
+    if (!auth?.access_token) {
+      auth = await authenticate(state.api_url, options);
+      atomicJSON(authFile, { ...auth, expires_at: Date.now() + Math.max(0, Number(auth.expires_in || 0) - 60) * 1000 });
+    }
+    await request(state.api_url, `/api/commerce/stores/${encodeURIComponent(state.store_id)}/agent-access`, {
+      method: 'PUT', token: auth.access_token, body: { enabled: false },
+    });
+    if (state.sidecar_installation_id) {
+      await request(state.api_url, `/api/commerce/stores/${encodeURIComponent(state.store_id)}/installations/${encodeURIComponent(state.sidecar_installation_id)}/revoke`, {
+        method: 'POST', token: auth.access_token,
+      });
+    }
+    state.status = 'disconnected';
+    state.disconnected_at = new Date().toISOString();
+    state.public_discovery_verified = false;
+    atomicJSON(configPath(root), state);
+    const localStop = state.sidecar_bundle ? join(state.sidecar_bundle, 'disconnect.sh') : null;
+    console.log('Agent Access is disabled and the sidecar installation is revoked. Repository files and durable audit data were preserved.');
+    if (localStop && existsSync(localStop)) console.log(`Stop the local containers with: ${localStop}`);
+    return state;
   }
   console.log('Usage: auteric connect [--domain store.example.com] [--localhost] [--local-storefront] [--api-url http://127.0.0.1:8100] [--store-url http://127.0.0.1:5500] [--backend-url http://127.0.0.1:3001] [--backend services/api] [--frontend apps/web] [--dry-run] [--no-agent] [--agent auto|codex|claude|cursor|copilot|none]');
   console.log('GitHub shortcut: npx --yes github:auteric-ai/auteric-kit --localhost --store-url http://127.0.0.1:5500');
