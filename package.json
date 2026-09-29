@@ -1,6 +1,6 @@
 {
   "name": "@auteric/cli",
-  "version": "0.7.2",
+  "version": "0.7.3",
   "description": "Connect a custom storefront to an Auteric Commerce control plane",
   "type": "module",
   "bin": {
@@ -12,7 +12,7 @@
     "LICENSE",
     "README.md",
     "runtime/manifest.json",
-    "runtime/contracts/registry.json",
+    "runtime/contracts/registry/registry.json",
     "runtime/contracts/registry/operations/*.json",
     "runtime/contracts/generated.ts",
     "runtime/sdk/pyproject.toml",

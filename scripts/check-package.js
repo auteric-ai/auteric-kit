@@ -25,6 +25,7 @@ for (const required of [
   'src/acceptance/runner.js',
   'src/acceptance/contracts.generated.js',
   'runtime/manifest.json',
+  'runtime/contracts/registry/registry.json',
   'runtime/sdk/pyproject.toml',
   'runtime/sdk/src/auteric_edge/onboarding.py',
 ]) {
