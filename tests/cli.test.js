@@ -41,6 +41,15 @@ test('cloud dry run accepts a merchant domain without a local API origin', async
   await run(['connect', '--domain', 'shop.example', '--dry-run'], root);
 });
 
+test('store platform selection is explicit and rejects unknown adapters', async () => {
+  const root = mkdtempSync(join(realpathSync(tmpdir()), 'auteric-platform-store-'));
+  await run(['connect', '--domain', 'shop.myshopify.com', '--platform', 'shopify', '--dry-run'], root);
+  await assert.rejects(
+    run(['connect', '--domain', 'shop.example', '--platform', 'magento', '--dry-run'], root),
+    /Unsupported store platform/,
+  );
+});
+
 test('local-storefront finds the merchant service while preserving the cloud control-plane', async () => {
   const previous = globalThis.fetch;
   const calls = [];
@@ -254,7 +263,7 @@ test('native reference Connect registers and verifies Native HTTP without invoki
     calls.push(path);
     let body = {};
     if (init.body) body = JSON.parse(init.body);
-    if (path.endsWith('/cli/start')) return Response.json({ authorization_url: 'https://control.auteric.com/cli/authorize?request=test', request_id: 'request', expires_at: Date.now() / 1000 + 30, interval: 0 });
+    if (path.endsWith('/cli/start')) return Response.json({ authorization_url: 'https://control.auteric.com/cli/authorize?request=test', request_id: 'request', user_code: '1234-5678', approval_mode: 'device', expires_at: Date.now() / 1000 + 30, interval: 0 });
     if (path.endsWith('/cli/poll')) return Response.json({ status: 'authorized', access_token: 'token', user: { email: 'owner@example.com', organization: 'Owner' } });
     if (path.endsWith('/stores') && (!init.method || init.method === 'GET')) {
       return Response.json(storeExists ? [{ id: storeId, domain: 'native.example', environment: 'production' }] : []);

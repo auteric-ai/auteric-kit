@@ -12,6 +12,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { loadOperationsRegistry } from '../inventory/operations.js';
 import { resourceOf, camelCase, pascalCase, pathParams, routeParams, tsType } from './naming.js';
+import { candidateFor } from './selection.js';
 
 const STRATEGY_ACTION = {
   local_service_call: 'bind_service_call',
@@ -256,6 +257,18 @@ export function planBindings(report, options = {}) {
       binding.extraction_patch = layout.extraction_patch(candidate.operation);
       binding.regression_stub = layout.regression_stub(candidate.operation);
     }
+    const candidateId = candidateFor(binding).candidate_id;
+    if (options.requireMerchantSelection && !options.approvedCandidateIds?.has(candidateId)) {
+      decisions.push({
+        operation: candidate.operation,
+        decision: `merchant adapter selection: approve candidate ${candidateId} before code generation`,
+        evidence: entrypoint || null,
+        gaps: candidate.gaps,
+        candidate_id: candidateId,
+      });
+      continue;
+    }
+    binding.candidate_id = candidateId;
     bindings.push(binding);
   }
 
