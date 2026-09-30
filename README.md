@@ -1,4 +1,4 @@
-# Connect candidate 0.6.5-rc.5
+# Connect candidate 0.6.5-rc.6
 
 Factory-based Node ESM/Express merchants can use `auteric connect --domain STORE`
 (`--no-agent` inside a coding session). The installer keeps the original HTTP
@@ -322,3 +322,5 @@ disposable, such as `acceptance/fixtures/custom`.
 The separate platform's UCP encoder must permit loopback product links only when
 the service is in development mode and the Store is sandbox. The kit alone cannot
 upgrade an older running control plane.
+
+Plugin candidate 0.7.4-rc.1 and CLI candidate 0.6.5-rc.6 have independent versions. The bundled CLI must match the CLI release; Codex, Claude and marketplace plugin manifests must match each other. Public Sidecar liveness is checked before any connection-test action.

@@ -8,7 +8,7 @@ PLUGIN = ROOT / "plugins" / "auteric-kit"
 
 
 class PluginContractTests(unittest.TestCase):
-    def test_all_release_manifests_share_the_package_version(self):
+    def test_plugin_manifests_align_and_bundled_cli_matches_cli_release(self):
         expected = json.loads((ROOT / "package.json").read_text())["version"]
         codex = json.loads((ROOT / "plugins/auteric-kit/.codex-plugin/plugin.json").read_text())
         claude = json.loads((ROOT / "plugins/auteric-kit/.claude-plugin/plugin.json").read_text())
@@ -16,19 +16,19 @@ class PluginContractTests(unittest.TestCase):
         bundled = json.loads(
             (ROOT / "plugins/auteric-kit/skills/auteric-connect/scripts/cli/package.json").read_text()
         )
+        self.assertEqual(bundled["version"], expected)
         self.assertEqual(
             {
                 codex["version"],
                 claude["version"],
                 marketplace["plugins"][0]["version"],
-                bundled["version"],
             },
-            {expected},
+            {codex["version"]},
         )
 
     def test_codex_manifest_has_user_facing_starters(self):
         manifest = json.loads((PLUGIN / ".codex-plugin" / "plugin.json").read_text())
-        self.assertEqual(manifest["version"], json.loads((ROOT / "package.json").read_text())["version"])
+        self.assertEqual(manifest["version"], json.loads((ROOT / ".claude-plugin/marketplace.json").read_text())["plugins"][0]["version"])
         prompts = manifest["interface"]["defaultPrompt"]
         self.assertTrue(any("Prepare this storefront" in prompt for prompt in prompts))
         self.assertFalse(any("auteric-connect" in prompt for prompt in prompts))
@@ -48,7 +48,7 @@ class PluginContractTests(unittest.TestCase):
     def test_claude_has_a_matching_visible_entry_point(self):
         manifest = json.loads((PLUGIN / ".claude-plugin" / "plugin.json").read_text())
         command = (PLUGIN / "commands" / "prepare-storefront.md").read_text()
-        self.assertEqual(manifest["version"], json.loads((ROOT / "package.json").read_text())["version"])
+        self.assertEqual(manifest["version"], json.loads((ROOT / ".claude-plugin/marketplace.json").read_text())["plugins"][0]["version"])
         self.assertIn("Prepare this storefront for shopping agents", command)
         self.assertNotIn("auteric-connect", command)
 

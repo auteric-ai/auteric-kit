@@ -1,3 +1,4 @@
+import {waitForSidecarIngress} from './single-command.js';
 // Supported single-host pilot using the existing binder, MEP runtime and test lifecycle.
 import { stripTypeScriptTypes } from 'node:module';
 import { existsSync, mkdirSync, readFileSync, writeFileSync, cpSync, openSync, closeSync } from 'node:fs';
@@ -225,6 +226,8 @@ export async function connectSidecar(root, options, context) {
     bridgeChild=start(process.execPath,[join(backend,'.auteric','bridge.mjs')],backend,env,join(backend,'.auteric','bridge.log'));
     await ready('http://127.0.0.1:'+bridgePort+'/health/ready',bridgeChild,{authorization:'Bearer '+secrets.bridge});
     sidecarChild=startSidecar();await ready(sidecarUrl+'/health/live',sidecarChild);
+    // Read-only public readiness precedes the first verification action.
+    await waitForSidecarIngress(endpoints.endpoint,sidecarChild);
     if(!options['product-id'] && usesApplication){
       const local=applicationAdapters(appPlan,{origin:options['application-url'],statePath:join(backend,'.auteric','state','buyer-sessions.sqlite'),reject:code=>Error(code)});
       try {

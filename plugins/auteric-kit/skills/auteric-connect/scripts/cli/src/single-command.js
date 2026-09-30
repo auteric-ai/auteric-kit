@@ -60,3 +60,22 @@ export async function withApplicationRuntime(root,layout,options,plan,run){
   return await run({...options,sidecar:true,serve:true,environment:options.environment || 'staging'});
  }finally{for(const tunnel of tunnels)await tunnel.stop();for(const process of children)await stop(process);}
 }
+
+// A tunnel URL being allocated does not prove the origin is reachable. Probe
+// only liveness here; never retry a commerce action to wait for the edge.
+export async function waitForSidecarIngress(endpoint, child, {timeoutMs=60000}={}) {
+ const url=new URL('/health/live',endpoint);
+ const deadline=Date.now()+timeoutMs;
+ while(Date.now()<deadline) {
+  if(child.exitCode!==null)throw Error('Sidecar stopped before public ingress became live');
+  try {
+   const response=await fetch(url,{redirect:'error',headers:{'cache-control':'no-cache'},signal:AbortSignal.timeout(Math.min(2500,Math.max(1,deadline-Date.now())))});
+   if(response.ok && response.headers.get('content-type')?.includes('application/json')) {
+    const body=await response.json();
+    if(body.status==='live' && body.merchant_protocol==='1')return;
+   }
+  }catch{}
+  await delay(Math.min(500,Math.max(1,deadline-Date.now())));
+ }
+ throw Error('Public Sidecar ingress did not return verified liveness; no connection-test action was submitted');
+}
