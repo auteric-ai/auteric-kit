@@ -6,3 +6,19 @@ dist/
 runtime/sdk/build/
 runtime/sdk/src/*.egg-info/
 .DS_Store
+
+# Generated from canonical monorepo sources by scripts/bundle-pilot.py.
+runtime/merchant-node/
+runtime/merchant-python/
+runtime/pilot/
+runtime/pilot-manifest.json
+runtime/verify_profile.py
+runtime/contracts/schemas/
+
+# The plugin source is copied separately; release archives carry generated runtimes.
+plugins/auteric-kit/skills/auteric-connect/scripts/cli/runtime/merchant-node/
+plugins/auteric-kit/skills/auteric-connect/scripts/cli/runtime/merchant-python/
+plugins/auteric-kit/skills/auteric-connect/scripts/cli/runtime/pilot/
+plugins/auteric-kit/skills/auteric-connect/scripts/cli/runtime/pilot-manifest.json
+plugins/auteric-kit/skills/auteric-connect/scripts/cli/runtime/verify_profile.py
+plugins/auteric-kit/skills/auteric-connect/scripts/cli/runtime/contracts/schemas/

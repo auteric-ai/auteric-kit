@@ -116,6 +116,8 @@ function decisionFor(candidate, report) {
   }
   const ambiguous = candidate.reasons.find(reason => reason.startsWith('ambiguous operation match'));
   if (ambiguous) return `operation disambiguation: route ${at} matches ${ambiguous.replace('ambiguous operation match: ', '')}; confirm the intended operation`;
+  const boundary = candidate.reasons.find(reason => reason.startsWith('application boundary required'));
+  if (boundary) return `${boundary}; traced ${at}`;
   if (candidate.gaps.length) return `manual review for ${candidate.operation} at ${at}: ${candidate.gaps.join('; ')}`;
   return `manual review required for ${candidate.operation} at ${at}`;
 }
@@ -133,7 +135,7 @@ function inputFields(registryDir, record) {
       required: required.has(name),
       type: tsType(schema.properties[name]),
     }));
-  } catch { return []; }
+  } catch (error) { throw new Error(`Locked contract input schema unavailable for ${record?.operation || record?.schemas?.input}: ${error.message}`); }
 }
 
 // Adapter layout per language. Node keeps generated code next to the traced

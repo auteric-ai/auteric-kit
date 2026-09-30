@@ -1,6 +1,6 @@
 {
   "name": "@auteric/cli",
-  "version": "0.7.3",
+  "version": "0.6.5-rc.7",
   "description": "Connect a custom storefront to an Auteric Commerce control plane",
   "type": "module",
   "bin": {
@@ -12,19 +12,28 @@
     "LICENSE",
     "README.md",
     "runtime/manifest.json",
-    "runtime/contracts/registry/registry.json",
+    "runtime/contracts/registry.json",
     "runtime/contracts/registry/operations/*.json",
     "runtime/contracts/generated.ts",
     "runtime/sdk/pyproject.toml",
     "runtime/sdk/src/**/*.py",
-    "runtime/sdk/src/**/*.md"
+    "runtime/sdk/src/**/*.md",
+    "runtime/merchant-node",
+    "runtime/merchant-python",
+    "runtime/contracts/schemas",
+    "runtime/pilot",
+    "runtime/pilot-manifest.json",
+    "runtime/contracts/registry/registry.json",
+    "runtime/verify_profile.py",
+    "PILOT.md"
   ],
   "engines": {
-    "node": ">=20"
+    "node": ">=22.13"
   },
   "license": "MIT",
   "scripts": {
     "test": "node --test tests/*.test.js",
-    "test:package": "node scripts/check-package.js"
+    "test:package": "node scripts/check-package.js",
+    "bundle:pilot": "python3 scripts/bundle-pilot.py"
   }
 }

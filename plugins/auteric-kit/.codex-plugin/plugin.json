@@ -1,6 +1,6 @@
 {
   "name": "auteric-kit",
-  "version": "0.7.3",
+  "version": "0.7.4-rc.1",
   "description": "Guide ecommerce teams from storefront inspection through an approved Auteric shopping-agent integration and verification.",
   "author": {
     "name": "Auteric"
@@ -12,7 +12,12 @@
     "longDescription": "A guided Auteric workflow that inspects the existing storefront, presents a reviewable integration plan, makes approved local changes, and verifies the result without claiming unproven protection.",
     "developerName": "Auteric",
     "category": "Developer Tools",
-    "capabilities": ["Inspect storefront architecture", "Plan a safe agent-commerce integration", "Implement approved catalog and discovery changes", "Verify public exposure"],
+    "capabilities": [
+      "Inspect storefront architecture",
+      "Plan a safe agent-commerce integration",
+      "Implement approved catalog and discovery changes",
+      "Verify public exposure"
+    ],
     "defaultPrompt": [
       "Prepare this storefront for shopping agents with Auteric.",
       "Review this ecommerce site for safe AI shopping readiness.",

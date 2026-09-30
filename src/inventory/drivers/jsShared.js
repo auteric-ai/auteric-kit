@@ -19,18 +19,31 @@ export function packageDeps(ctx) {
   return deps;
 }
 
-// Finds service-style calls (`Symbol.method(...)`) where Symbol is an imported
-// binding that resolves to another file in the repository.
+// Trace imported services and instances made by an imported factory. Factory
+// provenance is evidence, not permission to instantiate dependencies or bypass
+// the application's transaction/session boundary.
 export function serviceCalls(ctx, file) {
   const imports = jsImports(file.content);
+  const factories = new Map();
+  for (const match of file.content.matchAll(/\bconst\s+([A-Za-z_$][\w$]*)\s*=\s*([A-Za-z_$][\w$]*)\s*\(/g)) {
+    const [, instance, factory] = match;
+    const binding = imports.find(entry => entry.names.includes(factory));
+    if (!binding) continue;
+    // Repeated names in different scopes cannot be resolved by this bounded
+    // lexical inspector. Leave them untraced rather than pick a random factory.
+    if (factories.has(instance)) { factories.set(instance, null); continue; }
+    factories.set(instance, { binding, name: factory, line: lineAt(file.content, match.index) });
+  }
   const calls = [];
-  for (const match of matchAll(file.content, /\b([A-Za-z_$][\w$]*)\.([A-Za-z_$][\w$]*)\s*\(/)) {
-    const [symbol, method] = match.groups;
-    const binding = imports.find(entry => entry.names.includes(symbol));
+  for (const match of file.content.matchAll(/\b([A-Za-z_$][\w$]*)\.([A-Za-z_$][\w$]*)\s*\(/g)) {
+    const [, symbol, method] = match;
+    const factory = factories.get(symbol);
+    const binding = imports.find(entry => entry.names.includes(symbol)) || factory?.binding;
     if (!binding) continue;
     const resolved = resolveModule(ctx, file.path, binding.specifier);
     if (!resolved || resolved === file.path) continue;
-    calls.push({ symbol, method, file: file.path, line: match.line, resolved_file: resolved });
+    calls.push({ symbol, method, file: file.path, line: lineAt(file.content, match.index), offset: match.index, resolved_file: resolved,
+      ...(factory ? { factory: { name: factory.name, file: resolved, line: factory.line } } : {}) });
   }
   return calls;
 }
@@ -90,6 +103,9 @@ export function verbRoutes(ctx, file, receivers) {
       middleware,
       auth,
       serviceCalls: [],
+      start_offset: openIndex,
+      end_offset: openIndex + argsText.length + 2,
+      ...(/\.type\(\s*['"](?:text\/)?html['"]\s*\)|\.render\(/.test(argsText) ? { response_format: 'html' } : {}),
     });
   }
   return routes;
@@ -123,6 +139,12 @@ export function wrapperRoutes(ctx, file) {
   for (const match of matchAll(file.content, /\b([A-Za-z_$][\w$]*)\(\s*['"`](get|post|put|patch|delete)['"`]\s*,\s*['"`](\/[^'"`]*)['"`]/i)) {
     const [wrapper, method, path] = match.groups;
     if (['get', 'set', 'app'].includes(wrapper.toLowerCase())) continue;
+    const start = match.offset;
+    const open = file.content.indexOf('(', start);
+    const group = balancedGroup(file.content, open);
+    if (group === null) continue;
+    const options = splitTopLevel(group)[2] || '';
+    const auth = /\bauth\s*:\s*['"](session|user|admin|jwt|bearer)['"]/.exec(options)?.[1];
     routes.push({
       kind: 'rest',
       method: method.toUpperCase(),
@@ -131,8 +153,11 @@ export function wrapperRoutes(ctx, file) {
       line: match.line,
       via: wrapper,
       middleware: [],
-      auth: [],
+      auth: auth && auth !== 'none' ? [{ type: auth, file: file.path, line: match.line, detail: `wrapper ${wrapper} auth=${auth}` }] : [],
       serviceCalls: [],
+      start_offset: open,
+      end_offset: open + group.length + 2,
+      application_boundary: { wrapper, auth: auth || 'none', idempotent: /\bidempotent\s*:\s*true\b/.test(options) },
     });
   }
   return routes;
@@ -145,7 +170,10 @@ export function attributeCalls(routes, calls) {
   for (const call of calls) {
     let owner = null;
     for (const route of sorted) {
-      if (route.file === call.file && route.line <= call.line) owner = route;
+      if (route.file !== call.file) continue;
+      if (route.start_offset !== undefined && call.offset !== undefined) {
+        if (route.start_offset <= call.offset && call.offset < route.end_offset) owner = route;
+      } else if (route.line <= call.line) owner = route;
     }
     if (owner) owner.serviceCalls.push(call);
   }

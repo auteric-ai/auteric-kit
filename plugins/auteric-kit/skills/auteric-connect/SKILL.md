@@ -5,18 +5,37 @@ description: Prepare an ecommerce or storefront project for shopping agents with
 
 # Prepare a storefront for shopping agents
 
-If the user asks for a single-command setup, run
-`npx --yes github:auteric-ai/auteric-kit --domain STORE` or
-`npx --yes github:auteric-ai/auteric-kit --localhost --store-url http://127.0.0.1:5500 --serve`
-from the merchant repository root. Local mode requires the storefront and Auteric
-Commerce service to be running. The CLI supports local HTTP control-plane
-and storefront verification. The CLI installs the bundled SDK and project skill,
-inventories the entire detected API surface, classifies every endpoint, and selects
-only supported shopping operations as capability/tool candidates. It installs supported local adapters, performs browser authorization
-and exact sandbox contract/Gateway tests, then prepares signed UCP locally.
-`--serve` keeps the connector running in that terminal after verification. Inspect
-`.auteric/capabilities.json` and `.auteric/validation.json` for missing operations. Do not claim `npx @auteric/cli` is
-available or that local development signatures prove public protection.
+For a supported factory-based Node ESM/Express application, the minimal command
+is `connect --domain STORE`. Inside a coding session pass `--no-agent`; keep the
+normal browser authorization flow. The CLI traces the merchant's existing routes,
+starts its own start script and a temporary Sidecar tunnel, chooses a sellable test
+product from the live catalog, and runs real connection and public UCP/MCP tests.
+The merchant domain must route to this installation's storefront; it is never
+silently changed to another hostname. A temporary storefront tunnel may be
+provisioned by the acceptance harness and supplied as the domain. The private
+Bridge is never tunneled. Existing transactions, sessions and idempotency execute
+through the merchant's original HTTP boundary. Unsupported capabilities stay off.
+Do not infer support for arbitrary factories, authentication systems or response
+formats; ambiguous evidence and failed contract or lifecycle checks fail closed.
+
+For clean acceptance, use one new worktree from fresh merchant origin/main and
+one isolated installation/session directory per attempt. Run Connect exactly once
+per attempt. Preserve credentials, ledgers and unresolved operations after a
+failure; repair the generic installer and begin a new attempt. Do not patch the
+merchant by hand before Connect or reuse artifacts from previous attempts. Record
+the exact candidate version and package SHA256, current Gateway/merchant receipts,
+public discovery/MCP, health, safety probes and Scanner evidence. Only the full
+passing workflow may report `minimum_verified`.
+
+If the user asks for a single-command setup, run the plugin-bundled
+`node <skill>/scripts/cli/bin/auteric.js connect --domain STORE --no-agent`
+from the merchant repository root. The coding-session invocation always includes
+`--no-agent`, keeps normal browser authorization, and may reuse a valid account
+session with the user's authorization. Never silently substitute a floating GitHub
+checkout for an explicitly requested release candidate. Record the candidate's
+exact package version and SHA256. Preserve previous credentials and ledgers.
+A valid account session does not prove runtime protection; completion still
+requires fresh installation, contract, safety, public MCP, health and Scanner evidence.
 
 Start at the merchant repository root. The CLI searches for a frontend and API
 service beneath it. If it finds one of each, it chooses them automatically. If it

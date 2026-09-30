@@ -1,3 +1,19 @@
+# Connect candidate 0.6.5-rc.7
+
+Factory-based Node ESM/Express merchants can use `auteric connect --domain STORE`
+(`--no-agent` inside a coding session). The installer keeps the original HTTP
+transaction/session boundary, selects a live test product, starts the merchant's
+start script and a temporary Sidecar tunnel, and verifies public UCP → cloud MCP →
+Gateway → Sidecar → private Bridge → original merchant service. The merchant
+hostname must route to this checkout; Connect cannot change DNS without a
+configured provider. The Bridge is always loopback. `minimum_verified` requires
+passing live safety probes, independent public MCP, active health and accepted
+current Scanner evidence. Other architectures and ambiguous response/identity
+contracts fail closed. This is a non-production foreground integration; stopping
+the command stops its added runtime layer. No permanent deployment is implied.
+
+The supported single-host Node/Express Sidecar pilot, public UCP/MCP acceptance, Scanner verification and safe removal commands are in [PILOT.md](PILOT.md). This is a local candidate, not a published registry/plugin or cloud release.
+
 # Auteric Kit 0.6.1
 
 Fresh-store regression coverage now includes 48 isolated catalog simulations:
@@ -306,3 +322,7 @@ disposable, such as `acceptance/fixtures/custom`.
 The separate platform's UCP encoder must permit loopback product links only when
 the service is in development mode and the Store is sandbox. The kit alone cannot
 upgrade an older running control plane.
+
+Plugin candidate 0.7.4-rc.1 and CLI candidate 0.6.5-rc.7 have independent versions. The bundled CLI must match the CLI release; Codex, Claude and marketplace plugin manifests must match each other. Public Sidecar liveness is checked before any connection-test action.
+
+The private Bridge stores stable canonical aliases for actual merchant product, variant, cart and line IDs. Reverse lookup is required before calling original routes; unknown aliases cannot create or select merchant resources. All five actual merchant outputs passed the locked Python MEP validators.

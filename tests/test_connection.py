@@ -113,6 +113,11 @@ class ConnectionTests(unittest.TestCase):
         self.assertIn("skills/auteric-connect/SKILL.md", names)
         self.assertIn("skills/auteric-verify/scripts/check_connection.py", names)
         self.assertFalse(any("__pycache__" in name for name in names))
+        prefix = "skills/auteric-connect/scripts/cli/"
+        for required in ["src/application-bridge.js", "src/single-command.js", "runtime/merchant-node/dist/bridge.js", "runtime/merchant-python/pyproject.toml", "runtime/pilot-manifest.json", "runtime/verify_profile.py", "PILOT.md"]:
+            self.assertIn(prefix + required, names)
+        self.assertIn("commands/connect.md", names)
+        self.assertFalse(any(name.endswith((".sqlite", ".log", ".pyc")) for name in names))
 
 
 if __name__ == "__main__":
