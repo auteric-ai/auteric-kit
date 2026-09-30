@@ -1,3 +1,7 @@
+# Connect candidate 0.6.5-rc.2
+
+The supported single-host Node/Express Sidecar pilot, public UCP/MCP acceptance, Scanner verification and safe removal commands are in [PILOT.md](PILOT.md). This is a local candidate, not a published registry/plugin or cloud release.
+
 # Auteric Kit 0.6.1
 
 Fresh-store regression coverage now includes 48 isolated catalog simulations:

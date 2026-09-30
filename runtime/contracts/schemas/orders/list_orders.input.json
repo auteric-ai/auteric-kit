@@ -1,0 +1,25 @@
+{
+  "$id": "https://contracts.auteric.dev/schemas/orders/list_orders.input.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "cursor": {
+      "$ref": "../common/ids.json#/$defs/cursor"
+    },
+    "limit": {
+      "maximum": 100,
+      "minimum": 1,
+      "type": "integer"
+    },
+    "status": {
+      "enum": [
+        "confirmed",
+        "fulfilled",
+        "cancelled"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [],
+  "type": "object"
+}

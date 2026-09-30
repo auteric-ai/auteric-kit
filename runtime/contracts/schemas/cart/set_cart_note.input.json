@@ -1,0 +1,16 @@
+{
+  "$id": "https://contracts.auteric.dev/schemas/cart/set_cart_note.input.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "note": {
+      "maxLength": 1000,
+      "minLength": 0,
+      "type": "string"
+    }
+  },
+  "required": [
+    "note"
+  ],
+  "type": "object"
+}

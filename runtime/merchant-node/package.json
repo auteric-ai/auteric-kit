@@ -1,0 +1,49 @@
+{
+  "name": "@auteric/merchant-node",
+  "version": "0.1.0",
+  "description": "Merchant-side SDK for the Auteric Merchant Execution Protocol v1 (MEP/1). Zero runtime dependencies.",
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./express": {
+      "types": "./dist/express.d.ts",
+      "import": "./dist/express.js"
+    },
+    "./fastify": {
+      "types": "./dist/fastify.d.ts",
+      "import": "./dist/fastify.js"
+    },
+    "./next": {
+      "types": "./dist/next.d.ts",
+      "import": "./dist/next.js"
+    },
+    "./bridge": {
+      "types": "./dist/bridge.d.ts",
+      "import": "./dist/bridge.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "scripts": {
+    "sync-contracts": "node scripts/sync-contracts.mjs",
+    "build": "npm run sync-contracts && tsc -p tsconfig.json",
+    "build:test": "npm run build && tsc -p tsconfig.test.json",
+    "test": "npm run build:test && node --test \"dist-test/*.test.js\"",
+    "test:dist": "node --test \"dist-test/*.test.js\""
+  },
+  "devDependencies": {
+    "@types/express": "^4.17.21",
+    "@types/node": "^24.0.0",
+    "express": "^4.21.2",
+    "fastify": "^5.0.0",
+    "typescript": "^5.6.0"
+  }
+}

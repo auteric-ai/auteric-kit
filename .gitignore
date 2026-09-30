@@ -6,3 +6,11 @@ dist/
 runtime/sdk/build/
 runtime/sdk/src/*.egg-info/
 .DS_Store
+
+# Generated from canonical monorepo sources by scripts/bundle-pilot.py.
+runtime/merchant-node/
+runtime/merchant-python/
+runtime/pilot/
+runtime/pilot-manifest.json
+runtime/verify_profile.py
+runtime/contracts/schemas/

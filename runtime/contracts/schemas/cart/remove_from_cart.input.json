@@ -1,0 +1,13 @@
+{
+  "$id": "https://contracts.auteric.dev/schemas/cart/remove_from_cart.input.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "expected_revision": {
+      "minimum": 0,
+      "type": "integer"
+    }
+  },
+  "required": [],
+  "type": "object"
+}

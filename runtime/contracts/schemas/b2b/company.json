@@ -1,0 +1,43 @@
+{
+  "$defs": {
+    "company_id": {
+      "pattern": "^co_[A-Za-z0-9]{8,64}$",
+      "type": "string"
+    },
+    "location_id": {
+      "pattern": "^loc_[A-Za-z0-9]{8,64}$",
+      "type": "string"
+    }
+  },
+  "$id": "https://contracts.auteric.dev/schemas/b2b/company.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "company_id": {
+      "$ref": "#/$defs/company_id"
+    },
+    "created_at": {
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$",
+      "type": "string"
+    },
+    "name": {
+      "maxLength": 200,
+      "minLength": 1,
+      "type": "string"
+    },
+    "status": {
+      "enum": [
+        "active",
+        "suspended"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "company_id",
+    "name",
+    "status",
+    "created_at"
+  ],
+  "type": "object"
+}

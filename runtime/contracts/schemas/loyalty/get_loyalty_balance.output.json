@@ -1,0 +1,28 @@
+{
+  "$id": "https://contracts.auteric.dev/schemas/loyalty/get_loyalty_balance.output.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "expires_at": {
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$",
+      "type": "string"
+    },
+    "points_balance": {
+      "minimum": 0,
+      "type": "integer"
+    },
+    "points_expiring": {
+      "minimum": 0,
+      "type": "integer"
+    },
+    "tier": {
+      "maxLength": 64,
+      "minLength": 1,
+      "type": "string"
+    }
+  },
+  "required": [
+    "points_balance"
+  ],
+  "type": "object"
+}

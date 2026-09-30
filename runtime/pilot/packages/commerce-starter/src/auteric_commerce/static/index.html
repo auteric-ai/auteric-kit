@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Auteric · Commerce Runtime</title><link rel="icon" href="data:,"><link rel="stylesheet" href="/console/assets/console.css">
+<script src="/console/assets/console.js" defer></script></head>
+<body>
+<a class="skip" href="#main">Skip to actions</a>
+<header><a class="wordmark" href="/console">AUTERIC<span>COMMERCE SECURITY RUNTIME</span></a><span id="environment" class="pill">Connecting</span></header>
+<main id="main">
+<section class="intro"><p class="eyebrow">THE AUTHORIZATION POINT</p><h1>Agent intent.<br>Merchant control.</h1>
+<p>See the business impact. Review the exact change. Keep authority outside the agent.</p></section>
+<section id="access" class="panel" aria-labelledby="access-title"><h2 id="access-title">Open your operator console</h2>
+<p id="access-note">Use a separate approver credential. Tokens stay in this page's memory and are cleared on disconnect.</p>
+<button id="demo-login" hidden>Enter local demo</button>
+<form id="login"><label for="token">Approver token</label><div class="inline"><input id="token" type="password" autocomplete="off" required><button>Connect</button></div></form>
+</section>
+<p id="message" role="status" aria-live="polite" tabindex="-1"></p>
+<section id="workspace" hidden>
+<div class="toolbar"><div><strong id="merchant"></strong><span class="muted"> · latest 100 actions</span></div><div class="inline"><button class="secondary" id="refresh">Refresh</button><button class="secondary" id="logout">Disconnect</button></div></div>
+<section id="demo-panel" class="panel demo" hidden aria-labelledby="demo-title">
+<div><p class="eyebrow">SYNTHETIC CATALOG · NO MODEL OR SHOPIFY CALLS</p><h2 id="demo-title">Summer Shoes</h2><p>4,200 units. Initial price $100. Changes persist; every proposal uses the current price.</p></div>
+<form id="scenario"><label for="price">Proposed price (USD)</label><div class="inline"><input type="number" id="price" min="0.01" max="999999999" step="0.01" value="75" required><button>Evaluate change</button></div><p class="muted">From $100: $95 → allow · $75 → approval · $20 → block.</p></form>
+</section>
+<div class="section-title"><h2>Pending approvals</h2><span id="pending-count" class="pill">0</span></div>
+<div id="pending" class="cards"></div>
+<div class="section-title"><h2>Activity</h2><p class="muted">A decision is not an execution receipt.</p></div>
+<div id="activity" class="cards"></div>
+</section>
+<footer>Deterministic policies. Exact-action approvals. Durable execution records.<br><span class="muted">Developer pilot · single merchant · not a production certification.</span></footer>
+</main></body></html>

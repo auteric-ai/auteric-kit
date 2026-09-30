@@ -1,0 +1,37 @@
+{
+  "$id": "https://contracts.auteric.dev/schemas/catalog/variant.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "available": {
+      "type": "boolean"
+    },
+    "price": {
+      "$ref": "../common/money.json"
+    },
+    "product_id": {
+      "$ref": "../common/ids.json#/$defs/product_id"
+    },
+    "sku": {
+      "maxLength": 64,
+      "minLength": 1,
+      "type": "string"
+    },
+    "title": {
+      "maxLength": 300,
+      "minLength": 1,
+      "type": "string"
+    },
+    "variant_id": {
+      "$ref": "../common/ids.json#/$defs/variant_id"
+    }
+  },
+  "required": [
+    "variant_id",
+    "product_id",
+    "title",
+    "price",
+    "available"
+  ],
+  "type": "object"
+}

@@ -1,0 +1,18 @@
+{
+  "$id": "https://contracts.auteric.dev/schemas/checkout/create_payment_intent.input.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "payment_method_id": {
+      "pattern": "^pm_[A-Za-z0-9]{8,64}$",
+      "type": "string"
+    },
+    "save_for_future": {
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "payment_method_id"
+  ],
+  "type": "object"
+}

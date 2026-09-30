@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Auteric Synthetic Store Lab</title>
+    <link rel="stylesheet" href="/lab-assets/styles.css" />
+    <script src="/lab-assets/app.js" defer></script>
+    <script src="/lab-assets/webmcp.js" type="module"></script>
+  </head>
+  <body>
+    <header class="topbar">
+      <a class="brand" href="/" aria-label="Auteric lab home"><span>AU</span> Auteric Lab</a>
+      <span class="badge">Synthetic · Local only</span>
+    </header>
+    <main>
+      <section class="hero">
+        <p class="eyebrow">Protected commerce execution</p>
+        <h1>A store you can safely let an agent touch.</h1>
+        <p>Every catalog, cart and checkout action crosses the real Auteric gateway. No payment is collected.</p>
+        <p id="webmcp-status" class="native-status" data-status="pending">WebMCP registration pending…</p>
+      </section>
+      <section class="layout" aria-live="polite">
+        <div>
+          <div class="section-heading"><div><p class="eyebrow">Catalog</p><h2>Lab products</h2></div><button id="refresh" class="secondary">Refresh</button></div>
+          <div id="products" class="products"><div class="empty">Connecting to the local control plane…</div></div>
+        </div>
+        <aside class="panel">
+          <p class="eyebrow">Agent cart</p><h2>Execution state</h2>
+          <div id="cart" class="cart"><p class="muted">No cart yet.</p></div>
+          <button id="create-cart">Create protected cart</button>
+          <button id="checkout" class="secondary" disabled>Create checkout handoff</button>
+          <div class="lab-controls">
+            <p class="eyebrow">Failure lab</p>
+            <button id="arm-fault" class="warning" disabled>Lose next write response</button>
+            <div class="control-row"><button id="price-up" class="secondary">Shoes $120</button><button id="price-reset" class="secondary">Reset $100</button></div>
+            <button id="reconcile" class="secondary" disabled>Inspect unknown outcome</button>
+          </div>
+          <div id="approval" class="approval" hidden></div>
+          <div id="status" class="status" role="status">Initializing…</div>
+        </aside>
+      </section>
+      <section class="traffic-section">
+        <div class="section-heading"><div><p class="eyebrow">Evidence</p><h2>Gateway traffic</h2></div><button id="traffic-refresh" class="secondary">Refresh</button></div>
+        <div class="table-wrap"><table><thead><tr><th>Operation</th><th>State</th><th>Decision</th><th>Latency</th></tr></thead><tbody id="traffic"></tbody></table></div>
+      </section>
+    </main>
+  </body>
+</html>

@@ -1,0 +1,23 @@
+{
+  "$id": "https://contracts.auteric.dev/schemas/common/line_item_input.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "product_id": {
+      "$ref": "ids.json#/$defs/product_id"
+    },
+    "quantity": {
+      "maximum": 999,
+      "minimum": 1,
+      "type": "integer"
+    },
+    "variant_id": {
+      "$ref": "ids.json#/$defs/variant_id"
+    }
+  },
+  "required": [
+    "product_id",
+    "quantity"
+  ],
+  "type": "object"
+}

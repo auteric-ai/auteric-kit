@@ -1,0 +1,38 @@
+{
+  "$id": "https://contracts.auteric.dev/schemas/cart/quote_cart.output.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "cart_id": {
+      "$ref": "../common/ids.json#/$defs/cart_id"
+    },
+    "discount_total": {
+      "$ref": "../common/money.json"
+    },
+    "expires_at": {
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$",
+      "type": "string"
+    },
+    "shipping_total": {
+      "$ref": "../common/money.json"
+    },
+    "subtotal": {
+      "$ref": "../common/money.json"
+    },
+    "tax_total": {
+      "$ref": "../common/money.json"
+    },
+    "total": {
+      "$ref": "../common/money.json"
+    }
+  },
+  "required": [
+    "cart_id",
+    "subtotal",
+    "discount_total",
+    "shipping_total",
+    "tax_total",
+    "total"
+  ],
+  "type": "object"
+}

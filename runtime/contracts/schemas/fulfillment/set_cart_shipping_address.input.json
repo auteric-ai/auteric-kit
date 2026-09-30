@@ -1,0 +1,14 @@
+{
+  "$id": "https://contracts.auteric.dev/schemas/fulfillment/set_cart_shipping_address.input.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "address": {
+      "$ref": "../common/address.json"
+    }
+  },
+  "required": [
+    "address"
+  ],
+  "type": "object"
+}

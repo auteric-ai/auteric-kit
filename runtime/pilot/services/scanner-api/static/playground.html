@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="theme-color" content="#efeaff" />
+  <meta name="description" content="Connect Auteric's read-only AI commerce playground to a public storefront and inspect UCP, MCP transports and catalog evidence." />
+  <link rel="canonical" href="/playground" />
+  <title>AI Commerce Playground | Auteric</title>
+  <link rel="icon" type="image/png" href="/static/brand/logo_evergreen_auteric-symbol_20260906_transparent.png" />
+  <link rel="stylesheet" href="/static/styles.css?v=022" />
+  <link rel="stylesheet" href="/static/aether.css?v=021" />
+  <link rel="stylesheet" href="/static/kinetic.css?v=002" />
+</head>
+<body class="playground-page">
+  <a class="skip-link" href="#playgroundMain">Skip to playground</a>
+  <header class="site-header">
+    <a class="brand" href="/" aria-label="Auteric Scanner home">
+      <span class="brand-mark brand-image" aria-hidden="true"><img src="/static/brand/logo_evergreen_auteric-symbol_20260906_transparent.png" alt="" width="46" height="46" /></span>
+      <span><strong class="brand-wordmark">AUTERIC</strong><small>Agentic Commerce Playground</small></span>
+    </a>
+    <nav class="marketing-nav" aria-label="Primary navigation">
+      <a href="/">Scanner</a>
+      <a href="/ucp-validator">UCP validator</a>
+      <a class="nav-cta" href="#workbench">Start a session</a>
+    </nav>
+  </header>
+
+  <main class="playground-shell" id="playgroundMain">
+    <section class="playground-hero">
+      <div class="playground-title">
+        <span class="eyebrow">READ-ONLY AGENT LAB</span>
+        <h1>See what<br><span>AI sees.</span></h1>
+        <p>Connect a public store, discover its commerce protocol signals and browse the exact product evidence Auteric can verify — without creating a cart, order or payment.</p>
+      </div>
+      <aside class="playground-note">
+        <strong>A safe playground, by design.</strong>
+        <p>Public mode validates discovery, transports and catalog evidence. Cart and checkout execution remain locked until a merchant-authorized sandbox is connected.</p>
+      </aside>
+    </section>
+
+    <section class="playground-workbench" id="workbench" aria-labelledby="workbenchTitle">
+      <div class="playground-connect">
+        <span class="eyebrow">CONNECT A STOREFRONT</span>
+        <h2 id="workbenchTitle">Start an agent session.</h2>
+        <p>Use any public commerce URL. The session reuses the production scanner's real evidence pipeline.</p>
+        <form class="playground-form" id="playgroundForm" novalidate>
+          <label for="playgroundUrl">STORE DOMAIN</label>
+          <input id="playgroundUrl" name="storeUrl" autocomplete="url" inputmode="url" placeholder="store.com" aria-describedby="playgroundError" required />
+          <button class="btn primary" type="submit" id="playgroundSubmit">Connect &amp; inspect</button>
+          <p class="form-error" id="playgroundError" role="alert" aria-live="assertive"></p>
+        </form>
+        <div class="playground-safety">Read-only HTTP checks · no credentials · no cart mutation · no purchase</div>
+      </div>
+
+      <div class="playground-session" aria-live="polite">
+        <div class="playground-session-head">
+          <div class="session-lights" aria-hidden="true"><i></i><i></i><i></i></div>
+          <strong id="sessionDomain">No storefront connected</strong>
+          <span class="session-status" id="sessionStatus">IDLE</span>
+        </div>
+        <div class="playground-log" id="playgroundLog">
+          <div class="playground-log-row"><i>01</i><div><strong>Discover storefront</strong><small>Waiting for a public store URL.</small></div><em>WAITING</em></div>
+          <div class="playground-log-row"><i>02</i><div><strong>Read UCP manifest</strong><small>Validate declarations and protocol metadata.</small></div><em>WAITING</em></div>
+          <div class="playground-log-row"><i>03</i><div><strong>Probe declared transports</strong><small>Check REST, MCP or embedded routes when advertised.</small></div><em>WAITING</em></div>
+          <div class="playground-log-row"><i>04</i><div><strong>Browse product evidence</strong><small>Load safe, machine-readable catalog results.</small></div><em>WAITING</em></div>
+          <div class="playground-log-row"><i>05</i><div><strong>Build agent view</strong><small>Separate verified results from unknown or unavailable evidence.</small></div><em>WAITING</em></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="playground-results" id="playgroundResults" aria-label="Connected session results">
+      <article class="playground-metric"><span>UCP MANIFEST</span><strong id="playgroundUcp">Not connected</strong><small id="playgroundUcpMeta">Version and validity appear here.</small></article>
+      <article class="playground-metric"><span>TRANSPORTS</span><strong id="playgroundTransports">—</strong><small id="playgroundTransportsMeta">Declared agent connection routes.</small></article>
+      <article class="playground-metric"><span>CATALOG</span><strong id="playgroundCatalogCount">—</strong><small id="playgroundCatalogMeta">Products visible to the scanner.</small></article>
+      <article class="playground-metric"><span>AI ACCESS</span><strong id="playgroundAgentAccess">—</strong><small>robots.txt signals for known AI crawlers.</small></article>
+    </section>
+
+    <section class="playground-catalog" id="playgroundCatalog" aria-labelledby="playgroundCatalogTitle">
+      <div class="playground-catalog-head">
+        <div><span class="eyebrow">AGENT CATALOG VIEW</span><h2 id="playgroundCatalogTitle">Products will appear here.</h2></div>
+        <a class="btn secondary hidden" id="openReportLink" href="/">Open scanner report</a>
+      </div>
+      <div class="playground-products" id="playgroundProducts"><div class="empty-state"><strong>No active session.</strong><p>Connect a storefront to browse verified product evidence.</p></div></div>
+    </section>
+
+    <aside class="playground-locked">
+      <div><span>MERCHANT-AUTHORIZED ONLY</span><strong>Cart and checkout simulation stays locked in public mode.</strong><p>This avoids inventory, order and payment side effects. A future connected Shopify sandbox can unlock controlled transaction tests.</p></div>
+      <a class="btn primary" href="/">Back to Scanner</a>
+    </aside>
+  </main>
+
+  <script src="/static/gsap/gsap.min.js"></script>
+  <script src="/static/gsap/CustomEase.min.js"></script>
+  <script src="/static/playground.js?v=002"></script>
+</body>
+</html>

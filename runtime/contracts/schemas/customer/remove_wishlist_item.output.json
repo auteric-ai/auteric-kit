@@ -1,0 +1,21 @@
+{
+  "$id": "https://contracts.auteric.dev/schemas/customer/remove_wishlist_item.output.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "product_id": {
+      "$ref": "../common/ids.json#/$defs/product_id"
+    },
+    "status": {
+      "enum": [
+        "removed"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "product_id",
+    "status"
+  ],
+  "type": "object"
+}

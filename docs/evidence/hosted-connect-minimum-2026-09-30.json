@@ -1,0 +1,94 @@
+{
+  "verified_date": "2026-09-30",
+  "scope": "single-host Node ESM Express hosted-Control minimum; no payment",
+  "backend_sha": "56a90d507c78c171adaca7f61670457eca729706",
+  "workflow_run": "36748546024",
+  "candidate_version": "0.6.5-rc.3",
+  "candidate_sha256": "6ae169e58dd91e84c43d2184a83bfd1860dca4b2ebefd9ca2390e351c79a848c",
+  "runtime": {
+    "control_task": 49,
+    "mcp_task": 30,
+    "scanner_task": 30,
+    "commerce_image_digest": "sha256:577e3b54a3ab706482f347420622b3409e33755a288978d25420fbf83c839585",
+    "scanner_image_digest": "sha256:0fdd5b53829d6188e362c96c877cf86e5a35a73b895cda2bf66b0ae00a8ae5f8",
+    "alb_targets": "healthy"
+  },
+  "public_agent": {
+    "state": "passed",
+    "observed_at": 1790789966.321641,
+    "domain": "optimal-proc-vendor-attached.trycloudflare.com",
+    "discovery": "verified",
+    "mcp_endpoint": "https://mcp.auteric.com/mcp/4a25227e3b844129939324cdd217ade0",
+    "operation": "search_products",
+    "action_id": "d6c2bb62085b3a1267540581696a8aace232755eda2a4b5ed3851b353bffc437",
+    "product_id": "prod_greenleaf",
+    "products_returned": 1
+  },
+  "disconnect": {
+    "status": "disconnected",
+    "health_protection": "needs_action",
+    "scanner_status": "connected",
+    "scanner_protection": "safe_test_required",
+    "ucp_status": 404,
+    "mcp_initialize_status": 200,
+    "mcp_call_status": 409,
+    "mcp_list_status": 409,
+    "mcp_list_error": {
+      "detail": "Agent access is disabled for this Store"
+    },
+    "mcp_call_error": {
+      "detail": "Agent access is disabled for this Store"
+    }
+  },
+  "connection_run": {
+    "run_id": "5ac307185d3942a6b6bbcebaf307d603",
+    "state": "passed",
+    "phase1_probes": {
+      "agent_authorization": true,
+      "blocked_action_id": "125eccdb096ea736e6daee4a8dbd8f5137c4d9f8411c7db295e0e9b955f10cfa",
+      "idempotency": true,
+      "passed": true,
+      "policy_block": true,
+      "replay_protection": true,
+      "session_ownership": true,
+      "unchanged_cart": true
+    },
+    "scanner_evidence": {
+      "published": true,
+      "status": "protected"
+    }
+  },
+  "stages": [
+    {
+      "name": "product_search",
+      "state": "passed"
+    },
+    {
+      "name": "product_details",
+      "state": "passed"
+    },
+    {
+      "name": "cart_creation",
+      "state": "passed"
+    },
+    {
+      "name": "cart_add",
+      "state": "passed"
+    },
+    {
+      "name": "cart_read",
+      "state": "passed"
+    }
+  ],
+  "owner_health": "active",
+  "scanner": {
+    "scan_id": "357196b14cdc4ff3bcc8a9501c3b837a",
+    "merchant_status": "protected",
+    "protection_status": "verified"
+  },
+  "baseline_restored": {
+    "source_byte_identical": true,
+    "business_test_passed": true,
+    "private_bridge_only": true
+  }
+}

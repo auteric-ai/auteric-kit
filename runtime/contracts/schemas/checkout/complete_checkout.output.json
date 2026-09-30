@@ -1,0 +1,14 @@
+{
+  "$id": "https://contracts.auteric.dev/schemas/checkout/complete_checkout.output.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "order": {
+      "$ref": "../common/order.json"
+    }
+  },
+  "required": [
+    "order"
+  ],
+  "type": "object"
+}

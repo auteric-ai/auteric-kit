@@ -1,0 +1,35 @@
+name = "Auteric"
+client_id = "200be1bc0ddc056d4dd441d4d8470530"
+application_url = "https://control.auteric.com/api/commerce/shopify/install"
+embedded = false
+
+[access_scopes]
+scopes = "read_products,unauthenticated_read_product_listings,unauthenticated_write_checkouts"
+
+[auth]
+redirect_urls = [
+  "https://control.auteric.com/api/commerce/shopify/callback"
+]
+
+[webhooks]
+api_version = "2026-07"
+
+[[webhooks.subscriptions]]
+topics = ["app/uninstalled"]
+uri = "/api/commerce/shopify/webhooks/app/uninstalled"
+
+[[webhooks.subscriptions]]
+topics = ["app/scopes_update"]
+uri = "/api/commerce/shopify/webhooks/app/scopes_update"
+
+[[webhooks.subscriptions]]
+compliance_topics = ["customers/data_request"]
+uri = "/api/commerce/shopify/webhooks/customers/data_request"
+
+[[webhooks.subscriptions]]
+compliance_topics = ["customers/redact"]
+uri = "/api/commerce/shopify/webhooks/customers/redact"
+
+[[webhooks.subscriptions]]
+compliance_topics = ["shop/redact"]
+uri = "/api/commerce/shopify/webhooks/shop/redact"

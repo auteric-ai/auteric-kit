@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#f2eff9">
+  <title>Connect your store · Auteric</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/cli/authorize.css">
+  <script src="/cli/authorize.js" defer></script>
+</head>
+<body data-request="__AUTERIC_REQUEST_ID__" data-registration-enabled="__REGISTRATION_ENABLED__" data-local-development="__LOCAL_DEVELOPMENT__">
+  <header class="site-header"><a class="brand" href="/console"><img class="brand-mark" src="/auteric-mark.png" alt=""><span><strong class="brand-wordmark">AUTERIC</strong><small>Store connection</small></span></a><span class="header-state"><svg class="secure-setup-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.75 19 5.7v5.16c0 4.83-2.96 8.88-7 10.39-4.04-1.51-7-5.56-7-10.39V5.7l7-2.95Z"/><path class="secure-setup-check" d="m8.65 12.1 2.05 2.05 4.7-4.7"/></svg><span>Secure checkout setup</span></span></header>
+  <main class="page">
+    <section class="intro" aria-labelledby="page-title">
+      <span class="eyebrow">YOUR STORE. YOUR CONTROL.</span>
+      <h1 id="page-title">Open your store to AI shopping.<br><em>Keep control of every action.</em></h1>
+      <p>Connect this local setup to an Auteric workspace. You will review catalog, cart and checkout capabilities before any agent can use them.</p>
+      <ol class="steps"><li><b>01</b><span><strong>Identify yourself</strong><small>Create an account or sign in.</small></span></li><li><b>02</b><span><strong>Pair this setup</strong><small>Enter the code shown in your terminal.</small></span></li><li><b>03</b><span><strong>Review your store</strong><small>Choose and test capabilities in the dashboard.</small></span></li></ol>
+      <div class="boundary"><span aria-hidden="true">✦</span><p>The terminal code confirms this setup session. A public domain and live protection are verified separately.</p></div>
+    </section>
+    <section class="auth-card ecommerce-card auteric-login-card" aria-labelledby="card-title">
+      <div class="card-top"><span class="card-symbol" aria-hidden="true">↗</span><span class="eyebrow">STEP 1 OF 2</span></div>
+      <h2 id="card-title">Continue to your workspace</h2>
+      <p id="card-description">Use an Auteric account for this store connection.</p>
+      <div id="google-option" class="google-option" hidden><div class="identity-choice"><span>RECOMMENDED</span><strong>Continue with Google</strong><small>Use your verified Google identity to create or sign in to an Auteric workspace.</small></div><div id="google-button"></div><div class="google-divider"><span></span><strong>OR USE EMAIL</strong><span></span></div></div>
+      <div class="tabs" role="tablist" aria-label="Account access"><button id="tab-create" role="tab" aria-selected="true" type="button">Create account</button><button id="tab-login" role="tab" aria-selected="false" type="button">Sign in with email</button></div>
+      <div id="signed-in" class="signed-in" hidden><span>Signed in as</span><strong id="signed-in-email"></strong><button type="button" id="change-account">Use another account</button></div>
+      <!--
+        The account flow is intentionally JavaScript-driven: it sends JSON to
+        the authentication API and never places a password in a URL.  Keep a
+        request-bound POST fallback so a failed script load cannot degrade to
+        the browser's default GET submission (which would expose form fields
+        in the address bar and omit the pairing request).
+      -->
+      <form id="account-form" action="/cli/authorize?request=__AUTERIC_REQUEST_ID__" method="post" novalidate>
+        <label id="organization-row">Business or workspace name<input name="organization" type="text" maxlength="100" autocomplete="organization" placeholder="Your store name" required></label>
+        <label>Email address<input name="email" type="email" maxlength="254" autocomplete="email" placeholder="you@example.com" required></label>
+        <label>Account password <span class="hint">At least 12 characters</span><input name="password" type="password" minlength="12" maxlength="128" autocomplete="new-password" placeholder="Create a password" required></label>
+        <p id="account-note" class="note"></p>
+        <button id="account-submit" class="button primary" type="submit">Create account <span aria-hidden="true">↗</span></button>
+      </form>
+      <noscript><p class="commerce-error">Account setup requires JavaScript. Enable it and reload this pairing page from the terminal; do not enter an account password in the browser address bar.</p></noscript>
+      <div class="divider"><span></span><strong>STEP 2 OF 2</strong><span></span></div>
+      <div class="pair-section"><label for="pair-code">Merchant ID from your terminal</label><p>This is <strong>not your account password</strong> or a permanent store ID. It pairs this installation with your signed-in account.</p><input id="pair-code" inputmode="numeric" autocomplete="one-time-code" maxlength="9" placeholder="0000-0000" aria-describedby="code-help"><small id="code-help">The 8-digit ID expires after five minutes. Run the connection command again if it expires.</small></div>
+      <button class="button pair-button" id="approve" type="button" disabled>Approve and continue <span aria-hidden="true">↗</span></button>
+      <p id="message" role="status" aria-live="polite"></p>
+      <a id="dashboard-link" class="dashboard-link" href="/console" hidden>Open my dashboard ↗</a>
+    </section>
+  </main>
+</body>
+</html>

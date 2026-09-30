@@ -1,0 +1,24 @@
+{
+  "$id": "https://contracts.auteric.dev/schemas/customer/create_customer.input.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "accepts_marketing": {
+      "type": "boolean"
+    },
+    "email": {
+      "maxLength": 254,
+      "pattern": "^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$",
+      "type": "string"
+    },
+    "name": {
+      "maxLength": 200,
+      "minLength": 1,
+      "type": "string"
+    }
+  },
+  "required": [
+    "email"
+  ],
+  "type": "object"
+}

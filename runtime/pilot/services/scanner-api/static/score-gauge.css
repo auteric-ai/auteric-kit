@@ -1,0 +1,13 @@
+.score-instrument-panel,.primary-gauges{background:#0b0e17}
+.primary-gauges:before,.primary-gauges:after{display:none}
+.auteric-gauge .score-meter,.gauge-support .score-meter,#catalogGauge .score-meter,#securityGauge .score-meter{display:block;position:relative;width:min(240px,92%);height:auto;aspect-ratio:1;margin:4px auto 8px;background:#0b0e17}
+.auteric-gauge .score-meter svg,.gauge-support .score-meter svg,#catalogGauge .score-meter svg,#securityGauge .score-meter svg{position:static;display:block;width:100%;height:100%;margin:0;overflow:visible}
+.score-meter .score-gauge-halo{filter:blur(14px)}
+.score-meter .score-gauge-arc{filter:none}
+.score-meter .score-gauge-value,.score-meter .score-gauge-denominator{font-family:Inter,"Avenir Next",system-ui,sans-serif;fill:#fff;font-variant-numeric:tabular-nums}
+.score-meter .score-gauge-denominator{opacity:.45}
+.auteric-gauge .score-meter .gauge-ticks{stroke:none;stroke-width:initial;opacity:1}
+.auteric-gauge .gauge-status{color:var(--gauge-color,#4fa0c9)!important}
+.auteric-gauge:before{background:var(--gauge-color,#4fa0c9)}
+.auteric-gauge .gauge-action{border-color:rgba(255,255,255,.42);background:rgba(255,255,255,.08);color:#fff}
+.auteric-gauge:hover .gauge-action,.auteric-gauge:focus-visible .gauge-action{border-color:#dfff6a;background:#dfff6a;color:#14121a;box-shadow:0 0 0 2px rgba(223,255,106,.18)}

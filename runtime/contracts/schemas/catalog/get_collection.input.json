@@ -1,0 +1,17 @@
+{
+  "$id": "https://contracts.auteric.dev/schemas/catalog/get_collection.input.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "cursor": {
+      "$ref": "../common/ids.json#/$defs/cursor"
+    },
+    "limit": {
+      "maximum": 100,
+      "minimum": 1,
+      "type": "integer"
+    }
+  },
+  "required": [],
+  "type": "object"
+}

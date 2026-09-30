@@ -25,8 +25,14 @@ for (const required of [
   'src/acceptance/runner.js',
   'src/acceptance/contracts.generated.js',
   'runtime/manifest.json',
-  'runtime/contracts/registry/registry.json',
   'runtime/sdk/pyproject.toml',
+  'src/sidecar-connect.js',
+  'src/public-agent.py',
+  'runtime/merchant-node/dist/bridge.js',
+  'runtime/merchant-python/src/auteric_merchant/sidecar_app.py',
+  'runtime/contracts/schemas/catalog/search_products.input.json',
+  'runtime/pilot/apps/shopify/shopify.app.toml',
+  'runtime/pilot/services/commerce/engine.py',
   'runtime/sdk/src/auteric_edge/onboarding.py',
 ]) {
   if (!paths.has(required)) throw Error(`Package is missing ${required}`);

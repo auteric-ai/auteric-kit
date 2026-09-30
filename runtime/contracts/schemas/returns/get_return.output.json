@@ -1,0 +1,5 @@
+{
+  "$id": "https://contracts.auteric.dev/schemas/returns/get_return.output.json",
+  "$ref": "return.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

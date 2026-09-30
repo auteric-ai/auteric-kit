@@ -1,0 +1,18 @@
+FROM python:3.12-slim
+
+ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 PORT=8080 HOST=0.0.0.0
+WORKDIR /app
+
+# The two packages below are deliberate build inputs. They are tracked monorepo
+# paths, so a clean clone of this repo is sufficient to build this image; see
+# docs/commerce/source-map.md.
+COPY services/commerce/requirements.txt /app/requirements.txt
+RUN pip install --no-cache-dir -r /app/requirements.txt
+COPY packages/commerce-starter/src/auteric_commerce /app/auteric_commerce
+COPY kits/auteric-kit/runtime/sdk/src/auteric_edge /app/auteric_edge
+COPY services/__init__.py /app/services/__init__.py
+COPY services/commerce /app/services/commerce
+RUN useradd --uid 10001 --create-home auteric
+USER 10001
+EXPOSE 8080
+CMD ["sh", "-c", "python -m services.commerce.mcp_server --host 0.0.0.0 --port ${PORT}"]

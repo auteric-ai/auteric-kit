@@ -1,0 +1,14 @@
+{
+  "$id": "https://contracts.auteric.dev/schemas/customer/add_wishlist_item.input.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "product_id": {
+      "$ref": "../common/ids.json#/$defs/product_id"
+    }
+  },
+  "required": [
+    "product_id"
+  ],
+  "type": "object"
+}

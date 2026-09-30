@@ -1,0 +1,26 @@
+{
+  "$id": "https://contracts.auteric.dev/schemas/orders/cancel_order.output.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "cancelled_at": {
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$",
+      "type": "string"
+    },
+    "order_id": {
+      "$ref": "../common/ids.json#/$defs/order_id"
+    },
+    "status": {
+      "enum": [
+        "cancelled"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "order_id",
+    "status",
+    "cancelled_at"
+  ],
+  "type": "object"
+}

@@ -1,0 +1,377 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="color-scheme" content="light" />
+  <meta name="theme-color" content="#efeaff" />
+  <title>AI Shopping &amp; Agentic Commerce Scanner | Auteric</title>
+  <link rel="icon" type="image/png" href="/static/brand/logo_evergreen_auteric-symbol_20260906_transparent.png" />
+  <link rel="apple-touch-icon" href="/static/brand/logo_evergreen_auteric-symbol_20260906_transparent.png" />
+  <!-- AUTERIC_ROUTE_META -->
+  <script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"Organization","name":"Auteric Security"},{"@type":"WebApplication","name":"Auteric Agentic Commerce Scanner","applicationCategory":"BusinessApplication","operatingSystem":"Web","description":"A non-destructive scanner for AI shopping readiness, catalog discovery, commerce protocols and public security signals."},{"@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Can ChatGPT find my products?","acceptedAnswer":{"@type":"Answer","text":"Auteric checks the public discovery and catalog signals that AI shopping systems may rely on, but no outside scanner can guarantee inclusion in a third-party experience."}},{"@type":"Question","name":"Does Auteric make a real purchase?","acceptedAnswer":{"@type":"Answer","text":"No. The public scan is non-destructive and does not submit an order, capture payment or modify inventory."}},{"@type":"Question","name":"What security information is public?","acceptedAnswer":{"@type":"Answer","text":"Anonymous reports show high-level readiness and generic issue categories. Detailed security evidence requires store ownership verification."}}]}]}</script>
+  <link rel="stylesheet" href="/static/styles.css?v=024" />
+  <link rel="stylesheet" href="/static/aether.css?v=021" />
+  <link rel="stylesheet" href="/static/kinetic.css?v=020" />
+  <link rel="stylesheet" href="/static/score-gauge.css?v=004" />
+</head>
+<body>
+  <a class="skip-link" href="#main-content">Skip to content</a>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <header class="site-header" id="siteHeader">
+    <a class="brand" href="/" aria-label="Auteric Scanner home">
+      <span class="brand-mark brand-image" aria-hidden="true"><img src="/static/brand/logo_evergreen_auteric-symbol_20260906_transparent.png" alt="" width="42" height="42" /></span>
+      <span><strong class="brand-wordmark">AUTERIC</strong><small>Agentic Commerce Scanner</small></span>
+    </a>
+    <nav class="marketing-nav" aria-label="Primary navigation">
+      <a href="#score">The score</a>
+      <a href="#checks">What we test</a>
+      <a href="/playground" data-playground-link>Playground</a>
+      <a class="nav-cta" href="#scanForm" data-focus-scanner>Protect my store</a>
+    </nav>
+  </header>
+
+  <main id="main-content">
+    <section class="landing" id="landingView">
+      <div class="hero-shell">
+        <div class="hero-signal-field" aria-hidden="true">
+          <span class="hero-signal signal-ucp">UCP</span>
+          <span class="hero-signal signal-mcp">MCP</span>
+          <span class="hero-signal signal-agent">AI</span>
+          <span class="hero-spark spark-one">✦</span>
+          <span class="hero-spark spark-two">✦</span>
+        </div>
+        <div class="hero-copy">
+          <span class="hero-edition">GET DISCOVERED. GET SHOPPABLE. STAY PROTECTED.</span>
+          <h1>Don't let AI agents <span>skip</span><br>your store.</h1>
+          <form id="scanForm" class="scan-form hero-scanner" novalidate>
+            <label for="storeUrl">Enter Store Domain</label>
+            <div class="scan-input">
+              <input id="storeUrl" name="storeUrl" autocomplete="url" inputmode="url" placeholder="store.com" aria-describedby="scanHelp scanError" required />
+              <button class="btn primary" type="submit">Scan my store</button>
+              <button class="btn ghost" type="button" id="connectAutericBtn">Make my store discoverable</button>
+            </div>
+            <p id="scanHelp">Usually ready in under a minute.<br>Public and read-only. No purchase or credentials required.</p>
+            <p id="scanError" class="form-error" role="alert" aria-live="assertive"></p>
+          </form>
+          <p class="hero-lede">See how AI shopping agents understand your store, what they can do today, and what is preventing you from becoming AI-commerce ready.</p>
+          <div class="scanner-storefront-scene" aria-hidden="true">
+            <svg viewBox="0 0 720 184" focusable="false">
+              <path class="scene-line scene-street" d="M24 151H696" />
+              <g class="scene-scan-beam">
+                <rect class="scene-scan-field" x="22" y="25" width="90" height="128" rx="18" />
+                <path class="scene-scan-edge" d="M106 32V148" />
+              </g>
+              <g class="scene-shop scene-shop-one">
+                <path class="scene-line scene-shell" d="M64 67H182V151H64Z" />
+                <path class="scene-line scene-roof" d="M54 67L74 42H172L192 67" />
+                <path class="scene-line scene-awning" d="M64 83H182M79 68V83M103 68V83M127 68V83M151 68V83M175 68V83" />
+                <path class="scene-window" d="M78 98H118V137H78ZM130 98H168V137H130Z" />
+              </g>
+              <g class="scene-shop scene-shop-two">
+                <path class="scene-line scene-shell" d="M214 82H334V151H214Z" />
+                <path class="scene-line scene-roof" d="M204 82L225 51H323L344 82" />
+                <path class="scene-line scene-awning" d="M214 97H334M230 82V97M254 82V97M278 82V97M302 82V97M326 82V97" />
+                <path class="scene-window" d="M229 111H270V138H229ZM283 111H320V151H283Z" />
+              </g>
+              <g class="scene-shop scene-shop-three">
+                <path class="scene-line scene-shell" d="M366 58H503V151H366Z" />
+                <path class="scene-line scene-roof" d="M356 58L379 30H490L513 58" />
+                <path class="scene-line scene-awning" d="M366 76H503M383 59V76M410 59V76M437 59V76M464 59V76M491 59V76" />
+                <path class="scene-window" d="M382 94H430V136H382ZM445 94H487V151H445Z" />
+              </g>
+              <g class="scene-shop scene-shop-four">
+                <path class="scene-line scene-shell" d="M535 78H657V151H535Z" />
+                <path class="scene-line scene-roof" d="M525 78L547 49H645L667 78" />
+                <path class="scene-line scene-awning" d="M535 94H657M551 79V94M575 79V94M599 79V94M623 79V94M647 79V94" />
+                <path class="scene-window" d="M550 108H592V138H550ZM606 108H642V151H606Z" />
+              </g>
+            </svg>
+          </div>
+
+          <div class="platform-support" aria-label="Store platforms we can scan">
+            <span class="platform-support-label">Scan stores built on</span>
+            <div class="platform-support-list">
+              <span class="platform-chip"><span class="platform-custom-mark" aria-hidden="true">&lt;/&gt;</span>Custom commerce</span>
+              <span class="platform-chip">WooCommerce</span>
+              <span class="platform-chip">Wix</span>
+              <span class="platform-chip">Magento Open Source</span>
+              <span class="platform-chip">commercetools</span>
+              <span class="platform-chip">BigCommerce</span>
+              <span class="platform-chip">Shopify</span>
+              <span class="platform-chip">Other platforms</span>
+            </div>
+            <p>Platform names identify store technology; no partnership is implied.</p>
+          </div>
+          <div class="secondary-entry" hidden>
+            <button class="shopify-connect" id="shopifyConnectBtn" type="button" aria-describedby="shopifyStatus">
+              <span>Protect a Shopify store</span>
+              <small id="shopifyStatus">Prepare your store for AI shopping after the free scan</small>
+            </button>
+          </div>
+
+        </div>
+      </div>
+
+      <div class="concept-strip" aria-label="Concepts assessed by Auteric">
+        <span>PUBLIC EVIDENCE</span><span>CATALOG SIGNALS</span><span>AI SHOPPING</span><span>UCP</span><span>MCP</span><span>ACP</span>
+      </div>
+
+      <section class="value-section" id="readiness">
+        <div class="section-heading centered">
+          <span class="eyebrow">THE NEXT STOREFRONT</span>
+          <h2>Get discovered. Get shoppable. Stay protected.</h2>
+          <p>Auteric follows the evidence from discovery to a safer purchase path.</p>
+        </div>
+        <div class="value-grid merchant-values">
+          <article><span class="value-icon" aria-hidden="true">01</span><h3>Discoverable</h3><p>Can agents find your store and understand its products, prices, variants and availability?</p></article>
+          <article><span class="value-icon" aria-hidden="true">02</span><h3>Functional</h3><p>Can agents search products, manage a cart and reach checkout? See observed actions and remaining gaps.</p></article>
+          <article><span class="value-icon" aria-hidden="true">03</span><h3>Protected</h3><p>Are agent actions authorized and controlled by your policies? Verify Auteric runtime protection.</p></article>
+        </div>
+      </section>
+
+      <section class="score-section" id="score">
+        <div class="score-story">
+          <span class="eyebrow">AUTERIC READINESS MODEL</span>
+          <h2>Three answers. Evidence underneath.</h2>
+          <p>The report separates Discoverable, Functional and Protected. Missing evidence is never presented as a confirmed vulnerability.</p>
+        </div>
+        <div class="score-example" aria-label="Illustrative scoring model">
+          <div class="score-example-total"><span>Illustrative only</span><strong>72</strong><small>/100</small></div>
+          <div class="score-example-bars">
+            <div><span>Discoverable</span><i><b style="width:72%"></b></i><strong>72</strong></div>
+            <div><span>Functional</span><i><b style="width:76%"></b></i><strong>76</strong></div>
+            <div><span>Protected</span><i><b style="width:48%"></b></i><strong>48</strong></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="checks-section" id="checks">
+        <div class="section-heading"><span class="eyebrow">WHAT AUTERIC CHECKS</span><h2>From discovery to a safer purchase path.</h2><p>Checks run only where technically possible and retain their evidence state.</p></div>
+        <div class="check-grid">
+          <article><span class="check-kicker">DISCOVERY</span><h3>AI Discovery</h3><p>robots.txt, sitemap, metadata, canonicalization, structured data and AI crawler access.</p><a href="/ai-shopping-readiness">Explore AI readiness</a></article>
+          <article><span class="check-kicker">PRODUCTS</span><h3>Catalog Readiness</h3><p>Names, descriptions, pricing, currency, availability, variants, SKUs and catalog consistency.</p><a href="/tools/catalog-readiness">Catalog readiness</a></article>
+          <article><span class="check-kicker">PROTOCOLS</span><h3>Commerce Protocols</h3><p>UCP detection and validation, with an extensible path for ACP and future protocols.</p><a href="/ucp-validator">Open UCP validator</a></article>
+          <article><span class="check-kicker">PURCHASE PATH</span><h3>Checkout Readiness</h3><p>Safely observable purchase signals. The public scanner never makes a real purchase.</p><a href="/chatgpt-shopping">Prepare for AI shopping</a></article>
+          <article><span class="check-kicker">TRUST</span><h3>Agentic Commerce Security</h3><p>Public protocol trust, authorization assumptions and safely observable integrity controls.</p><a href="/agentic-commerce-security">Understand security</a></article>
+        </div>
+      </section>
+
+      <section class="scanner-cta" id="scanner">
+        <div><span class="eyebrow">PUBLIC STORE SCAN</span><h2>See your store the way an AI shopper might.</h2><p>No signup, installation or purchase.</p></div>
+        <button class="btn primary" type="button" data-focus-scanner>See how to protect my store</button>
+      </section>
+
+      <section class="faq-section" id="faq">
+        <div class="section-heading"><span class="eyebrow">MERCHANT FAQ</span><h2>Questions about AI shopping readiness.</h2></div>
+        <div class="faq-grid">
+          <details><summary>Can ChatGPT find my products?</summary><p>Auteric checks public discovery and catalog signals that AI shopping systems may rely on. No outside scanner can guarantee inclusion in a third-party experience.</p></details>
+          <details><summary>How do I know if my store is ready?</summary><p>Run the public URL scan to review crawlability, catalog data, protocol availability, checkout signals and high-level security posture.</p></details>
+          <details><summary>What is an AI shopping readiness score?</summary><p>It is an evidence-based summary of visibility, product data, protocols, checkout signals and safely observable security checks.</p></details>
+          <details><summary>What is UCP?</summary><p>UCP is a commerce protocol surface that can describe merchant capabilities to agents. Auteric validates public UCP evidence when available.</p></details>
+          <details><summary>Does Auteric make a real purchase?</summary><p>No. The public scan never submits an order, captures payment or changes inventory.</p></details>
+          <details><summary>What security information is public?</summary><p>High-level scores and generic issue categories. Potentially sensitive details remain protected until ownership is verified.</p></details>
+        </div>
+      </section>
+
+      <footer class="marketing-footer">
+        <a class="brand" href="/" aria-label="Auteric"><span class="brand-mark brand-image" aria-hidden="true"><img src="/static/brand/logo_evergreen_auteric-symbol_20260906_transparent.png" alt="" width="52" height="52" loading="lazy" decoding="async" /></span><span><strong class="brand-wordmark">AUTERIC</strong><small>Agentic Commerce Security</small></span></a>
+        <nav aria-label="Footer navigation"><a href="/ai-shopping-readiness">AI readiness</a><a href="/shopify-ai-shopping">Shopify</a><a href="/woocommerce-ai-shopping">WooCommerce</a><a href="/ucp-validator">UCP</a><a href="/playground">Playground</a></nav>
+        <p>Get discovered. Get shoppable. Stay protected.</p>
+      <nav aria-label="Scanner resources"><a href="/directory">Directory</a> · <a href="/stats">Statistics</a> · <a href="/tools/acp-checker">ACP checker</a> · <a href="/methodology">Methodology</a> · <a href="/docs/scoring">Scoring</a></nav></footer>
+    </section>
+
+    <section class="directory-view hidden" id="directoryView">
+      <div class="directory-shell">
+        <div class="directory-head"><div><span class="eyebrow">PUBLIC READINESS DIRECTORY</span><h1>Latest AI shopping scans</h1><p>High-level public readiness, catalog and protocol results. Detailed security evidence is never published without ownership verification.</p></div><a class="btn primary" href="/#scanner">Scan a store</a></div>
+        <div class="directory-stats" id="directoryStats"></div>
+        <div class="directory-table-wrap"><table class="directory-table"><thead><tr><th>#</th><th>Store</th><th>AI score</th><th>UCP</th><th>Web</th><th>Coverage</th><th>Review</th><th>Platform</th><th>Last scan</th></tr></thead><tbody id="directoryRows"></tbody></table></div>
+      </div>
+    </section>
+
+    <section class="progress-view hidden" id="progressView" aria-live="polite">
+      <div class="progress-card" id="progressCard">
+        <div class="scan-core scan-city" aria-hidden="true">
+          <svg viewBox="0 0 720 190" focusable="false">
+            <path class="progress-street" d="M22 149H698" />
+            <g class="progress-scan-beam">
+              <rect class="progress-scan-field" x="22" y="28" width="96" height="122" rx="18"/>
+              <path class="progress-scan-edge" d="M112 35V145"/>
+            </g>
+            <g class="progress-shop" data-shop-stage="0" transform="translate(34 0)">
+              <path class="progress-shop-shell" d="M0 72H108V149H0Z"/><path class="progress-shop-roof" d="M-8 72L12 47H96L116 72"/><path class="progress-shop-awning" d="M0 87H108M18 72V87M42 72V87M66 72V87M90 72V87"/><path class="progress-window" d="M15 102H54V136H15ZM66 102H94V149H66Z"/>
+            </g>
+            <g class="progress-shop" data-shop-stage="1" transform="translate(171 0)">
+              <path class="progress-shop-shell" d="M0 72H108V149H0Z"/><path class="progress-shop-roof" d="M-8 72L12 47H96L116 72"/><path class="progress-shop-awning" d="M0 87H108M18 72V87M42 72V87M66 72V87M90 72V87"/><path class="progress-window" d="M15 102H54V136H15ZM66 102H94V149H66Z"/>
+            </g>
+            <g class="progress-shop" data-shop-stage="2" transform="translate(308 0)">
+              <path class="progress-shop-shell" d="M0 72H108V149H0Z"/><path class="progress-shop-roof" d="M-8 72L12 47H96L116 72"/><path class="progress-shop-awning" d="M0 87H108M18 72V87M42 72V87M66 72V87M90 72V87"/><path class="progress-window" d="M15 102H54V136H15ZM66 102H94V149H66Z"/>
+            </g>
+            <g class="progress-shop" data-shop-stage="3" transform="translate(445 0)">
+              <path class="progress-shop-shell" d="M0 72H108V149H0Z"/><path class="progress-shop-roof" d="M-8 72L12 47H96L116 72"/><path class="progress-shop-awning" d="M0 87H108M18 72V87M42 72V87M66 72V87M90 72V87"/><path class="progress-window" d="M15 102H54V136H15ZM66 102H94V149H66Z"/>
+            </g>
+            <g class="progress-shop" data-shop-stage="4" transform="translate(582 0)">
+              <path class="progress-shop-shell" d="M0 72H108V149H0Z"/><path class="progress-shop-roof" d="M-8 72L12 47H96L116 72"/><path class="progress-shop-awning" d="M0 87H108M18 72V87M42 72V87M66 72V87M90 72V87"/><path class="progress-window" d="M15 102H54V136H15ZM66 102H94V149H66Z"/>
+            </g>
+          </svg>
+        </div>
+        <span class="eyebrow">AUTERIC IS INSPECTING</span>
+        <h2 id="progressTitle">Preparing safe scan</h2>
+        <p id="progressUrl"></p>
+        <div class="scan-stage-list" id="scanStages" aria-label="Scan stages">
+          <div data-stage="5"><i></i><span>Discovering store</span></div>
+          <div data-stage="28"><i></i><span>Analyzing products</span></div>
+          <div data-stage="52"><i></i><span>Checking AI commerce</span></div>
+          <div data-stage="70"><i></i><span>Reviewing security</span></div>
+          <div data-stage="90"><i></i><span>Building report</span></div>
+        </div>
+        <div class="progress-line" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" id="progressTrack"><i id="progressBar"></i></div>
+        <div class="progress-meta"><strong id="progressPercent">0%</strong><span id="progressNote">Large catalogs can take a little longer. The scan remains read-only.</span></div>
+        <div class="progress-actions hidden" id="progressActions"><button class="btn primary" type="button" id="retryScanBtn">Try again</button><button class="btn ghost" type="button" id="editDomainBtn">Edit domain</button></div>
+      </div>
+    </section>
+
+    <section class="report-app hidden" id="dashboardView">
+      <header class="report-bar">
+        <a class="brand" href="/" aria-label="Auteric Scanner home"><span class="brand-mark brand-image" aria-hidden="true"><img src="/static/brand/logo_evergreen_auteric-symbol_20260906_transparent.png" alt="" width="42" height="42" /></span><span><strong class="brand-wordmark">AUTERIC</strong><small>Scanner report</small></span></a>
+        <div class="report-store-heading">
+          <div class="verdict-identity">
+            <div class="site-favicon" id="siteFavicon"><span>A</span></div>
+            <div class="report-domain"><h1 id="reportTitle">Store report</h1><div class="vitals-chips" id="vitalsChips"></div></div>
+          </div>
+        </div>
+        <span class="verdict-state" id="verdictState">Publicly scanned</span>
+      </header>
+
+      <div class="report-document" id="overviewSection">
+        <section class="gauge-stage report-reveal" aria-labelledby="gaugeHeading">
+          <div class="score-stage-head">
+            <div class="score-verdict-copy"><h2 id="gaugeHeading"><span>Checking discovery.</span><br><em>Checking protection.</em></h2><p id="reportSummary"></p></div>
+            <div class="score-connect-action"><a class="btn primary" id="merchantConnectCta" href="/" target="_blank" rel="noopener noreferrer">Make my store discoverable safely</a></div>
+          </div>
+          <div class="score-hero-layout">
+            <div class="score-instrument-panel">
+              <div class="primary-gauges" aria-label="Auteric readiness instrument">
+            <div class="instrument-axis" aria-hidden="true"><i></i><i></i><i></i></div>
+            <button class="auteric-gauge gauge-primary" id="aiGauge" type="button" data-gauge-view="tests" aria-label="Open AI Shopping Readiness details">
+              <span class="gauge-instrument score-meter" data-gauge-name="AI Shopping Readiness"></span>
+              <span class="gauge-name">AI Shopping Readiness</span><span class="gauge-status" id="aiGaugeStatus">Calculating</span><span class="gauge-action">Explore score <b aria-hidden="true">↗</b></span>
+            </button>
+            <button class="auteric-gauge gauge-support gauge-support-left" id="catalogGauge" type="button" data-gauge-view="catalog" aria-label="Open Catalog Readiness details">
+              <span class="gauge-instrument score-meter" data-gauge-name="Catalog Readiness"></span>
+              <span class="gauge-name">Catalog Readiness</span><span class="gauge-status" id="catalogGaugeStatus">Calculating</span><span class="gauge-action">View catalog <b aria-hidden="true">↓</b></span>
+            </button>
+            <button class="auteric-gauge gauge-support gauge-support-right" id="securityGauge" type="button" data-gauge-view="attacks" aria-label="Open Auteric protection details">
+              <span class="gauge-instrument score-meter" data-gauge-name="Security"></span>
+              <span class="gauge-name" id="securityGaugeName">Auteric Protection</span><span class="gauge-status" id="securityGaugeStatus">Calculating</span><span class="gauge-action">Review findings <b aria-hidden="true">↗</b></span>
+            </button>
+              </div>
+              <section class="score-breakdown score-breakdown-static" aria-labelledby="scoreBreakdownTitle"><h3 id="scoreBreakdownTitle">See what shapes these scores</h3><div class="layer-list" id="layerList" aria-label="AI shopping score components"></div></section>
+            </div>
+            <aside class="catalog-teaser" id="catalogTeaser" aria-labelledby="catalogTeaserTitle">
+              <div class="catalog-teaser-head"><span class="catalog-teaser-count" id="catalogTeaserCount">Loading</span></div>
+              <h3 id="catalogTeaserTitle">What an agent can see.</h3>
+              <p id="catalogTeaserMeta">Loading public product evidence from this scan.</p>
+              <div class="catalog-teaser-grid" id="catalogTeaserGrid" aria-live="polite"></div>
+              <button class="catalog-teaser-action" type="button" data-go="catalog"><span>Open the full catalog</span><b aria-hidden="true">↘</b></button>
+            </aside>
+          </div>
+          <p class="merchant-score-reason" id="merchantScoreReason"></p>
+        </section>
+        <aside id="privacyNotice" class="privacy-notice hidden report-reveal">
+          <div class="privacy-notice-copy"><strong>Public report, protected detail.</strong><span>This scan shows public readiness signals. Sensitive security evidence becomes available only after store ownership is verified.</span></div>
+          <a class="text-link" href="/onboarding/" data-report-onboarding target="_blank" rel="noopener noreferrer">Prepare safer AI shopping <b aria-hidden="true">→</b></a>
+        </aside>
+
+        <section class="protocol-section report-reveal" id="protocolSection">
+          <div class="section-line-head split"><div><span class="eyebrow">PROTOCOL STATUS</span><h2>Agent-facing commerce signals.</h2></div><button class="text-btn" data-go="ucp">Inspect protocol evidence</button></div>
+          <div id="protocolConformance" class="protocol-conformance" aria-live="polite"></div>
+          <article class="protocol-capabilities-panel" aria-labelledby="overviewCapabilitiesTitle">
+            <div class="panel-head"><div><span id="overviewCapabilitiesTitle">Capabilities detected</span><small>Declared capabilities and schema-binding results from the public protocol manifest.</small></div></div>
+            <div class="table-scroll"><table class="data-table protocol-capability-table"><caption class="sr-only">Agent commerce capabilities detected in this scan</caption><thead><tr><th scope="col">Capability</th><th scope="col">Type</th><th scope="col">Version</th><th scope="col">Binding</th></tr></thead><tbody id="overviewCapabilityRows"></tbody></table></div>
+          </article>
+          <div class="protocol-strip" id="protocolStrip"></div>
+        </section>
+
+        <section class="catalog-section report-reveal" id="catalogSection" tabindex="-1">
+          <div class="page-head catalog-showcase-head"><div><span class="eyebrow">PRODUCT CATALOG<span class="sr-only"> — CATALOG AUDIT</span></span><h2><span id="catalogTitleCount">—</span> products in the public catalog.</h2></div><button class="catalog-expand-btn" id="catalogExpandBtn" type="button" aria-expanded="false"><span>Browse catalog</span><small>Load and inspect 50 products per page</small></button></div>
+          <div id="catalogHeadline" class="catalog-headline"></div>
+          <div class="catalog-audit-grid">
+            <article class="panel"><div class="panel-head"><div><span>Storefront sample field coverage</span><small>Captured evidence, not certified accuracy. Eight weighted core fields; SKU is required (25 points). GTIN and variants are supplementary. UCP results are separate.</small></div></div><div id="catalogCoverageChart" class="coverage-chart" role="img" aria-label="Catalog field coverage"></div></article>
+          </div>
+          <details class="catalog-method">
+            <summary>How the catalog was tested</summary>
+            <div id="catalogProbe" class="catalog-probe"></div><div id="catalogChecks" class="test-list compact-tests"></div>
+          </details>
+          <div class="catalog-toolbar">
+            <label class="search-field"><span class="sr-only">Search the current product page</span><input id="productSearch" placeholder="Search this page" /></label>
+            <div class="catalog-selects">
+              <label><span>Filter this page</span><select id="catalogFilter"><option value="all">All on this page</option><option value="available">Available on this page</option><option value="issues">Data gaps on this page</option><option value="missing-image">Missing image on this page</option></select></label>
+              <label><span>Sort</span><select id="catalogSort"><option value="default">Catalog order</option><option value="name">Product name</option><option value="issues">Most gaps</option></select></label>
+            </div>
+            <span id="catalogCount">Loading catalog…</span>
+          </div>
+          <p id="catalogScope" class="catalog-scope"></p>
+          <div id="productGrid" class="product-grid" aria-live="polite" aria-label="Product catalog preview. Drag horizontally to browse products."></div>
+          <nav id="catalogPagination" class="catalog-pagination" aria-label="Catalog pages"></nav>
+        </section>
+
+        <section class="report-section report-reveal" id="findingsSection">
+          <div class="section-line-head split"><div><span class="eyebrow">AUTERIC ACTION QUEUE</span><h2>What Auteric should handle first.</h2></div><button class="text-btn" data-go="findings">Review all actions</button></div>
+          <div id="priorityFindings" class="priority-finding-list"></div>
+        </section>
+
+        <section class="report-section technical-section report-reveal">
+          <div class="section-line-head"><span class="eyebrow">DEEPER EVIDENCE</span><h2>Open only what you need.</h2></div>
+          <div class="technical-links">
+            <button data-go="tests"><span>AI readiness &amp; test matrix</span><small>Every test, method and evidence state</small><b aria-hidden="true">↗</b></button>
+            <button data-go="attacks"><span>Checkout &amp; runtime exposure</span><small>Public evidence versus connected verification</small><b aria-hidden="true">↗</b></button>
+            <button data-go="web"><span>Web &amp; transport posture</span><small>TLS, browser controls and headers</small><b aria-hidden="true">↗</b></button>
+            <button data-go="history"><span>Scan history</span><small>Recent reports from this scanner</small><b aria-hidden="true">↗</b></button>
+          </div>
+          <article class="status-banner" id="statusBanner"><div><span class="status-label">SCAN VERDICT</span><strong id="statusNarrative">Report ready</strong><small id="lastScanLabel"></small></div><div class="status-vitals" id="statusVitals"></div></article>
+          <div class="evidence-overview">
+            <div class="evidence-count"><span id="openFindingCount">0</span><small>public actions</small></div>
+            <div><div id="exposureSummary" class="exposure-summary"></div><div id="blockerChips" class="priority-action-list"></div></div>
+          </div>
+        </section>
+
+        <article id="protectionCallout" class="protection-callout hidden report-reveal"><div><span class="eyebrow">AUTERIC PROTECTION</span><h2 id="protectionTitle">Checkout enforcement is not yet verified.</h2><p id="protectionText">Review agent identity, spending limits and checkout integrity before allowing automated purchases.</p></div><button class="btn primary" data-gateway-cta>Secure agent checkout</button></article>
+        <footer class="report-utilities" aria-label="Report sharing"><button class="btn ghost" id="shareBtn" type="button">Copy link</button><button class="btn ghost" id="exportBtn" type="button">Export JSON</button></footer>
+      </div>
+
+      <section class="report-detail hidden" id="detailView" aria-labelledby="detailContext">
+        <div class="detail-bar"><button class="back-overview" id="detailBack" type="button"><span aria-hidden="true">←</span> Back to Overview</button><span id="detailContext">Detailed evidence</span></div>
+        <div class="detail-content">
+          <section class="view" data-panel="tests"><div class="page-head"><div><span class="eyebrow">AUTERIC REVIEW</span><h1>What Auteric found — and what it can handle.</h1><p>Review verified signals and gaps. Actionable findings become a merchant-authorized remediation plan after the store is connected.</p></div></div><div id="testsNotice" class="legacy-notice hidden"><strong>Legacy report reconstructed</strong><span>This saved scan did not contain the current test matrix. Rescan for full pass/fail coverage.</span></div><div id="testSummary" class="metric-cards"></div><div class="toolbar"><div class="filter-row" id="testFilters"><button class="active" data-test-filter="all">All</button><button data-test-filter="fail">Failed</button><button data-test-filter="warning">Warnings</button><button data-test-filter="pass">Passed</button><button data-test-filter="unknown">Unknown</button><button data-test-filter="transaction">Transaction</button><button data-test-filter="ucp">UCP</button></div><label class="search-field"><span class="sr-only">Search security tests</span><input id="testSearch" placeholder="Search findings or impact" /></label></div><div id="securityTests" class="test-list"></div></section>
+
+          <section class="view" data-panel="findings"><div class="page-head"><div><span class="eyebrow">SECURITY DETAIL</span><h1>Issues, hardening opportunities and verified controls.</h1><p>Potentially sensitive evidence stays protected for unverified stores.</p></div></div><div class="filter-row" id="findingFilters"><button class="active" data-filter="all">All</button><button data-filter="critical">Critical</button><button data-filter="high">High</button><button data-filter="medium">Attention</button><button data-filter="pass">Passed</button><button data-filter="unknown">Unknown</button><button data-filter="ucp">UCP</button><button data-filter="security">Web</button></div><div id="allFindings" class="finding-list"></div></section>
+
+          <section class="view" data-panel="ucp"><div class="page-head"><div><span class="eyebrow">PROTOCOLS &amp; AGENTS</span><h1>Protocol conformance and agent access.</h1><p>Manifest, schema, authority binding, keys, payments, references and transport liveness.</p></div></div><div id="ucpSummary" class="metric-cards"></div><div class="two-col"><article class="panel"><div class="panel-head"><div><span>Capabilities detected</span><small>Namespace, version and authority status.</small></div></div><div class="table-scroll"><table class="data-table"><thead><tr><th>Capability</th><th>Version</th><th>Authority</th></tr></thead><tbody id="capabilityRows"></tbody></table></div></article><article class="panel"><div class="panel-head"><div><span>Technical vitals</span><small>Live endpoint details.</small></div></div><div id="technicalVitals" class="vital-table"></div></article></div><div class="two-col"><article class="panel"><div class="panel-head"><div><span>AI agent access</span><small>robots.txt policy by agent.</small></div></div><div id="botAccess" class="bot-table"></div></article><article class="panel"><div class="panel-head"><div><span>Payment configuration</span><small>Handlers declared by the UCP profile.</small></div></div><div id="paymentCards" class="payment-grid"></div></article></div><article class="panel"><div class="panel-head"><div><span>Agent-facing files</span><small>What the store publishes directly to AI agents.</small></div></div><div id="agentFiles" class="agent-files"></div></article><article class="panel"><div class="panel-head"><div><span>UCP and agent checks</span><small>Security-focused checks with pass/fail exposure.</small></div></div><div id="ucpChecks" class="test-list compact-tests"></div></article><article id="ucpRawPanel" class="panel raw-panel hidden"><details><summary><span>Raw UCP Manifest</span><em>Captured JSON</em></summary><pre id="ucpEvidence" class="evidence-code"></pre></details></article><div id="trustChain" class="trust-chain"></div></section>
+
+          <section class="view" data-panel="attacks"><div class="page-head"><div><span class="eyebrow">CHECKOUT &amp; RUNTIME</span><h1>What is public evidence — and what still needs runtime verification.</h1><p>Unexecuted transaction attacks are never labelled vulnerable.</p></div></div><div id="publicAttacks" class="attack-grid"></div><div id="attackPreview" class="attack-preview"></div><section class="business-risk-section"><div class="business-risk-head"><div><span class="eyebrow">AI TRANSACTION SAFETY</span><h2 id="businessRiskHeadline">Can you trust the final AI transaction?</h2><p id="businessRiskNarrative">The public scanner separates what it can prove from what still requires a connected control point.</p></div><button class="btn secondary" data-gateway-cta>Secure agent checkout</button></div><div id="businessRiskGrid" class="business-risk-grid"></div></section><article class="gateway-banner"><div><span class="eyebrow">PROTECT THIS PATH</span><h2>Stop unsafe AI actions before they become orders or incidents.</h2><p>Merchant-authorized verification can evaluate identity, delegated authority, spending policy and checkout integrity.</p></div><button class="btn primary" data-gateway-cta>Secure agent checkout</button></article><div class="locked-heading"><div><span class="eyebrow">RUNTIME VERIFICATION</span><h2>What a connected control point can prove</h2></div><span id="lockedAttackCount"></span></div><div id="lockedAttacks" class="locked-attack-grid"></div></section>
+
+          <section class="view" data-panel="web"><div class="page-head"><div><span class="eyebrow">WEB SECURITY</span><h1>Transport and browser posture.</h1><p>TLS, security headers, cookies, CORS, mixed content and disclosure.</p></div></div><div id="webSummary" class="metric-cards"></div><div id="webChecks" class="test-list"></div></section>
+
+          <section class="view" data-panel="history"><div class="page-head"><div><span class="eyebrow">SCAN HISTORY</span><h1>Recent scans.</h1><p>Reopen reports from this scanner instance.</p></div><a class="btn secondary" href="/directory" data-directory-link>Public directory</a></div><div id="historyList" class="history-list"></div></section>
+        </div>
+      </section>
+    </section>
+  <section class="seo-page"><h2>Protocol support is only one part of being agent-ready.</h2><p>Discoverable. Understandable. Purchasable. Secure.</p><p>Auteric vs basic protocol validators: one public scan also checks crawler rules, catalog fields, checkout signals, TLS and public security posture. Agent authority, payment scope and runtime enforcement require connected verification.</p><a href="/security/agentic-commerce">Explore Agentic Commerce Security</a></section></main>
+
+  <dialog id="evidenceModal" class="modal evidence-modal"><button id="evidenceClose" class="modal-close" aria-label="Close finding dialog">×</button><span class="eyebrow" id="evidenceEyebrow">AUTERIC FINDING</span><h2 id="evidenceTitle"></h2><p id="evidenceSummary"></p><div id="evidenceExposure" class="modal-exposure"></div><div id="evidenceFix" class="fix-copy hidden"></div><section id="evidenceAction" class="evidence-action hidden"><div><span>NEXT STEP</span><strong>Prepare the fix with Auteric</strong><p>Connect the store so Auteric can verify the live configuration and prepare a merchant-authorized remediation plan.</p></div><button class="btn primary" type="button" data-evidence-auteric>Continue with Auteric</button></section><details id="evidenceRaw" class="evidence-raw hidden"><summary><span>View technical evidence</span><em>JSON</em></summary><pre id="evidenceData" class="evidence-code"></pre></details></dialog>
+  <dialog id="gatewayModal" class="modal gateway-modal"><button class="modal-close" data-close-gateway aria-label="Close">×</button><span class="eyebrow" id="gatewayEyebrow">AUTERIC PROTECTION</span><h2 id="gatewayTitle">Turn scan findings into checkout enforcement.</h2><p id="gatewayIntro">Connect a store you own so Auteric can verify private controls and apply merchant-authorized protection.</p><div class="gateway-state"><span id="gatewayPlatform">Store connection</span><strong id="gatewayEvidence">Enforcement not verified</strong></div><div class="gateway-feature-list"><div><strong>Spending policy</strong><span>Evaluate amount, quantity and merchant-defined limits before checkout completes.</span></div><div><strong>Agent identity &amp; delegated authority</strong><span>Bind the action to the agent, shopper and scope of approval.</span></div><div><strong>Checkout integrity</strong><span>Block missing, expired or changed authorization at Shopify's server-side checkout boundary.</span></div></div><p class="gateway-boundary" id="gatewayBoundary">These private controls were not tested by the public scan. Auteric only marks them protected after connected verification.</p><a class="btn primary" id="gatewayPrimaryCta" href="/shopify-ai-shopping#protection">View protection options</a><small class="gateway-cta-note" id="gatewayCtaNote">Installation is not connected on this deployment yet.</small></dialog>
+  <dialog id="productModal" class="modal product-modal"><button class="modal-close" id="productClose" aria-label="Close product details">×</button><div id="productDetail"></div></dialog>
+  <script src="/static/gsap/gsap.min.js"></script>
+  <script src="/static/gsap/ScrollTrigger.min.js"></script>
+  <script src="/static/gsap/Flip.min.js"></script>
+  <script src="/static/gsap/Draggable.min.js"></script>
+  <script src="/static/gsap/InertiaPlugin.min.js"></script>
+  <script src="/static/gsap/DrawSVGPlugin.min.js"></script>
+  <script src="/static/gsap/CustomEase.min.js"></script>
+  <script src="/static/runtime-config.js?v=001"></script>
+  <script src="/static/score-gauge.js?v=007"></script>
+  <script src="/static/app.js?v=public1-046"></script>
+</body>
+</html>

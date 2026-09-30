@@ -1,0 +1,84 @@
+{
+  "$defs": {
+    "quote_id": {
+      "pattern": "^quote_[A-Za-z0-9]{8,64}$",
+      "type": "string"
+    }
+  },
+  "$id": "https://contracts.auteric.dev/schemas/b2b/quote.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "company_id": {
+      "$ref": "company.json#/$defs/company_id"
+    },
+    "created_at": {
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$",
+      "type": "string"
+    },
+    "expires_at": {
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$",
+      "type": "string"
+    },
+    "items": {
+      "items": {
+        "additionalProperties": false,
+        "properties": {
+          "quantity": {
+            "maximum": 9999,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "unit_price": {
+            "$ref": "../common/money.json"
+          },
+          "variant_id": {
+            "$ref": "../common/ids.json#/$defs/variant_id"
+          }
+        },
+        "required": [
+          "variant_id",
+          "quantity",
+          "unit_price"
+        ],
+        "type": "object"
+      },
+      "maxItems": 200,
+      "minItems": 1,
+      "type": "array"
+    },
+    "location_id": {
+      "$ref": "company.json#/$defs/location_id"
+    },
+    "note": {
+      "maxLength": 1000,
+      "minLength": 0,
+      "type": "string"
+    },
+    "quote_id": {
+      "$ref": "#/$defs/quote_id"
+    },
+    "status": {
+      "enum": [
+        "draft",
+        "sent",
+        "accepted",
+        "declined",
+        "expired"
+      ],
+      "type": "string"
+    },
+    "total": {
+      "$ref": "../common/money.json"
+    }
+  },
+  "required": [
+    "quote_id",
+    "company_id",
+    "status",
+    "items",
+    "total",
+    "created_at"
+  ],
+  "type": "object"
+}
