@@ -1,4 +1,4 @@
-# Connect candidate 0.6.5-rc.6
+# Connect candidate 0.6.5-rc.7
 
 Factory-based Node ESM/Express merchants can use `auteric connect --domain STORE`
 (`--no-agent` inside a coding session). The installer keeps the original HTTP
@@ -323,4 +323,6 @@ The separate platform's UCP encoder must permit loopback product links only when
 the service is in development mode and the Store is sandbox. The kit alone cannot
 upgrade an older running control plane.
 
-Plugin candidate 0.7.4-rc.1 and CLI candidate 0.6.5-rc.6 have independent versions. The bundled CLI must match the CLI release; Codex, Claude and marketplace plugin manifests must match each other. Public Sidecar liveness is checked before any connection-test action.
+Plugin candidate 0.7.4-rc.1 and CLI candidate 0.6.5-rc.7 have independent versions. The bundled CLI must match the CLI release; Codex, Claude and marketplace plugin manifests must match each other. Public Sidecar liveness is checked before any connection-test action.
+
+The private Bridge stores stable canonical aliases for actual merchant product, variant, cart and line IDs. Reverse lookup is required before calling original routes; unknown aliases cannot create or select merchant resources. All five actual merchant outputs passed the locked Python MEP validators.

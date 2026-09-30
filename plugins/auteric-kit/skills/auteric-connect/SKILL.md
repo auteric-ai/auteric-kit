@@ -27,18 +27,15 @@ the exact candidate version and package SHA256, current Gateway/merchant receipt
 public discovery/MCP, health, safety probes and Scanner evidence. Only the full
 passing workflow may report `minimum_verified`.
 
-If the user asks for a single-command setup, run
-`npx --yes github:auteric-ai/auteric-kit --domain STORE` or
-`npx --yes github:auteric-ai/auteric-kit --localhost --store-url http://127.0.0.1:5500 --serve`
-from the merchant repository root. Local mode requires the storefront and Auteric
-Commerce service to be running. The CLI supports local HTTP control-plane
-and storefront verification. The CLI installs the bundled SDK and project skill,
-inventories the entire detected API surface, classifies every endpoint, and selects
-only supported shopping operations as capability/tool candidates. It installs supported local adapters, performs browser authorization
-and exact sandbox contract/Gateway tests, then prepares signed UCP locally.
-`--serve` keeps the connector running in that terminal after verification. Inspect
-`.auteric/capabilities.json` and `.auteric/validation.json` for missing operations. Do not claim `npx @auteric/cli` is
-available or that local development signatures prove public protection.
+If the user asks for a single-command setup, run the plugin-bundled
+`node <skill>/scripts/cli/bin/auteric.js connect --domain STORE --no-agent`
+from the merchant repository root. The coding-session invocation always includes
+`--no-agent`, keeps normal browser authorization, and may reuse a valid account
+session with the user's authorization. Never silently substitute a floating GitHub
+checkout for an explicitly requested release candidate. Record the candidate's
+exact package version and SHA256. Preserve previous credentials and ledgers.
+A valid account session does not prove runtime protection; completion still
+requires fresh installation, contract, safety, public MCP, health and Scanner evidence.
 
 Start at the merchant repository root. The CLI searches for a frontend and API
 service beneath it. If it finds one of each, it chooses them automatically. If it

@@ -57,6 +57,29 @@ export function applicationAdapters(plan,{origin,statePath,reject}={}) {
   mkdirSync(dirname(statePath),{recursive:true,mode:0o700});
   const db = new DatabaseSync(statePath);chmodSync(statePath,0o600);
   db.exec('CREATE TABLE IF NOT EXISTS buyer_sessions (subject TEXT PRIMARY KEY, cookie TEXT NOT NULL)');
+  // Public MEP identifiers are stable aliases for actual merchant identities.
+  // Keep the reverse mapping durable; a caller cannot invent an original ID.
+  db.exec('CREATE TABLE IF NOT EXISTS merchant_ids (kind TEXT NOT NULL, original TEXT NOT NULL, canonical TEXT NOT NULL, PRIMARY KEY(kind, canonical), UNIQUE(kind, original))');
+  function encodeId(kind,original) {
+    if(typeof original!=='string' || !original || original.length>1024)throw Error('Authoritative merchant identifier is required');
+    const canonical=kind+'_'+createHash('sha256').update(JSON.stringify([kind,original])).digest('hex');
+    db.prepare('INSERT OR IGNORE INTO merchant_ids VALUES(?,?,?)').run(kind,original,canonical);
+    if(db.prepare('SELECT original FROM merchant_ids WHERE kind=? AND canonical=?').get(kind,canonical)?.original!==original)throw Error('Merchant identifier collision');
+    return canonical;
+  }
+  function decodeId(kind,canonical) {
+    const row=db.prepare('SELECT original FROM merchant_ids WHERE kind=? AND canonical=?').get(kind,canonical);
+    if(!row)throw reject('RESOURCE_NOT_FOUND',404);
+    return row.original;
+  }
+  function productIds(product) {
+    return {...product,product_id:encodeId('prod',product.product_id),variants:product.variants.map(v=>({...v,variant_id:encodeId('var',v.variant_id)}))};
+  }
+  function resultIds(operation,result) {
+    if(operation==='search_products')return {...result,results:result.results.map(productIds)};
+    if(operation==='get_product')return productIds(result);
+    return {...result,cart_id:encodeId('cart',result.cart_id),line_items:result.line_items.map(item=>({...item,line_id:encodeId('line',item.line_id),product_id:encodeId('prod',item.product_id),...(item.variant_id?{variant_id:encodeId('var',item.variant_id)}:{})}))};
+  }
   const pending = new Map();
   async function session(ctx) {
     // Bind both installation and pairwise buyer; all operations for this buyer
@@ -76,6 +99,20 @@ export function applicationAdapters(plan,{origin,statePath,reject}={}) {
   }
   const adapters=Object.fromEntries(plan.bindings.map(binding=>[binding.operation,async(ctx,input)=>{
     const values={...input,...ctx.pathParams};
+    if(binding.operation==='create_cart' && input.line_items?.length)throw reject('INVALID_INPUT',400);
+    for(const [name,kind] of Object.entries({product_id:'prod',variant_id:'var',cart_id:'cart',line_id:'line'}))
+      if(values[name]!==undefined)values[name]=decodeId(kind,values[name]);
+    if(binding.operation==='add_to_cart') {
+      if(!values.variant_id)throw reject('INVALID_INPUT',400);
+      const productRoute=plan.bindings.find(b=>b.operation==='get_product');
+      if(!productRoute || !values.product_id)throw reject('INVALID_INPUT',400);
+      let productPath=productRoute.route.path;
+      for(const [name,canonical] of Object.entries(productRoute.path_params))productPath=productPath.replace(':'+name,encodeURIComponent(values[canonical]));
+      const response=await fetch(new URL(productPath,base),{redirect:'error',signal:AbortSignal.timeout(15000)});
+      if(!response.ok || !response.headers.get('content-type')?.includes('application/json'))throw reject('RESOURCE_NOT_FOUND',404);
+      const product=normalizeProduct(await response.json());
+      if(product.product_id!==values.product_id || !product.variants.some(v=>v.variant_id===values.variant_id))throw reject('INVALID_INPUT',400);
+    }
     let path=binding.route.path;
     for(const [name,canonical] of Object.entries(binding.path_params || {})) {
       if(typeof values[canonical]!=='string' || !values[canonical]) throw Error('Missing canonical resource identifier');
@@ -86,7 +123,7 @@ export function applicationAdapters(plan,{origin,statePath,reject}={}) {
     if(binding.idempotent) headers['idempotency-key']=ctx.actionId;
     const data={};
     for(const [name,canonical] of Object.entries(binding.fields)) if(values[canonical]!==undefined) data[name]=values[canonical];
-    if(ctx.expectedRevision!==undefined && !binding.revision_field) throw Error('Merchant revision precondition is unsupported');
+    if(ctx.expectedRevision!==undefined && !binding.revision_field) throw reject('INVALID_INPUT',400);
     if(binding.revision_field && ctx.expectedRevision!==undefined) data[binding.revision_field]=ctx.expectedRevision;
     if(binding.operation==='search_products' && values.cursor) {
       if(!/^[1-9]\d*$/.test(values.cursor)) throw Error('Unsupported merchant pagination cursor');
@@ -104,7 +141,7 @@ export function applicationAdapters(plan,{origin,statePath,reject}={}) {
           /(?:INSUFFICIENT|OUT_OF).*STOCK/i.test(merchantCode)?'OUT_OF_STOCK':'INVALID_INPUT';
       throw reject(code,response.status);
     }
-    return normalizeResult(binding.operation,await response.json());
+    return resultIds(binding.operation,normalizeResult(binding.operation,await response.json()));
   }]));
   return {adapters,close:()=>db.close()};
 }

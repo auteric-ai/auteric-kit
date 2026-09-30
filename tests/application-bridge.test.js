@@ -50,3 +50,24 @@ test('bridge keeps operation cookies in one durable buyer session and separates 
   assert.equal(issuances,2);
  }finally{bridge.close();await new Promise(done=>server.close(done));rmSync(root,{recursive:true,force:true});}
 });
+
+test('opaque merchant IDs round-trip through durable canonical aliases without accepting invented resources',async()=>{
+ const root=mkdtempSync(join(tmpdir(),'application-ids-'));const original='sku/blue:7';const paths=[];
+ const product={id:original,name:'Blue item',variants:[{id:'size/M:1',priceCents:100,currency:'USD',availability:'in_stock'}]};
+ const server=createServer((req,res)=>{paths.push(req.url);res.setHeader('content-type','application/json');res.end(JSON.stringify(req.url.startsWith('/catalog?')?{products:[product],page:1,totalPages:1}:product));});
+ await new Promise(done=>server.listen(0,'127.0.0.1',done));
+ const options={origin:'http://127.0.0.1:'+server.address().port,statePath:join(root,'private.sqlite'),reject:code=>Error(code)};
+ const plan={bindings:[{operation:'search_products',route:{method:'GET',path:'/catalog'},auth:'none',fields:{query:'q'}},{operation:'get_product',route:{method:'GET',path:'/catalog/:id'},auth:'none',fields:{},path_params:{id:'product_id'}}]};
+ const ctx={installationId:'installation',principal:'buyer',actionId:'read'};
+ let bridge=applicationAdapters(plan,options);
+ try {
+  const found=(await bridge.adapters.search_products(ctx,{q:'Blue'})).results[0];
+  assert.match(found.product_id,/^prod_[A-Za-z0-9]{8,64}$/);assert.match(found.variants[0].variant_id,/^var_[A-Za-z0-9]{8,64}$/);
+  bridge.close();bridge=applicationAdapters(plan,options);
+  assert.deepEqual(await bridge.adapters.get_product(ctx,{product_id:found.product_id}),found);
+  assert.ok(paths.includes('/catalog/'+encodeURIComponent(original)));
+  const count=paths.length;
+  await assert.rejects(()=>bridge.adapters.get_product(ctx,{product_id:'prod_unknown000'}),/RESOURCE_NOT_FOUND/);
+  assert.equal(paths.length,count,'unknown aliases never reach the merchant');
+ }finally{bridge.close();await new Promise(done=>server.close(done));rmSync(root,{recursive:true,force:true});}
+});
