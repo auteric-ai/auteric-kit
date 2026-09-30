@@ -62,6 +62,7 @@ export function buildCandidateSet(plan, options = {}) {
     backend: plan.backend,
     registry: plan.registry,
     candidates,
+    decisions: plan.decisions || [],
   };
   return { ...body, candidate_set_digest: digest(body) };
 }

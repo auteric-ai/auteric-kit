@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { existsSync, mkdirSync, mkdtempSync, realpathSync, readFileSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { apiUrl, detectLocalStoreUrl, existingDiscoveryDigest, inspect, localStoreUrl, localTestDomain, nativeBindingDigest, nativeReference, NATIVE_PHASE1_OPERATIONS, prepareBuiltDiscovery, prepareDiscovery, resolveProjectLayout, run, serviceErrorMessage, uncoveredOperations, validateConnectOptions, verifyLocalWithRetry } from '../src/cli.js';
+import { apiUrl, detectLocalStoreUrl, existingDiscoveryDigest, inspect, localStoreUrl, localTestDomain, nativeBindingDigest, nativeReference, NATIVE_PHASE1_OPERATIONS, prepareBuiltDiscovery, prepareDiscovery, resolveProjectLayout, run, uncoveredOperations, verifyLocalWithRetry } from '../src/cli.js';
 import { renderTerminalProgressLine, terminalColor } from '../src/progress.js';
 
 test('terminal status colours are applied only when a terminal supports them', () => {
@@ -21,22 +21,6 @@ test('localhost mode permits loopback only and cloud requires HTTPS', () => {
   assert.throws(() => apiUrl({ localhost: true, 'api-url': 'http://localhost:8100/path' }), /origin/);
   assert.equal(localStoreUrl('http://127.0.0.1:5500'), 'http://127.0.0.1:5500');
   assert.throws(() => localStoreUrl('http://example.com:5500'), /loopback/);
-});
-
-test('service errors preserve FastAPI validation details', () => {
-  assert.equal(serviceErrorMessage({ detail: [{ loc: ['body', 'approval_mode'], msg: 'Extra inputs are not permitted' }] }),
-    'body.approval_mode: Extra inputs are not permitted');
-  assert.equal(serviceErrorMessage({ detail: 'Not authorized' }), 'Not authorized');
-});
-
-test('public-store option errors leave no Connect state behind', async () => {
-  const root = mkdtempSync(join(realpathSync(tmpdir()), 'auteric-public-options-'));
-  assert.throws(() => validateConnectOptions({ domain: 'shop.example', 'store-url': 'https://shop.example' }), /local-only/);
-  await assert.rejects(
-    run(['connect', '--domain', 'shop.example', '--store-url', 'https://shop.example'], root),
-    /local-only/
-  );
-  assert.equal(existsSync(join(root, '.auteric', 'connection-status.json')), false);
 });
 
 test('local store has a stable non-public test identifier without a domain', async () => {
@@ -279,7 +263,7 @@ test('native reference Connect registers and verifies Native HTTP without invoki
     calls.push(path);
     let body = {};
     if (init.body) body = JSON.parse(init.body);
-    if (path.endsWith('/cli/start')) return Response.json({ authorization_url: 'https://control.auteric.com/cli/authorize?request=test', request_id: 'request', user_code: '1234-5678', approval_mode: 'device', expires_at: Date.now() / 1000 + 30, interval: 0 });
+    if (path.endsWith('/cli/start')) return Response.json({ authorization_url: 'https://control.auteric.com/cli/authorize?request=test', request_id: 'request', expires_at: Date.now() / 1000 + 30, interval: 0 });
     if (path.endsWith('/cli/poll')) return Response.json({ status: 'authorized', access_token: 'token', user: { email: 'owner@example.com', organization: 'Owner' } });
     if (path.endsWith('/stores') && (!init.method || init.method === 'GET')) {
       return Response.json(storeExists ? [{ id: storeId, domain: 'native.example', environment: 'production' }] : []);
@@ -298,6 +282,10 @@ test('native reference Connect registers and verifies Native HTTP without invoki
       config_version: 'auteric-native-runtime/v1', endpoint: 'https://native.example', release_id: 'release',
       installation: { installationId, storeId, environment: 'production', enabled: true, bindingDigest: digest, operations: NATIVE_PHASE1_OPERATIONS },
       trust: { issuers: ['https://control.auteric.com'], keys: { test: 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA' } },
+    });
+    if (path.endsWith('/sidecar-config')) return Response.json({
+      schema: 'auteric-sidecar/v1', installation: {}, integration: {}, trust: {},
+      operational: { storage_mode: 'ephemeral' },
     });
     if (path.endsWith(`/installations/${installationId}/verify`)) return Response.json({ reachable: runtimeReachable });
     if (/\/capabilities\/[^/]+\/enable$/.test(path)) return Response.json({ enabled: true });
@@ -325,11 +313,58 @@ test('native reference Connect registers and verifies Native HTTP without invoki
     runtimeReachable = false;
     calls.length = 0;
     const pending = await run(['connect', '--domain', 'native.example', '--no-browser', '--no-agent'], root);
-    assert.equal(pending.status, 'deployment_pending');
+    assert.equal(pending.status, 'discovery_prepared');
+    assert.equal(pending.installation_status, 'deployment_pending');
+    assert.deepEqual(pending.deployable_artifacts, ['auteric/sidecar.json', 'auteric/deployment.json']);
     assert.equal(pending.public_discovery_verified, false);
     assert.ok(existsSync(join(root, '.auteric', 'native-runtime.json')));
     assert.ok(existsSync(join(root, '.well-known', 'ucp')));
     assert.ok(calls.indexOf(`/api/commerce/stores/${storeId}/discovery`) < calls.indexOf(`/api/commerce/stores/${storeId}/installations/${installationId}/verify`));
     assert.equal(calls.some(path => path.endsWith(`/stores/${storeId}/verify`)), false);
+  } finally { globalThis.fetch = previousFetch; }
+});
+
+test('clean Express bridge is a deployable sidecar reference without legacy runtime files', () => {
+  const root = mkdtempSync(join(realpathSync(tmpdir()), 'auteric-sidecar-bridge-'));
+  mkdirSync(join(root, 'server'), { recursive: true });
+  writeFileSync(join(root, 'package.json'), JSON.stringify({ type: 'module', dependencies: { express: '4.21.2' } }));
+  writeFileSync(join(root, 'server', 'app.js'), 'function createPrivateBridge() { return null; }\nexport { createPrivateBridge };\n');
+  const detected = nativeReference(root);
+  assert.equal(detected.detected, true);
+  assert.equal(detected.kind, 'service_bridge');
+  assert.equal(existsSync(join(root, 'server', 'auteric', 'runtime.js')), false);
+  assert.match(nativeBindingDigest(root), /^sha256:[0-9a-f]{64}$/);
+});
+
+test('disconnect revokes both distinct installation paths and preserves project artifacts', async () => {
+  const root = mkdtempSync(join(realpathSync(tmpdir()), 'auteric-disconnect-'));
+  const storeId = 'c'.repeat(32);
+  const installationId = 'install_disconnect';
+  mkdirSync(join(root, '.auteric'), { recursive: true });
+  writeFileSync(join(root, '.auteric', 'config.json'), JSON.stringify({
+    api_url: 'https://control.auteric.com', domain: 'disconnect.example',
+    store_id: storeId, sidecar_installation_id: installationId, native_installation_id: 'install_native',
+    sidecar_bundle: '.auteric/runtime', public_discovery_verified: true,
+  }));
+  const previousFetch = globalThis.fetch;
+  const calls = [];
+  globalThis.fetch = async (target, init = {}) => {
+    const path = new URL(target).pathname;
+    calls.push({ path, method: init.method });
+    if (path.endsWith('/cli/start')) return Response.json({ authorization_url: 'https://control.auteric.com/cli/authorize?request=test', request_id: 'request', expires_at: Date.now() / 1000 + 30, interval: 0 });
+    if (path.endsWith('/cli/poll')) return Response.json({ status: 'authorized', access_token: 'token', user: { email: 'owner@example.com', organization: 'Owner' } });
+    if (path.endsWith('/agent-access') && init.method === 'PUT') return Response.json({ enabled: false });
+    if (path.endsWith(`/installations/${installationId}/revoke`) && init.method === 'POST') return Response.json({ revoked: true });
+    if (path.endsWith('/installations/install_native/revoke') && init.method === 'POST') return Response.json({ revoked: true });
+    throw Error(`unexpected fetch ${path}`);
+  };
+  try {
+    const result = await run(['disconnect', '--no-browser'], root);
+    assert.equal(result.status, 'disconnected');
+    assert.equal(result.public_discovery_verified, false);
+    assert.ok(calls.some(call => call.path.endsWith('/agent-access') && call.method === 'PUT'));
+    assert.ok(calls.some(call => call.path.endsWith(`/installations/${installationId}/revoke`) && call.method === 'POST'));
+    assert.ok(calls.some(call => call.path.endsWith('/installations/install_native/revoke') && call.method === 'POST'));
+    assert.ok(existsSync(join(root, '.auteric', 'config.json')));
   } finally { globalThis.fetch = previousFetch; }
 });

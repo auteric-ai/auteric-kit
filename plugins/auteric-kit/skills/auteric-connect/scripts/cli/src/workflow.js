@@ -2,6 +2,7 @@ import { createHash, randomBytes } from 'node:crypto';
 import { existsSync, lstatSync, mkdirSync, readFileSync, writeFileSync, renameSync, unlinkSync, openSync, closeSync, readdirSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
+import { normalizeInstallationReport } from './installation-state.js';
 
 export function safePath(path) {
   for (let item = resolve(path); ; item = dirname(item)) {
@@ -39,7 +40,7 @@ export function journal(root, phase, status, extra = {}) {
 export function connectionStatus(root, update = {}) {
   const path = join(root, '.auteric/connection-status.json');
   const previous = readJSON(path) || { version: 1 };
-  const value = { ...previous, ...update, updated_at: new Date().toISOString() };
+  const value = normalizeInstallationReport(previous, { ...update, updated_at: new Date().toISOString() });
   atomicJSON(path, value);
   return value;
 }

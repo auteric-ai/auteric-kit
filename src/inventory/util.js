@@ -16,7 +16,7 @@ export function matchAll(content, regex) {
   const found = [];
   let match;
   while ((match = re.exec(content))) {
-    found.push({ line: lineAt(content, match.index), groups: match.slice(1), text: match[0] });
+    found.push({ line: lineAt(content, match.index), offset: match.index, groups: match.slice(1), text: match[0] });
     if (match[0] === '') re.lastIndex += 1;
   }
   return found;

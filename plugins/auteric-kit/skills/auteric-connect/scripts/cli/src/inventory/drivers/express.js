@@ -40,8 +40,7 @@ export default {
       for (const entry of jsImports(file.content)) if (!entry.specifier.startsWith('.')) dependencies.push(entry.specifier);
     }
     for (const file of jsFiles) {
-      routes.push(...attributeCalls(verbRoutes(ctx, file, routerReceivers(file)), serviceCalls(ctx, file)));
-      routes.push(...wrapperRoutes(ctx, file));
+      routes.push(...attributeCalls([...verbRoutes(ctx, file, routerReceivers(file)), ...wrapperRoutes(ctx, file)], serviceCalls(ctx, file)));
     }
     // Apply Router mounts: a mounted prefix rewrites routes in the file that
     // defines the mounted router (or the file the mounted specifier resolves to).

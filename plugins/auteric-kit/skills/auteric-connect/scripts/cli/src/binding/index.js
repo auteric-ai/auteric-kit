@@ -9,6 +9,7 @@ import { generateGo } from './generators/go.js';
 import { buildManifest, readManifest, writeManifestIfChanged, MANIFEST_PATH } from './manifest.js';
 import { reconcile } from './reconcile.js';
 import { validateInstallation } from './validate.js';
+import { nodeObjectCall } from './node-call.js';
 import {
   ADAPTER_CANDIDATES_PATH, ADAPTER_SELECTION_PATH, approveCandidateSet,
   buildCandidateSet, normalizeStorePlatform, readAdapterSelection,
@@ -54,6 +55,24 @@ export async function bindRepo(root, options = {}) {
   const plan = options.requireMerchantSelection
     ? planBindings(report, { root, registryDir: options.registryDir, requireMerchantSelection: true, approvedCandidateIds })
     : proposedPlan;
+  // Connect must reject an unsupported application boundary before writing
+  // executable scaffolds. The standalone bind workflow still exposes proposals.
+  if (options.requiredServiceOperations) {
+    const callFailures = new Map();
+    const failures = options.requiredServiceOperations.filter(operation => {
+      const binding = plan.bindings.find(item => item.operation === operation);
+      if (!binding || binding.action !== 'bind_service_call' || !/\.(m?js)$/.test(binding.symbol?.file || '')) return true;
+      const signature = nodeObjectCall(root, binding.symbol);
+      if (signature.reason) { callFailures.set(operation, signature.reason); return true; }
+      return false;
+    });
+    if (failures.length) {
+      const reasons = failures.map(operation => `${operation}: ${callFailures.get(operation) || plan.decisions.find(item => item.operation === operation)?.decision || 'needs a traced JavaScript business service with reviewed signature and canonical output'}`);
+      const error = Error(`Integration required: ${reasons.join('; ')}. See .auteric/adapter-candidates.json. No executable adapters were generated.`);
+      error.code = 'application_integration_required';
+      throw error;
+    }
+  }
   const artifacts = generate(plan, { root });
   const previous = readManifest(root);
   const reconciliation = reconcile(root, artifacts, previous, plan);

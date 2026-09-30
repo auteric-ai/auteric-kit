@@ -16,10 +16,31 @@ function routeTokens(route) {
 }
 
 function matchOperation(route, tokenSet) {
+  // Keep these routes in the API inventory, but never nominate privileged or
+  // sandbox endpoints as shopper capabilities, even if names resemble commerce.
+  if (route.response_format === 'html' || /(?:^|\/)(?:admin|internal|sandbox|payments?|webhooks?|auth)(?:\/|$)/i.test(route.path || '') ||
+      (route.auth || []).some(entry => entry.type === 'admin')) return [];
+  const rest = route.kind === 'rest';
+  const segments = (route.path || '').split('/').filter(Boolean);
+  const last = segments.at(-1) || '';
+  const parameter = value => /^:[\w]+$|^\{[\w]+\}$/.test(value);
+  const itemIndex = segments.findIndex(value => /^(items?|lines?)$/i.test(value));
+  const itemLookup = itemIndex >= 0 && segments.slice(itemIndex + 1).some(parameter);
+  const collectionRead = rest && route.method === 'GET' && /^(products|catalog|items|variants)$/i.test(last);
+  const scopedTokens = collectionRead ? new Set([...tokenSet, 'browse']) : tokenSet;
   const matches = [];
   for (const signal of OPERATION_SIGNALS) {
     if (route.method !== 'ANY' && !signal.methods.includes(route.method)) continue;
-    const hit = signal.groups.every(group => group.some(token => tokenSet.has(token)));
+    if (rest && ['get_product', 'get_order', 'get_cart'].includes(signal.operation) &&
+        /^(products|variants|items|orders|carts|baskets|bags)$/i.test(last)) continue;
+    if (rest && signal.operation === 'get_product' &&
+        !segments.some(value => /^(products?|catalog|items?|skus?)$/i.test(value))) continue;
+    if (rest && signal.operation === 'update_cart_item' && !itemLookup && !scopedTokens.has('update') && !scopedTokens.has('quantity')) continue;
+    const bulkReplace = rest && signal.operation === 'replace_cart_items' && route.method === 'PUT' &&
+      itemIndex >= 0 && !itemLookup;
+    if (rest && signal.operation === 'replace_cart_items' && itemLookup) continue;
+    const hit = signal.groups.every(group => group.some(token => scopedTokens.has(token)) ||
+      (bulkReplace && group.includes('replace')));
     if (!hit) continue;
     if (signal.exclude?.some(token => tokenSet.has(token))) continue;
     matches.push(signal);
@@ -116,6 +137,7 @@ export function matchCandidates(ctx, graph, registry) {
         ...(route.symbol ? { symbol: route.symbol } : {}),
         ...(route.mount ? { mount: route.mount } : {}),
         ...(route.yaml_heuristic ? { yaml_heuristic: true } : {}),
+        ...(route.application_boundary ? { application_boundary: route.application_boundary } : {}),
       };
       if (byKey.has(key)) {
         const existing = byKey.get(key);
@@ -138,6 +160,10 @@ export function matchCandidates(ctx, graph, registry) {
       const serviceContent = call?.resolved_file ? ctx.files.find(file => file.path === call.resolved_file)?.content || '' : '';
       if (conflict) strategy = 'requires_merchant_decision';
       else if (route.kind === 'openapi') strategy = 'requires_merchant_decision';
+      else if (call?.factory) {
+        strategy = 'requires_merchant_decision';
+        reasons.push(`application boundary required: ${call.symbol} is created by ${call.factory.name}; preserve its injected dependencies, transaction, persistence and verified buyer ownership instead of importing the local instance`);
+      }
       else if (call?.resolved_file && !OUTBOUND_HTTP.test(serviceContent)) strategy = 'local_service_call';
       else if (OUTBOUND_HTTP.test(routeContent) || OUTBOUND_HTTP.test(serviceContent)) strategy = 'internal_api';
       else strategy = 'requires_extraction';
@@ -149,7 +175,8 @@ export function matchCandidates(ctx, graph, registry) {
         strategy,
         evidence: {
           entrypoints: [entrypoint],
-          business_symbol: call ? { name: call.symbol, method: call.method, file: call.resolved_file || call.file, line: call.line } : null,
+          business_symbol: call ? { name: call.symbol, method: call.method, file: call.resolved_file || call.file, line: call.line,
+            ...(call.factory ? { factory: call.factory } : {}) } : null,
           authorization,
           persistence,
           side_effects: [signal.side],

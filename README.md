@@ -1,3 +1,19 @@
+# Connect candidate 0.6.5-rc.4
+
+Factory-based Node ESM/Express merchants can use `auteric connect --domain STORE`
+(`--no-agent` inside a coding session). The installer keeps the original HTTP
+transaction/session boundary, selects a live test product, starts the merchant's
+start script and a temporary Sidecar tunnel, and verifies public UCP → cloud MCP →
+Gateway → Sidecar → private Bridge → original merchant service. The merchant
+hostname must route to this checkout; Connect cannot change DNS without a
+configured provider. The Bridge is always loopback. `minimum_verified` requires
+passing live safety probes, independent public MCP, active health and accepted
+current Scanner evidence. Other architectures and ambiguous response/identity
+contracts fail closed. This is a non-production foreground integration; stopping
+the command stops its added runtime layer. No permanent deployment is implied.
+
+The supported single-host Node/Express Sidecar pilot, public UCP/MCP acceptance, Scanner verification and safe removal commands are in [PILOT.md](PILOT.md). This is a local candidate, not a published registry/plugin or cloud release.
+
 # Auteric Kit 0.6.1
 
 Fresh-store regression coverage now includes 48 isolated catalog simulations:

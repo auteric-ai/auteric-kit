@@ -5,6 +5,28 @@ description: Prepare an ecommerce or storefront project for shopping agents with
 
 # Prepare a storefront for shopping agents
 
+For a supported factory-based Node ESM/Express application, the minimal command
+is `connect --domain STORE`. Inside a coding session pass `--no-agent`; keep the
+normal browser authorization flow. The CLI traces the merchant's existing routes,
+starts its own start script and a temporary Sidecar tunnel, chooses a sellable test
+product from the live catalog, and runs real connection and public UCP/MCP tests.
+The merchant domain must route to this installation's storefront; it is never
+silently changed to another hostname. A temporary storefront tunnel may be
+provisioned by the acceptance harness and supplied as the domain. The private
+Bridge is never tunneled. Existing transactions, sessions and idempotency execute
+through the merchant's original HTTP boundary. Unsupported capabilities stay off.
+Do not infer support for arbitrary factories, authentication systems or response
+formats; ambiguous evidence and failed contract or lifecycle checks fail closed.
+
+For clean acceptance, use one new worktree from fresh merchant origin/main and
+one isolated installation/session directory per attempt. Run Connect exactly once
+per attempt. Preserve credentials, ledgers and unresolved operations after a
+failure; repair the generic installer and begin a new attempt. Do not patch the
+merchant by hand before Connect or reuse artifacts from previous attempts. Record
+the exact candidate version and package SHA256, current Gateway/merchant receipts,
+public discovery/MCP, health, safety probes and Scanner evidence. Only the full
+passing workflow may report `minimum_verified`.
+
 If the user asks for a single-command setup, run
 `npx --yes github:auteric-ai/auteric-kit --domain STORE` or
 `npx --yes github:auteric-ai/auteric-kit --localhost --store-url http://127.0.0.1:5500 --serve`

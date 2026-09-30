@@ -5,10 +5,6 @@ import { inventoryRepo } from './inventory/index.js';
 import { bindRepo, bindingSummaryLines, normalizeStorePlatform, platformAdapter, validateInstallation } from './binding/index.js';
 import { loadOperationsRegistry } from './inventory/operations.js';
 import { runAcceptance, acceptanceSummaryLines } from './acceptance/index.js';
-import {
-  CUSTOM_MVP_OPERATIONS, prepareServiceFirstBundle, serviceFirstBindingDigest,
-  serviceFirstOperationEvidence, serviceFirstSupport, verifyStandardMerchantBridge,
-} from './sidecar/bundle.js';
 import { cliProgress, fraction, terminalColor } from './progress.js';
 import { createHash, randomBytes } from 'node:crypto';
 import { existsSync, lstatSync, mkdirSync, readFileSync, readdirSync, realpathSync, writeFileSync, unlinkSync } from 'node:fs';
@@ -16,6 +12,7 @@ import { join, relative, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { spawn } from 'node:child_process';
 import { setTimeout as delay } from 'node:timers/promises';
+import { prepareEcsMvpArtifacts } from './deployment.js';
 
 const PROD_API = 'https://control.auteric.com';
 const LOCAL_API = 'http://127.0.0.1:8100';
@@ -26,12 +23,19 @@ export const NATIVE_PHASE1_OPERATIONS = Object.freeze([
   'search_products', 'get_product', 'create_cart', 'get_cart',
   'add_to_cart', 'update_cart_item', 'remove_from_cart',
 ]);
+// The first deployable clean-Custom-Store path uses the task-local bridge,
+// rather than the removed in-process Node runtime. Checkout preparation is
+// included, but payment completion is intentionally absent.
+export const SIDECAR_MVP_OPERATIONS = Object.freeze([
+  ...NATIVE_PHASE1_OPERATIONS, 'create_checkout', 'get_checkout', 'update_checkout',
+]);
 
 function failureDetails(error) {
   const message = String(error?.message || 'Unknown connection failure')
     .replace(/Bearer\s+[^\s]+/gi, 'Bearer [redacted]')
     .replace(/([?&](?:token|secret|credential)=)[^&\s]+/gi, '$1[redacted]')
     .slice(0, 500);
+  if (error?.code === 'application_integration_required') return { failure_code: 'application_integration_required', message, next_action: 'Review .auteric/adapter-candidates.json and integrate the existing merchant transaction/identity boundary. Browser login or repeating Connect cannot repair this local compatibility failure.' };
   if (/timed out|timeout|abort/i.test(message)) return { failure_code: 'timeout', message, next_action: 'Check the control-plane and storefront health, then retry. The previous attempt is terminal.' };
   if (/^404\b/.test(message)) return { failure_code: 'control_plane_route_missing', message, next_action: 'The requested Auteric control-plane route is unavailable. Repair the service route before retrying.' };
   if (/Cannot contact/.test(message)) return { failure_code: 'control_plane_unreachable', message, next_action: 'Check the configured Auteric control-plane URL and its health.' };
@@ -59,9 +63,9 @@ function parse(argv) {
       throw Error(`Unknown argument: ${arg}`);
     }
     const [name, value] = arg.slice(2).split('=', 2);
-    if (['localhost', 'local-storefront', 'approve-publication', 'approve-adapters', 'dry-run', 'yes', 'no-browser', 'serve', 'no-agent', 'skip-project-checks', 'quiet', 'json'].includes(name)) {
+    if (['sidecar', 'localhost', 'local-storefront', 'approve-publication', 'approve-adapters', 'dry-run', 'yes', 'no-browser', 'serve', 'no-agent', 'skip-project-checks', 'quiet', 'json'].includes(name)) {
       options[name] = true;
-    } else if (['api-url', 'domain', 'agent', 'store-url', 'backend', 'frontend', 'backend-url', 'port', 'platform', 'approved-by'].includes(name)) {
+    } else if (['api-url', 'domain', 'agent', 'store-url', 'backend', 'frontend', 'backend-url', 'port', 'platform', 'approved-by', 'sidecar-storage', 'environment', 'sidecar-url', 'sidecar-public-url', 'application-url', 'application-port', 'product-id', 'query', 'scanner-url', 'mcp-url', 'discovery-key'].includes(name)) {
       options[name] = value ?? tail[++i];
       if (!options[name]) throw Error(`--${name} needs a value`);
     } else throw Error(`Unknown flag: --${name}`);
@@ -89,13 +93,6 @@ export function localStoreUrl(value) {
   }
   if (url.hostname === 'localhost') url.hostname = '127.0.0.1';
   return url.origin;
-}
-
-export function validateConnectOptions(options = {}) {
-  const localSession = Boolean(options.localhost || options['local-storefront']);
-  if (options['store-url'] && !localSession)
-    throw Error('--store-url is local-only. Remove it for a public store and use --domain store.example.com.');
-  return localSession;
 }
 
 const LOCAL_STOREFRONT_PORTS = [9020, 5173, 3000, 3001, 8080, 8000, 5500];
@@ -142,30 +139,31 @@ export function nativeReference(root) {
   const runtime = join(root, 'server', 'auteric', 'runtime.js');
   const app = join(root, 'server', 'app.js');
   const reasons = [];
-  if (!existsSync(runtime)) reasons.push('missing server/auteric/runtime.js');
-  if (!packageDependencies(root)['@auteric/merchant-node']) reasons.push('package.json does not declare @auteric/merchant-node');
   let appSource = '';
   try { appSource = readFileSync(app, 'utf8'); } catch { reasons.push('missing server/app.js'); }
-  if (appSource && !/app\.use\(\s*['"]\/api\/auteric\/v1['"]/.test(appSource)) {
-    reasons.push('Express app does not mount /api/auteric/v1');
-  }
+  const bridge = /createPrivateBridge\s*\(/.test(appSource);
+  const legacy = existsSync(runtime) && Boolean(packageDependencies(root)['@auteric/merchant-node'])
+    && /app\.use\(\s*['"]\/api\/auteric\/v1['"]/.test(appSource);
+  if (!bridge && !legacy) reasons.push('missing a task-local Auteric bridge or legacy Native HTTP runtime');
   return {
     detected: reasons.length === 0,
     transport: reasons.length === 0 ? 'native_http' : null,
-    runtime_file: runtime,
+    kind: bridge ? 'service_bridge' : legacy ? 'native_runtime' : null,
+    runtime_file: bridge ? app : runtime,
     reasons,
   };
 }
 
 export function nativeBindingDigest(root) {
-  const source = readFileSync(join(root, 'server', 'auteric', 'runtime.js'));
+  const runtime = join(root, 'server', 'auteric', 'runtime.js');
+  const source = readFileSync(existsSync(runtime) ? runtime : join(root, 'server', 'app.js'));
   return 'sha256:' + createHash('sha256')
-    .update('auteric-native-phase1/v1\0')
+    .update('auteric-sidecar-bridge/v1\0')
     .update(source)
     .digest('hex');
 }
 
-function nativeOperationEvidence() {
+function nativeOperationEvidence(operations = NATIVE_PHASE1_OPERATIONS) {
   const registry = loadOperationsRegistry();
   if (!registry) throw Error('Locked commerce contracts registry is required for a native installation');
   const indexPath = join(registry.path, '..', 'registry.json');
@@ -179,7 +177,7 @@ function nativeOperationEvidence() {
   // Per-operation file hashes are useful inventory metadata, but are not the
   // compatibility authority for an installed native runtime.
   const contractDigest = 'sha256:' + createHash('sha256').update(canonical(JSON.parse(readFileSync(indexPath, 'utf8')))).digest('hex');
-  return NATIVE_PHASE1_OPERATIONS.map(operation => {
+  return operations.map(operation => {
     const record = registry.operations[operation];
     if (!record) throw Error(`Locked commerce contract is missing ${operation}`);
     return {
@@ -293,23 +291,14 @@ async function request(base, path, { method = 'GET', body, token } = {}) {
     }, body: body ? JSON.stringify(body) : undefined, signal: AbortSignal.timeout(12000), redirect: 'error' });
   } catch { throw Error(`Cannot contact ${base}. Start the Commerce service or check its URL.`); }
   const data = await response.json().catch(() => ({}));
-  if (!response.ok) throw Error(`${response.status} ${serviceErrorMessage(data)}`);
-  return data;
-}
-
-export function serviceErrorMessage(data = {}) {
-  if (typeof data.detail === 'string' && data.detail) return data.detail;
-  if (Array.isArray(data.detail)) {
-    const detail = data.detail
-      .map(issue => {
-        const location = Array.isArray(issue?.loc) ? issue.loc.join('.') : '';
-        return [location, issue?.msg].filter(Boolean).join(': ');
-      })
-      .filter(Boolean)
-      .join('; ');
-    if (detail) return detail;
+  if (!response.ok) {
+    const detail = typeof data.detail === 'string' ? data.detail
+      : typeof data.message === 'string' ? data.message
+        : data.detail && typeof data.detail === 'object' ? JSON.stringify(data.detail).slice(0, 500)
+          : 'Service request failed';
+    throw Error(`${response.status} ${detail}`);
   }
-  return 'Service request failed';
+  return data;
 }
 
 function activityEnabled(options = {}) {
@@ -437,16 +426,15 @@ async function authenticate(base, options) {
   const verifier = randomBytes(32).toString('base64url');
   const state = randomBytes(32).toString('base64url');
   const challenge = createHash('sha256').update(verifier).digest('base64url');
-  const approvalMode = options['no-browser'] ? 'device' : 'browser';
-  const session = await request(base, '/api/commerce/cli/start', {
-    method: 'POST', body: { challenge, state, approval_mode: approvalMode },
-  });
+  const session = await request(base, '/api/commerce/cli/start', { method: 'POST', body: { challenge, state } });
   const link = new URL(session.authorization_url);
   if (link.origin !== base || link.pathname !== '/cli/authorize') throw Error('Unexpected authorization URL from control plane');
-  console.log(`${options['no-browser'] ? 'Open' : 'Opening'} this Auteric sign-in page:\n${link.href}`);
-  if (approvalMode === 'device') {
+  console.log(`Open this Auteric sign-in page:\n${link.href}`);
+  if (session.user_code) {
     if (!/^\d{4}-\d{4}$/.test(session.user_code)) throw Error('Invalid pairing code from control plane');
     console.log(`Merchant ID (one-time pairing code): ${session.user_code}`);
+  } else {
+    console.log('This control plane has not enabled CLI pairing codes yet.');
   }
   if (!options['no-browser']) openBrowser(link.href);
   const deadline = Math.min(session.expires_at * 1000, Date.now() + 300000);
@@ -576,6 +564,28 @@ async function provisionGatewayAccess(root, base, domain, storeId, token, operat
 function nativeRuntimePath(root) { return join(root, '.auteric', 'native-runtime.json'); }
 function nativeInstallationPath(root) { return join(root, '.auteric', 'native-installation.json'); }
 
+function nativeSidecarRegistration(operations, bindingDigest, storageMode = 'ephemeral') {
+  if (!['ephemeral', 'durable'].includes(storageMode)) throw Error('--sidecar-storage must be ephemeral or durable');
+  const routes = {
+    search_products: ['GET', '/v1/products'], get_product: ['GET', '/v1/products/{product_id}'],
+    create_cart: ['POST', '/v1/carts'], get_cart: ['GET', '/v1/carts/{cart_id}'],
+    add_to_cart: ['POST', '/v1/carts/{cart_id}/items'],
+    update_cart_item: ['PATCH', '/v1/carts/{cart_id}/items/{line_id}'],
+    remove_from_cart: ['DELETE', '/v1/carts/{cart_id}/items/{line_id}'],
+    create_checkout: ['POST', '/v1/checkouts'], get_checkout: ['GET', '/v1/checkouts/{checkout_id}'],
+    update_checkout: ['PATCH', '/v1/checkouts/{checkout_id}'],
+  };
+  const profiles = Object.fromEntries(operations.map(operation => {
+    const [method, path] = routes[operation] || [];
+    if (!method) throw Error(`No approved bridge route exists for ${operation}`);
+    const mapping = createHash('sha256').update(`${operation}:${method}:${path}:${bindingDigest}`).digest('hex');
+    return [operation, { operation, mapping_fingerprint: `sha256:${mapping}`, enabled: false,
+      integration_mode: 'service_bridge', merchant_selection_id: `generated-${operation}`,
+      target: { base_url: 'http://127.0.0.1:3101', method, path, auth_scheme: 'bearer', credential_ref: 'env:AUTERIC_BRIDGE_TOKEN', credential_header: 'authorization' } }];
+  }));
+  return { schema: 'auteric-sidecar-registration/v1', integration_version: 'ecs-mvp-v1', profiles, allowed_operations: operations, storage_mode: storageMode };
+}
+
 function assertNativeRuntimeConfig(config, { storeId, environment, endpoint, bindingDigest }) {
   if (!config || config.config_version !== 'auteric-native-runtime/v1') {
     throw Error('Control plane returned an invalid native runtime configuration');
@@ -620,7 +630,7 @@ async function authenticatedStore(base, root, domain, project, layout, options, 
   if (!store) {
     store = await activity('Creating the Auteric Store', () => request(base, '/api/commerce/stores', {
       method: 'POST', token: auth.access_token,
-      body: { domain, name: domain, platform, environment: localSession ? 'sandbox' : 'production' },
+      body: { domain, name: domain, platform, environment: options.environment || (localSession ? 'sandbox' : 'production') },
     }), options);
   }
   if ((store.platform || 'custom') !== platform) throw Error(`Saved Store platform is ${store.platform || 'custom'}, not ${platform}`);
@@ -654,14 +664,15 @@ async function connectNativeReference(root, options, { base, layout, project, do
   if (localSession) throw Error('The native reference flow requires a public HTTPS merchant domain; do not use --localhost.');
   const detected = nativeReference(layout.backend);
   if (!detected.detected) throw Error(`Native reference is incomplete: ${detected.reasons.join('; ')}`);
-  recordConnection(root, 'native_reference', 'running', { transport: 'native_http', operations: NATIVE_PHASE1_OPERATIONS });
+  const operations = detected.kind === 'service_bridge' ? SIDECAR_MVP_OPERATIONS : NATIVE_PHASE1_OPERATIONS;
+  recordConnection(root, 'native_reference', 'running', { transport: 'native_http', integration_mode: detected.kind, operations });
   if (options['skip-project-checks']) throw Error('Native reference installation requires merchant test and build validation; --skip-project-checks is not allowed.');
   const checks = await runProjectValidation(layout, options);
   const bindingDigest = nativeBindingDigest(layout.backend);
   const { auth, store, state } = await authenticatedStore(base, root, domain, project, layout, options, false);
   const endpoint = `https://${domain}`;
-  const operations = nativeOperationEvidence().map(item => ({ ...item, binding_digest: bindingDigest }));
-  recordConnection(root, 'native_registration', 'running', { transport: 'native_http', operations: NATIVE_PHASE1_OPERATIONS });
+  const operationEvidence = nativeOperationEvidence(operations).map(item => ({ ...item, binding_digest: bindingDigest }));
+  recordConnection(root, 'native_registration', 'running', { transport: 'native_http', operations });
   const installation = await activity('Registering signed Native HTTP runtime', () => request(
     base, `/api/commerce/stores/${encodeURIComponent(store.id)}/installations`, {
       method: 'POST', token: auth.access_token,
@@ -669,32 +680,40 @@ async function connectNativeReference(root, options, { base, layout, project, do
         environment: store.environment || 'production', transport: 'native_http', endpoint,
         native_runtime: { binding_digest: bindingDigest, trusted_proxy_prefix: null, max_body_bytes: 1048576 },
         protocol_version: '1', sdk_version: packageDependencies(layout.backend)['@auteric/merchant-node'],
-        release_id: bindingDigest.slice('sha256:'.length, 'sha256:'.length + 24), operations,
+        release_id: bindingDigest.slice('sha256:'.length, 'sha256:'.length + 24), operations: operationEvidence,
+        sidecar: nativeSidecarRegistration(operations, bindingDigest, options['sidecar-storage'] || 'ephemeral'),
       },
     }), options);
   if (!installation?.id || installation.transport !== 'native_http' || installation.endpoint !== endpoint) {
     throw Error('Control plane did not confirm the expected Native HTTP installation');
   }
-  const runtimeConfig = await activity('Fetching pinned native runtime configuration', () => request(
+  const runtimeConfig = detected.kind === 'native_runtime' ? await activity('Fetching pinned native runtime configuration', () => request(
     base, `/api/commerce/stores/${encodeURIComponent(store.id)}/installations/${encodeURIComponent(installation.id)}/native-runtime-config`,
     { token: auth.access_token },
+  ), options) : null;
+  if (runtimeConfig) assertNativeRuntimeConfig(runtimeConfig, { storeId: store.id, environment: store.environment || 'production', endpoint, bindingDigest });
+  const sidecarConfig = await activity('Fetching pinned sidecar deployment configuration', () => request(
+    base, `/api/commerce/stores/${encodeURIComponent(store.id)}/installations/${encodeURIComponent(installation.id)}/sidecar-config`,
+    { token: auth.access_token },
   ), options);
-  assertNativeRuntimeConfig(runtimeConfig, { storeId: store.id, environment: store.environment || 'production', endpoint, bindingDigest });
+  const deployable = prepareEcsMvpArtifacts(layout.backend, sidecarConfig, {
+    installationId: installation.id, domain, operations,
+  });
   // This file intentionally contains only public keys and immutable install
   // metadata. Never put operator tokens or Gateway credentials in it.
-  atomicJSON(nativeRuntimePath(layout.backend), runtimeConfig, 0o644);
+  if (runtimeConfig) atomicJSON(nativeRuntimePath(layout.backend), runtimeConfig, 0o644);
   atomicJSON(nativeInstallationPath(layout.backend), {
     version: 1, transport: 'native_http', installation_id: installation.id, store_id: store.id,
     environment: store.environment || 'production', endpoint, binding_digest: bindingDigest,
-    operations: NATIVE_PHASE1_OPERATIONS, project_validation: checks.status,
-    runtime_config: '.auteric/native-runtime.json', release_id: installation.release_id || null,
+    operations, project_validation: checks.status,
+    runtime_config: runtimeConfig ? '.auteric/native-runtime.json' : null, release_id: installation.release_id || null,
   }, 0o644);
   // Native HTTP has no generated connector mapping to activate. Its immutable
   // registration and local test/build evidence are sufficient to prepare a
   // signed discovery document. Runtime reachability is deliberately checked
   // afterwards: a first Connect must leave the merchant with one complete
   // deployable bundle (runtime config + UCP), not require a second Connect.
-  for (const operation of NATIVE_PHASE1_OPERATIONS) {
+  for (const operation of operations) {
     await activity(`Preparing native capability: ${operation}`, () => request(
       base, `/api/commerce/stores/${encodeURIComponent(store.id)}/capabilities/${encodeURIComponent(operation)}/enable`,
       { method: 'POST', token: auth.access_token },
@@ -719,10 +738,12 @@ async function connectNativeReference(root, options, { base, layout, project, do
   state.discovery_digest = createHash('sha256').update(JSON.stringify(discovery.document, null, 2) + '\n').digest('hex');
   state.mcp_url = discovery.document.auteric_mcp?.endpoint;
   state.integration = 'native_http_verified';
-  state.tested_operations = NATIVE_PHASE1_OPERATIONS;
+  state.tested_operations = operations;
   state.native_installation_id = installation.id;
   state.native_runtime_config = nativeRuntimePath(layout.backend);
   state.status = 'discovery_prepared';
+  state.installation_status = 'deployment_pending';
+  state.deployable_artifacts = deployable.artifacts;
   atomicJSON(configPath(root), state);
   console.log(`Signed UCP prepared at ${prepared.path}.`);
   if (built) console.log(`Built storefront UCP prepared at ${built.path}.`);
@@ -735,17 +756,22 @@ async function connectNativeReference(root, options, { base, layout, project, do
     // yet. This is an expected lifecycle state, not a failed integration and
     // never a reason to manufacture public verification or start a connector.
     state.public_discovery_verified = false;
-    state.status = 'deployment_pending';
+    // These are local, intentionally ignored installer files. They are useful
+    // input to a deployment generator, but are not a deployable Git contract.
+    // Never label that state deployment_pending.
+    state.status = 'discovery_prepared';
+    state.installation_status = 'deployment_pending';
+    state.deployable_artifacts = deployable.artifacts;
     atomicJSON(configPath(root), state);
     recordConnection(root, 'deployment', 'pending', {
-      outcome: 'deployment_pending', transport: 'native_http',
+      outcome: 'deployment_pending', installation_status: 'deployment_pending', deployable_artifacts: deployable.artifacts, transport: 'native_http',
       installation_id: installation.id,
       runtime_config: nativeRuntimePath(layout.backend),
       ucp: prepared.path,
-      next_action: 'Deploy this merchant build once, then run Connection Test in Auteric Console.',
+      next_action: 'Review and commit the generated Git-tracked deployment artifacts, deploy that build, then run Connection Test in Auteric Console.',
     });
     console.log(terminalColor(
-      'Native runtime configuration and signed UCP are prepared locally. Deploy this build once, then run Connection Test in Auteric Console. No connector process is required.',
+      'Sidecar bundle, deployment manifest, and signed UCP are prepared. Commit and deploy this build, then run Connection Test. No connector process is required.',
       'green', { enabled: activityEnabled(options) },
     ));
     return state;
@@ -756,6 +782,7 @@ async function connectNativeReference(root, options, { base, layout, project, do
     ), options);
     state.public_discovery_verified = true;
     state.status = 'native_http_ready';
+    state.installation_status = 'deployed_unverified';
   } catch (error) {
     state.public_discovery_verified = false;
     recordConnection(root, 'discovery', 'publication_pending', {
@@ -781,8 +808,10 @@ async function connectNativeReference(root, options, { base, layout, project, do
   atomicJSON(configPath(root), state);
   const onboardingReady = state.public_discovery_verified && connectionTestReady;
   state.status = onboardingReady ? 'native_http_ready' : state.public_discovery_verified ? 'connection_test_required' : 'discovery_prepared';
+  state.installation_status = onboardingReady ? 'verified' : state.public_discovery_verified ? 'deployed_unverified' : 'prepared';
   recordConnection(root, 'discovery', state.public_discovery_verified ? 'public_verified' : 'publication_pending', {
-    outcome: onboardingReady ? 'native_ready' : state.public_discovery_verified ? 'connection_test_required' : 'discovery_pending', transport: 'native_http',
+    outcome: onboardingReady ? 'native_ready' : state.public_discovery_verified ? 'connection_test_required' : 'discovery_pending', installation_status: state.installation_status,
+    ...(onboardingReady ? { verified_operations: NATIVE_PHASE1_OPERATIONS } : {}), transport: 'native_http',
     // A rerun may follow a publication-pending attempt.  Clear its diagnostic
     // fields once the public verification succeeds so terminal exit status and
     // connect-status describe the current run rather than stale failure state.
@@ -791,7 +820,7 @@ async function connectNativeReference(root, options, { base, layout, project, do
     next_action: onboardingReady
       ? 'Native HTTP installation is active; no connector process is required.'
       : state.public_discovery_verified
-        ? `Run the controlled Connection Test at ${base}/console?store=${encodeURIComponent(store.id)}&onboarding=connection-test, then rerun Connect to activate Agent Access.`
+        ? `Run the safe cart check at ${base}/console?store=${encodeURIComponent(store.id)}&onboarding=connection-test. Agent Access activates automatically when every protected step passes; no second Connect run is required.`
         : `Deploy the prepared UCP at https://${domain}/.well-known/ucp and retry.`,
   });
   try {
@@ -804,103 +833,20 @@ async function connectNativeReference(root, options, { base, layout, project, do
   const completion = onboardingReady
     ? 'Native HTTP runtime, public UCP, and Connection Test verification passed. Agent Access is active; no connector process is required.'
     : state.public_discovery_verified
-      ? `Native HTTP runtime and public UCP verification passed. Run the controlled Connection Test: ${base}/console?store=${encodeURIComponent(store.id)}&onboarding=connection-test`
+      ? `Native HTTP runtime and public UCP verification passed. Run one safe cart check to activate protection automatically: ${base}/console?store=${encodeURIComponent(store.id)}&onboarding=connection-test`
     : 'Native runtime passed its health check; public UCP publication is pending deployment. No connector was started.';
   console.log(terminalColor(completion, onboardingReady ? 'green' : state.public_discovery_verified ? 'green' : 'red', { enabled: activityEnabled(options) }));
-  return state;
-}
-
-async function connectServiceFirst(root, options, context) {
-  const { base, layout, project, domain, localSession, storeUrl, backendUrl, inventory } = context;
-  if (options['skip-project-checks']) throw Error('Service-First installation requires merchant test and build validation; --skip-project-checks is not allowed.');
-  const checks = await runProjectValidation(layout, options);
-  recordConnection(root, 'service_first_validation', 'running', { operations: CUSTOM_MVP_OPERATIONS });
-  let verification = [];
-  if (localSession) {
-    if (!storeUrl) throw Error('Service-First sandbox verification requires --store-url or --local-storefront');
-    verification = await activity('Testing catalog, cart and pre-payment checkout through the merchant API',
-      () => verifyStandardMerchantBridge(storeUrl), options);
-  }
-  const { auth, store, state } = await authenticatedStore(base, root, domain, project, layout, options, localSession);
-  const bindingDigest = serviceFirstBindingDigest();
-  // The registered endpoint is the merchant origin that will reverse-proxy
-  // /api/auteric/v1 after deployment. Even a local sandbox registration uses
-  // its non-public test hostname; loopback execution is verification evidence,
-  // not the deployment identity.
-  const endpoint = `https://${domain}`;
-  const operations = serviceFirstOperationEvidence(bindingDigest);
-  const installation = await activity('Registering the Service-First sidecar installation', () => request(
-    base, `/api/commerce/stores/${encodeURIComponent(store.id)}/installations`, {
-      method: 'POST', token: auth.access_token,
-      body: {
-        environment: store.environment || (localSession ? 'sandbox' : 'production'),
-        transport: 'native_http', endpoint,
-        native_runtime: { runtime_kind: 'sidecar', binding_digest: bindingDigest, trusted_proxy_prefix: null, max_body_bytes: 1048576 },
-        protocol_version: '1', sdk_version: 'merchant-sidecar/0.1.0',
-        release_id: bindingDigest.slice(7, 31), operations,
-      },
-    }), options);
-  const runtimeConfig = await activity('Fetching pinned sidecar trust configuration', () => request(
-    base, `/api/commerce/stores/${encodeURIComponent(store.id)}/installations/${encodeURIComponent(installation.id)}/native-runtime-config`,
-    { token: auth.access_token },
-  ), options);
-  if (runtimeConfig?.installation?.bindingDigest !== bindingDigest || runtimeConfig?.installation?.storeId !== store.id) {
-    throw Error('Control plane returned a sidecar runtime configuration for a different binding or Store');
-  }
-  const bundle = prepareServiceFirstBundle(layout.backend, {
-    runtimeConfig, merchantBaseUrl: backendUrl, operations: CUSTOM_MVP_OPERATIONS, verification,
-    releaseId: installation.release_id,
-  });
-  for (const operation of CUSTOM_MVP_OPERATIONS) {
-    await request(base, `/api/commerce/stores/${encodeURIComponent(store.id)}/capabilities/${encodeURIComponent(operation)}/enable`, {
-      method: 'POST', token: auth.access_token,
-    });
-  }
-  const health = await request(base, `/api/commerce/stores/${encodeURIComponent(store.id)}/connection-health`, { token: auth.access_token });
-  if (health?.checks?.policies?.state !== 'active') {
-    const policy = await request(base, `/api/commerce/stores/${encodeURIComponent(store.id)}/policy`, { token: auth.access_token });
-    await request(base, `/api/commerce/stores/${encodeURIComponent(store.id)}/policy`, {
-      method: 'PUT', token: auth.access_token, body: policy,
-    });
-  }
-  const discovery = await activity('Preparing signed UCP for the deployable sidecar', () => request(
-    base, `/api/commerce/stores/${encodeURIComponent(store.id)}/discovery`, { token: auth.access_token },
-  ), options);
-  const previousDigest = state.discovery_digest || existingDiscoveryDigest(layout.frontend, project.framework, store.id);
-  const prepared = prepareDiscovery(layout.frontend, project.framework, discovery.document, { previousDigest });
-  const built = prepareBuiltDiscovery(layout.frontend, discovery.document, previousDigest);
-  Object.assign(state, {
-    discovery_digest: createHash('sha256').update(JSON.stringify(discovery.document, null, 2) + '\n').digest('hex'),
-    mcp_url: discovery.document.auteric_mcp?.endpoint,
-    integration: 'service_first_sidecar', status: 'deployment_pending',
-    tested_operations: verification.map(item => item.operation),
-    sidecar_installation_id: installation.id, sidecar_bundle: bundle.directory,
-    project_validation: checks.status, adapter_profile: serviceFirstSupport(inventory).profile,
-    public_discovery_verified: false,
-  });
-  atomicJSON(configPath(root), state);
-  recordConnection(root, 'deployment', 'pending', {
-    outcome: 'deployment_pending', transport: 'native_http', installation_id: installation.id,
-    bundle: bundle.directory, ucp: prepared.path,
-    next_action: 'Deploy the generated bridge and sidecar bundle with this merchant release, then run Connection Test.',
-  });
-  try { await completeBrowserPairing(base, auth, store.id); } catch (error) {
-    console.log(`Dashboard handoff is unavailable; open ${base}/console?store=${encodeURIComponent(store.id)}&onboarding=connection-test`);
-  }
-  console.log(`Service-First bundle prepared at ${bundle.directory}.`);
-  console.log(`Signed UCP prepared at ${prepared.path}.${built ? ` Built copy: ${built.path}.` : ''}`);
-  console.log(`Verified without payment: ${state.tested_operations.join(', ') || 'none (production verification remains required)'}.`);
-  console.log('Deploy once, expose only the sidecar at /api/auteric/v1, then run Connection Test. Payment and complete_checkout remain disabled.');
   return state;
 }
 
 async function connect(root, options) {
   const base = apiUrl(options);
   const platform = normalizeStorePlatform(options.platform || 'custom');
-  const localSession = validateConnectOptions(options);
+  const localSession = Boolean(options.localhost || options['local-storefront']);
   const storeUrl = options['store-url']
     ? localStoreUrl(options['store-url'])
     : options['local-storefront'] ? await detectLocalStoreUrl() : null;
+  if (storeUrl && !localSession) throw Error('--store-url is only available with --localhost or --local-storefront');
   connectionStatus(root, { control_plane: base, local_storefront: storeUrl, mode: localSession ? 'local_sandbox' : 'cloud' });
   const layout = resolveProjectLayout(root, options);
   const project = inspect(layout.frontend);
@@ -933,20 +879,22 @@ async function connect(root, options) {
       : `${platformAdapter(platform).adapter_family} is selected, but this connector is not shipped in this release. No custom adapter or production capability was activated.`);
     return state;
   }
+  const application = await import('./application-plan.js').then(m=>m.applicationPlan(layout.backend)).catch(()=>null);
+  if(application?.bindings.some(b=>b.evidence.business_symbol.factory)) {
+    const {connectSidecar}=await import('./sidecar-connect.js');
+    const {withApplicationRuntime}=await import('./single-command.js');
+    return withApplicationRuntime(root,layout,options,application,prepared=>connectSidecar(root,prepared,{base,layout,project,domain,localSession,authenticatedStore,request,prepareDiscovery,provisionGatewayAccess,completeBrowserPairing,recordConnection,runProjectValidation}));
+  }
+  if (options.sidecar) {
+    const { connectSidecar } = await import('./sidecar-connect.js');
+    return connectSidecar(root, options, { base, layout, project, domain, localSession, authenticatedStore, request, prepareDiscovery, provisionGatewayAccess, completeBrowserPairing, recordConnection, runProjectValidation });
+  }
   // Native reference detection has priority over legacy connector state.  This
   // branch must stay before `sdk('prepare', ...)`: the bundled Python SDK is
   // the outbound connector installer and is not part of native commerce.
   if (nativeReference(layout.backend).detected) {
     console.log(`Native reference detected: Node/Express Native HTTP (${NATIVE_PHASE1_OPERATIONS.join(', ')}).`);
     return connectNativeReference(root, options, { base, layout, project, domain, localSession });
-  }
-  const serviceInventory = await inventoryRepo(layout.backend, { backendDir: options.backend });
-  const serviceFirst = serviceFirstSupport(serviceInventory);
-  if (serviceFirst.supported) {
-    console.log(`Service-First bridge profile detected (${CUSTOM_MVP_OPERATIONS.length} catalog/cart/checkout operations; payment excluded).`);
-    return connectServiceFirst(root, options, {
-      base, layout, project, domain, localSession, storeUrl, backendUrl, inventory: serviceInventory,
-    });
   }
   recordConnection(root, 'inspection', 'running');
   let prepared = await activity('Inspecting APIs and preparing adapter evidence', () => sdk('prepare', layout.backend, { agent: agent === 'claude' ? 'claude-code' : agent === 'copilot' ? 'codex' : agent,
@@ -967,7 +915,7 @@ async function connect(root, options) {
     prepared = await activity('Rechecking adapter evidence', () => sdk('prepare', layout.backend, { agent: 'none', store_url: probeUrl, instructions_root: root }), options);
   }
   if (!prepared.connector_prepared) {
-    recordConnection(root, 'adapter', 'implementation_required', { outcome: 'incomplete', next_action: 'Implement the reported connector mappings, then retry.' });
+    recordConnection(root, 'adapter', 'implementation_required', { outcome: 'incomplete', installation_status: 'implementation_required', next_action: 'Implement the reported connector mappings, then retry.' });
     for (const reason of prepared.inventory.connector_diagnostics || []) console.log(`Diagnosis: ${reason}`);
     console.log('Integration incomplete: no commerce connector is configured. The coding agent must trace the detected APIs, implement .auteric/connector.json and test its handlers before rerunning Connect. No new Store or UCP was created.');
     return { integration: 'implementation_required', tested_operations: [] };
@@ -1015,7 +963,7 @@ async function connect(root, options) {
   let store = stores.find(item => item.domain === domain && (!previous?.store_id || item.id === previous.store_id));
   if (!store) {
     store = await activity('Creating the Auteric Store', () => request(base, '/api/commerce/stores', { method: 'POST', token: auth.access_token,
-      body: { domain, name: domain, platform, environment: localSession ? 'sandbox' : 'production' } }), options);
+      body: { domain, name: domain, platform, environment: options.environment || (localSession ? 'sandbox' : 'production') } }), options);
   }
   if ((store.platform || 'custom') !== platform) throw Error(`Saved Store platform is ${store.platform || 'custom'}, not ${platform}`);
   const state = { ...previous, discovery_digest: readConfig(root)?.discovery_digest, api_url: base, domain, store_id: store.id, platform, adapter: platformAdapter(platform), framework: project.framework, backend_dir: layout.backendRelative, frontend_dir: layout.frontendRelative, mode: localSession ? 'local' : 'cloud', local_only: localOnly, status: 'store_registered' };
@@ -1226,9 +1174,12 @@ export async function run(argv, root = process.cwd()) {
     const backend = state.backend_dir ? resolve(root, state.backend_dir) : root;
     return sdk('serve', backend, { credential_file: state.credential_file }, { install: true });
   }
+  if (command === 'pilot') {
+    const { pilot } = await import('./sidecar-connect.js');
+    return pilot(root,options);
+  }
   if (command === 'connect') {
     if (options['dry-run']) return connect(root, options);
-    validateConnectOptions(options);
     connectionStatus(root, { version: 1, run_id: randomBytes(12).toString('hex'), status: 'running', phase: 'starting', outcome: 'pending', started_at: new Date().toISOString(), next_action: 'Connect is running. Follow the current phase and complete pairing when requested.' });
     const release = lockProject(root);
     try { return await connect(root, options); }
@@ -1280,11 +1231,12 @@ export async function run(argv, root = process.cwd()) {
       auth = await authenticate(state.api_url, options);
       atomicJSON(authFile, { ...auth, expires_at: Date.now() + Math.max(0, Number(auth.expires_in || 0) - 60) * 1000 });
     }
-    await request(state.api_url, `/api/commerce/stores/${encodeURIComponent(state.store_id)}/agent-access`, {
+    const disabled=await request(state.api_url, `/api/commerce/stores/${encodeURIComponent(state.store_id)}/agent-access`, {
       method: 'PUT', token: auth.access_token, body: { enabled: false },
     });
-    if (state.sidecar_installation_id) {
-      await request(state.api_url, `/api/commerce/stores/${encodeURIComponent(state.store_id)}/installations/${encodeURIComponent(state.sidecar_installation_id)}/revoke`, {
+    if(state.integration==='sidecar' && !disabled.scanner_evidence?.published) console.log('Access is disabled; Scanner invalidation remains unconfirmed.');
+    for (const installationId of new Set([state.sidecar_installation_id, state.native_installation_id].filter(Boolean))) {
+      await request(state.api_url, `/api/commerce/stores/${encodeURIComponent(state.store_id)}/installations/${encodeURIComponent(installationId)}/revoke`, {
         method: 'POST', token: auth.access_token,
       });
     }
@@ -1292,6 +1244,20 @@ export async function run(argv, root = process.cwd()) {
     state.disconnected_at = new Date().toISOString();
     state.public_discovery_verified = false;
     atomicJSON(configPath(root), state);
+    if(state.integration==='sidecar') {
+      const {restoreDiscoveryRoute}=await import('./sidecar-discovery.js');
+      restoreDiscoveryRoute(resolve(root,state.backend_dir || '.'));
+      const backend=resolve(root,state.backend_dir || '.');
+      const owned=readJSON(join(backend,'.auteric','sidecar-files.json')) || {};
+      for(const [path,digest] of Object.entries(owned)) {
+        const file=resolve(backend,path);
+        if(!file.startsWith(backend+'/')) throw Error('Owned integration path escapes backend');
+        if(existsSync(file) && createHash('sha256').update(readFileSync(file)).digest('hex')===digest) unlinkSync(file);
+      }
+      const profile=destination(resolve(root,state.frontend_dir || '.'),state.framework);
+      if(existsSync(profile) && createHash('sha256').update(readFileSync(profile)).digest('hex')===state.ucp_digest) unlinkSync(profile);
+      console.log('Owned discovery changes removed. Restart the merchant server and stop the Connect terminal; durable state is retained.');
+    }
     const localStop = state.sidecar_bundle ? join(state.sidecar_bundle, 'disconnect.sh') : null;
     console.log('Agent Access is disabled and the sidecar installation is revoked. Repository files and durable audit data were preserved.');
     if (localStop && existsSync(localStop)) console.log(`Stop the local containers with: ${localStop}`);

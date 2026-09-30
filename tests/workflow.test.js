@@ -4,6 +4,7 @@ import { mkdirSync, mkdtempSync, realpathSync, chmodSync, symlinkSync, statSync,
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { atomicJSON, readJSON, cachedSession, connectionStatus, lockProject, journal, sessionPath } from '../src/workflow.js';
+import { exitCodeForInstallation, normalizeInstallationReport } from '../src/installation-state.js';
 import { adapterTelemetry, agentCommand, prepareWithAgent } from '../src/agent.js';
 const temporary = () => mkdtempSync(join(realpathSync(tmpdir()), 'auteric-workflow-'));
 test('private sessions reject expiration and broad permissions', () => {
@@ -30,6 +31,13 @@ test('connection status keeps a merchant-safe terminal diagnosis', () => {
   assert.equal(status.phase, 'authentication');
   assert.equal(status.failure_code, 'timeout');
   assert.equal(readJSON(join(root, '.auteric/connection-status.json')).status, 'failed');
+});
+test('installation states do not treat local files as a deployment', () => {
+  assert.equal(exitCodeForInstallation('verified'), 0);
+  assert.equal(exitCodeForInstallation('deployment_pending'), 2);
+  assert.throws(() => normalizeInstallationReport({}, { installation_status: 'deployment_pending' }), /Git-tracked deployable_artifacts/);
+  assert.throws(() => normalizeInstallationReport({}, { installation_status: 'verified' }), /verified_operations/);
+  assert.throws(() => normalizeInstallationReport({}, { installation_status: 'failed', failure_code: 'x' }), /requires failure_code/);
 });
 test('exclusive project lock prevents overlapping provisioning and releases', () => {
   const root = temporary(); const release = lockProject(root);

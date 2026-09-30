@@ -7,6 +7,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { dirname, join, relative } from 'node:path';
 import { camelCase, lowerFirst, tsType } from '../naming.js';
 import { addMarker } from '../util.js';
+import { nodeObjectCall } from '../node-call.js';
 
 function posix(path) {
   return path.split('\\').join('/');
@@ -43,7 +44,8 @@ function callArguments(binding, indent, inputVar) {
   for (const param of binding.path_params) args.push(`${camelCase(param)}: ctx.pathParams.${param},`);
   for (const field of binding.input_fields) {
     if (field.name === 'expected_revision') continue;
-    args.push(`${camelCase(field.name)}: ${inputVar}.${field.name},`);
+    const target = field.name === 'q' && binding.call_fields?.includes('query') && !binding.call_fields.includes('q') ? 'query' : camelCase(field.name);
+    args.push(`${target}: ${inputVar}.${field.name},`);
   }
   if (binding.contract.concurrency_mode === 'resource_revision') args.push('expectedRevision: ctx.expectedRevision,');
   if (binding.contract.idempotency === 'required') args.push('idempotencyKey: ctx.actionId,');
@@ -138,7 +140,7 @@ function adapterFile(resource, bindings, plan, root) {
     if (binding.action === 'bind_internal_api') body = internalApiBody(binding, indent);
     else {
       const symbol = binding.symbol || binding.proposed_symbol;
-      body = adapterBody({ ...binding, symbol }, lowerFirst(symbol.name), indent);
+      body = adapterBody({ ...binding, symbol, call_fields: nodeObjectCall(root, symbol).fields }, lowerFirst(symbol.name), indent);
     }
     return `    ${binding.operation}: async (ctx: VerifiedContext, input: unknown) => {\n${body}\n    },`;
   });
