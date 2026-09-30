@@ -26,7 +26,15 @@ export function syncedContracts() {
   if (!text.includes('Do not edit')) {
     throw new Error(`refusing to sync: ${source} does not look like the generated contracts file`);
   }
-  return HEADER + stripTypeScriptTypes(text, { mode: 'transform' });
+  // Node 25+ deliberately supports only erasable syntax. The generator has
+  // one parameter-property class; lower it explicitly before asking Node to
+  // strip the remaining type annotations, preserving its public fields.
+  const erasable = text
+    .replace('public readonly category: string,', 'category: string,')
+    .replace('public readonly path: string,', 'path: string,')
+    .replace('super(`${category} at ${path}: ${message}`);', 'super(`${category} at ${path}: ${message}`);\n    this.category = category;\n    this.path = path;');
+  return HEADER + stripTypeScriptTypes(erasable, { mode: 'strip' })
+    .split('\n').map(line => line.trimEnd()).join('\n');
 }
 
 if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {

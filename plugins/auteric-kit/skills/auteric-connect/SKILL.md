@@ -37,6 +37,16 @@ Read `.auteric/workflow.json` for the last stage, `.auteric/local-validation.jso
 for pre-authentication checks and `.auteric/health.json` for worker connectivity.
 A resumed session does not prove current runtime protection.
 
+`deployment_pending` is an implementation handoff, not a successful stopping
+point. When Connect returns it inside a coding assistant, continue in the same
+task: inspect the merchant's real deployment files, add the generated bridge and
+sidecar to that deployment, wire secret-manager references, route only
+`/api/auteric/v1` to the sidecar, make the prepared UCP reachable as JSON, and
+run the repository checks. The deployable, non-secret runtime configuration and
+all infrastructure/CI changes must be tracked in the merchant PR; `.auteric/`
+is private installer state and is never the deployable result. Do not report the
+installation complete while the PR contains only `/.well-known/ucp`.
+
 ## Installation SDK vs merchant runtime SDK
 
 Two different SDKs are involved, and they are not interchangeable:
@@ -84,6 +94,11 @@ and pairing must still be completed by the real account owner.
 Wait for normal user approval before pushing code, publishing packages, deploying
 merchant discovery or enabling production traffic. Prepare and validate the exact
 changes before this publication gate; local installation is not publication.
+For an explicit request to prepare a deployable installation, this local work
+includes adapting the existing deployment manifest and CI workflow. The merchant
+service, bridge and sidecar must all be present; secrets must be secret-manager
+references; and health/routing checks must cover the sidecar. Never leave the
+only runtime copy under an ignored `.auteric` directory.
 
 ## 3. Implement all supported local capabilities
 
