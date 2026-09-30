@@ -135,7 +135,7 @@ function inputFields(registryDir, record) {
       required: required.has(name),
       type: tsType(schema.properties[name]),
     }));
-  } catch { return []; }
+  } catch (error) { throw new Error(`Locked contract input schema unavailable for ${record?.operation || record?.schemas?.input}: ${error.message}`); }
 }
 
 // Adapter layout per language. Node keeps generated code next to the traced

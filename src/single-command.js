@@ -30,7 +30,11 @@ export async function withApplicationRuntime(root,layout,options,plan,run){
  try{
   // The process must load the generated JSON route on its first start.
   installDiscoveryRoute(backend,layout.frontend);
-  options['bridge-port']=await availablePort();
+  // The installation contract pins this private task-local endpoint. Check it
+  // before browser pairing instead of silently choosing an untrusted port.
+  const bridgeProbe=createServer();
+  await new Promise((done,fail)=>{bridgeProbe.once('error',()=>fail(Error('The required private Bridge port 3101 is already in use; existing runtime was preserved')));bridgeProbe.listen(3101,'127.0.0.1',done);});
+  await new Promise(done=>bridgeProbe.close(done));
   if(!options['application-url']){
    const pkg=JSON.parse(readFileSync(join(backend,'package.json'),'utf8'));
    if(!pkg.scripts?.start)throw Error('Automatic application startup requires the merchant start script or --application-url');

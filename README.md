@@ -1,4 +1,4 @@
-# Connect candidate 0.6.5-rc.4
+# Connect candidate 0.6.5-rc.5
 
 Factory-based Node ESM/Express merchants can use `auteric connect --domain STORE`
 (`--no-agent` inside a coding session). The installer keeps the original HTTP
