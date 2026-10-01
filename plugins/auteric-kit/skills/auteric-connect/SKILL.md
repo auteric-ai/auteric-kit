@@ -5,18 +5,35 @@ description: Prepare an ecommerce or storefront project for shopping agents with
 
 # Prepare a storefront for shopping agents
 
-If the user asks for a single-command setup, run
-`npx --yes github:auteric-ai/auteric-kit --domain STORE` or
-`npx --yes github:auteric-ai/auteric-kit --localhost --store-url http://127.0.0.1:5500 --serve`
-from the merchant repository root. Local mode requires the storefront and Auteric
-Commerce service to be running. The CLI supports local HTTP control-plane
-and storefront verification. The CLI installs the bundled SDK and project skill,
-inventories the entire detected API surface, classifies every endpoint, and selects
-only supported shopping operations as capability/tool candidates. It installs supported local adapters, performs browser authorization
-and exact sandbox contract/Gateway tests, then prepares signed UCP locally.
-`--serve` keeps the connector running in that terminal after verification. Inspect
-`.auteric/capabilities.json` and `.auteric/validation.json` for missing operations. Do not claim `npx @auteric/cli` is
-available or that local development signatures prove public protection.
+Custom Connect defaults to a model-generated adapter and one generic, versioned
+Auteric runtime container. Read [model-driven Connect](references/model-connect.md)
+first. The coding model already working in the merchant repository scans and
+interprets it, creates the adapter and fixtures, and repairs only that integration.
+Inventory assists this work; it cannot prove business semantics. Do not start a
+second coding agent. No SDK source or runtime environment is copied into the merchant.
+
+Use [managed HTTP Connect](references/managed-http.md) only for an explicitly
+provided simple HTTP mapping. Local acceptance must precede cloud qualification.
+The native and old installer paths below are compatibility paths, selected
+explicitly. They do not override the default out-of-process model.
+
+## One Connect request
+
+For custom stores the user supplies `auteric connect --domain STORE` to the
+current frontier coding model. Complete the entire local workflow in this same
+request. Read `references/model-connect.md`; run the source CLI, inspect its
+dossier and merchant code, generate the owned plan under ignored
+`auteric/.state/adapter-plan.json`, and resume the same command internally.
+Do not stop at `implementation_required`, ask for `--adapter-plan`, or hand a
+second command back to the user. Only stop for a concrete unresolved merchant
+semantic boundary or unavailable local prerequisite. Never invent a successful
+binding. A terminal without a coding model returns a continuation for that model;
+the CLI itself does not contain repository-specific intelligence.
+Connect installs the plan automatically and runs local acceptance by default.
+Runtime source/baseline options, when needed, are internal model setup details.
+Prepare discovery routing from actual verified capabilities and report local
+verification separately from public deployment. Do not use the legacy installer
+for a single-command request.
 
 Start at the merchant repository root. The CLI searches for a frontend and API
 service beneath it. If it finds one of each, it chooses them automatically. If it
@@ -52,7 +69,7 @@ Two different SDKs are involved, and they are not interchangeable:
   it from the authoritative backend's language: `native_node`,
   `native_python`, or `native_go`.
 
-Choose the runtime per ADR-01 conditions: a backend that can receive HTTPS
+For the explicit native/legacy fallback only, choose the runtime per ADR-01 conditions: a backend that can receive HTTPS
 gets the native runtime in its own language; `outbound_worker` is chosen only
 on deployment constraints (private network, no ingress); a static-only
 storefront gets a limited read-only catalog or an explicit companion backend —

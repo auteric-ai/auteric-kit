@@ -1,6 +1,6 @@
 {
   "name": "@auteric/cli",
-  "version": "0.7.3",
+  "version": "0.7.4",
   "description": "Connect a custom storefront to an Auteric Commerce control plane",
   "type": "module",
   "bin": {
@@ -17,14 +17,24 @@
     "runtime/contracts/generated.ts",
     "runtime/sdk/pyproject.toml",
     "runtime/sdk/src/**/*.py",
-    "runtime/sdk/src/**/*.md"
+    "runtime/sdk/src/**/*.md",
+    "runtime/merchant-runtime",
+    "schemas",
+    "release-manifest.json",
+    "plugins/auteric-kit/skills/auteric-connect/SKILL.md",
+    "plugins/auteric-kit/skills/auteric-connect/references/model-connect.md"
   ],
   "engines": {
-    "node": ">=20"
+    "node": ">=22.13"
   },
   "license": "MIT",
   "scripts": {
     "test": "node --test tests/*.test.js",
     "test:package": "node scripts/check-package.js"
+  },
+  "dependencies": {
+    "@aws-sdk/client-secrets-manager": "3.1144.0",
+    "ajv": "8.20.0",
+    "pg": "8.16.3"
   }
 }

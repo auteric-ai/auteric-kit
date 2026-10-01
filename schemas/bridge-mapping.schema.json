@@ -1,0 +1,426 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "bridge-mapping.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "schema": {
+      "const": "auteric-bridge-mapping/v1"
+    },
+    "registry_digest": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256,
+      "pattern": "^sha256:[0-9a-f]{64}$"
+    },
+    "identity_profile": {
+      "const": "installation-buyer-cookie/v1"
+    },
+    "session": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "method": {
+          "const": "POST"
+        },
+        "path": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256,
+          "pattern": "^/(?!/)[A-Za-z0-9_/{}/.-]*$"
+        },
+        "cookie_name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256,
+          "pattern": "^[A-Za-z][A-Za-z0-9_-]*$"
+        }
+      },
+      "required": [
+        "method",
+        "path",
+        "cookie_name"
+      ]
+    },
+    "profiles": {
+      "type": "object",
+      "minProperties": 1,
+      "maxProperties": 12,
+      "propertyNames": {
+        "pattern": "^[a-z][a-z0-9_]{0,31}$"
+      },
+      "additionalProperties": {
+        "type": "object",
+        "maxProperties": 40,
+        "propertyNames": {
+          "pattern": "^[a-zA-Z][a-zA-Z0-9_]{0,63}$"
+        },
+        "additionalProperties": {
+          "$ref": "#/$defs/selector"
+        }
+      }
+    },
+    "operations": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 5,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "operation": {
+            "type": "string",
+            "enum": [
+              "search_products",
+              "get_product",
+              "create_cart",
+              "get_cart",
+              "add_to_cart"
+            ]
+          },
+          "target": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "method": {
+                "type": "string",
+                "enum": [
+                  "GET",
+                  "POST"
+                ]
+              },
+              "path": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 256,
+                "pattern": "^/(?!/)[A-Za-z0-9_/{}/.-]*$"
+              }
+            },
+            "required": [
+              "method",
+              "path"
+            ]
+          },
+          "input": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "path": {
+                "type": "object",
+                "maxProperties": 40,
+                "propertyNames": {
+                  "pattern": "^[a-zA-Z][a-zA-Z0-9_]{0,63}$"
+                },
+                "additionalProperties": {
+                  "$ref": "#/$defs/inputSelector"
+                }
+              },
+              "query": {
+                "type": "object",
+                "maxProperties": 40,
+                "propertyNames": {
+                  "pattern": "^[a-zA-Z][a-zA-Z0-9_]{0,63}$"
+                },
+                "additionalProperties": {
+                  "$ref": "#/$defs/inputSelector"
+                }
+              },
+              "body": {
+                "type": "object",
+                "maxProperties": 40,
+                "propertyNames": {
+                  "pattern": "^[a-zA-Z][a-zA-Z0-9_]{0,63}$"
+                },
+                "additionalProperties": {
+                  "$ref": "#/$defs/inputSelector"
+                }
+              }
+            },
+            "required": [
+              "path",
+              "query",
+              "body"
+            ]
+          },
+          "output": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "profile": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 256
+              },
+              "select": {
+                "type": "string",
+                "minLength": 0,
+                "maxLength": 256,
+                "pattern": "^(|(/[A-Za-z0-9_.~-]+){1,8})$"
+              }
+            },
+            "required": [
+              "profile",
+              "select"
+            ]
+          },
+          "auth": {
+            "type": "string",
+            "enum": [
+              "none",
+              "session"
+            ]
+          },
+          "idempotency": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "header": {
+                "type": "string",
+                "enum": [
+                  "idempotency-key",
+                  "x-idempotency-key"
+                ]
+              }
+            },
+            "required": [
+              "header"
+            ]
+          },
+          "revision": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "location": {
+                "type": "string",
+                "enum": [
+                  "body",
+                  "header"
+                ]
+              },
+              "field": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 256,
+                "pattern": "^[A-Za-z][A-Za-z0-9_-]*$"
+              }
+            },
+            "required": [
+              "location",
+              "field"
+            ]
+          }
+        },
+        "required": [
+          "operation",
+          "target",
+          "input",
+          "output",
+          "auth"
+        ]
+      }
+    }
+  },
+  "required": [
+    "schema",
+    "registry_digest",
+    "identity_profile",
+    "session",
+    "profiles",
+    "operations"
+  ],
+  "$defs": {
+    "selector": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "select": {
+          "type": "string",
+          "minLength": 0,
+          "maxLength": 256,
+          "pattern": "^(|(/(?!__proto__(?:/|$)|constructor(?:/|$)|prototype(?:/|$))[A-Za-z0-9_.~-]+){1,8})$"
+        },
+        "transform": {
+          "type": "string",
+          "enum": [
+            "copy",
+            "id",
+            "money",
+            "enum",
+            "array",
+            "object",
+            "page_number",
+            "zero_discounts"
+          ]
+        },
+        "kind": {
+          "type": "string",
+          "enum": [
+            "product",
+            "variant",
+            "cart",
+            "line"
+          ]
+        },
+        "currency": {
+          "type": "string",
+          "minLength": 0,
+          "maxLength": 256,
+          "pattern": "^(|(/[A-Za-z0-9_.~-]+){1,8})$"
+        },
+        "unit": {
+          "type": "string",
+          "enum": [
+            "minor",
+            "decimal"
+          ]
+        },
+        "values": {
+          "type": "object",
+          "minProperties": 1,
+          "maxProperties": 32,
+          "additionalProperties": {
+            "type": [
+              "string",
+              "boolean",
+              "integer"
+            ]
+          }
+        },
+        "profile": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "optional": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "select",
+        "transform"
+      ],
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "transform": {
+                "const": "id"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "kind"
+            ],
+            "properties": {
+              "kind": {}
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "transform": {
+                "const": "money"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "currency",
+              "unit"
+            ],
+            "properties": {
+              "currency": {},
+              "unit": {}
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "transform": {
+                "const": "enum"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "values"
+            ],
+            "properties": {
+              "values": {}
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "transform": {
+                "const": "array"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "profile"
+            ],
+            "properties": {
+              "profile": {}
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "transform": {
+                "const": "object"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "profile"
+            ],
+            "properties": {
+              "profile": {}
+            }
+          }
+        }
+      ]
+    },
+    "inputSelector": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "select": {
+          "type": "string",
+          "minLength": 0,
+          "maxLength": 256,
+          "pattern": "^/[a-z][a-z0-9_]{0,63}$"
+        },
+        "transform": {
+          "type": "string",
+          "enum": [
+            "copy",
+            "id",
+            "cursor_page"
+          ]
+        },
+        "kind": {
+          "type": "string",
+          "enum": [
+            "product",
+            "variant",
+            "cart",
+            "line"
+          ]
+        }
+      },
+      "required": [
+        "select",
+        "transform"
+      ]
+    }
+  }
+}

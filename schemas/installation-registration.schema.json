@@ -1,0 +1,197 @@
+{
+  "$defs": {
+    "NativeRuntimeRegistration": {
+      "additionalProperties": false,
+      "description": "Merchant-pinned, non-secret runtime parameters.\n\nThe Gateway's signing key is deliberately *not* accepted here.  It is\nderived by the control plane at configuration retrieval time so a\nmerchant cannot replace the authority that signs execution credentials.",
+      "properties": {
+        "binding_digest": {
+          "pattern": "^sha256:[0-9a-f]{64}$",
+          "title": "Binding Digest",
+          "type": "string"
+        },
+        "trusted_proxy_prefix": {
+          "anyOf": [
+            {
+              "maxLength": 200,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Trusted Proxy Prefix"
+        },
+        "max_body_bytes": {
+          "default": 1048576,
+          "maximum": 4194304,
+          "minimum": 1,
+          "title": "Max Body Bytes",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "binding_digest"
+      ],
+      "title": "NativeRuntimeRegistration",
+      "type": "object"
+    },
+    "NativeSidecarRegistration": {
+      "additionalProperties": false,
+      "description": "Public, generated input for a deployable sidecar bundle.\n\nThe profile mappings are intentionally supplied by the installer after it\nhas inspected the merchant API.  The control plane pins and validates the\ninput; it never guesses a route or accepts credentials in this document.",
+      "properties": {
+        "schema": {
+          "default": "auteric-sidecar-registration/v1",
+          "title": "Schema",
+          "type": "string"
+        },
+        "integration_version": {
+          "maxLength": 200,
+          "minLength": 1,
+          "title": "Integration Version",
+          "type": "string"
+        },
+        "profiles": {
+          "additionalProperties": {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          "maxProperties": 30,
+          "minProperties": 1,
+          "title": "Profiles",
+          "type": "object"
+        },
+        "allowed_operations": {
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 30,
+          "minItems": 1,
+          "title": "Allowed Operations",
+          "type": "array"
+        },
+        "policy_ttl_seconds": {
+          "default": 3600,
+          "maximum": 86400,
+          "minimum": 60,
+          "title": "Policy Ttl Seconds",
+          "type": "integer"
+        },
+        "storage_mode": {
+          "default": "ephemeral",
+          "title": "Storage Mode",
+          "type": "string"
+        },
+        "storage_backend": {
+          "default": "postgres",
+          "title": "Storage Backend",
+          "type": "string"
+        },
+        "agent_ingress": {
+          "default": false,
+          "title": "Agent Ingress",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "integration_version",
+        "profiles",
+        "allowed_operations"
+      ],
+      "title": "NativeSidecarRegistration",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "environment": {
+      "title": "Environment",
+      "type": "string"
+    },
+    "transport": {
+      "default": "native_http",
+      "title": "Transport",
+      "type": "string"
+    },
+    "endpoint": {
+      "maxLength": 500,
+      "minLength": 1,
+      "title": "Endpoint",
+      "type": "string"
+    },
+    "trust_binding": {
+      "additionalProperties": true,
+      "title": "Trust Binding",
+      "type": "object"
+    },
+    "protocol_version": {
+      "default": "1",
+      "maxLength": 10,
+      "title": "Protocol Version",
+      "type": "string"
+    },
+    "sdk_version": {
+      "anyOf": [
+        {
+          "maxLength": 100,
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Sdk Version"
+    },
+    "release_id": {
+      "anyOf": [
+        {
+          "maxLength": 200,
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Release Id"
+    },
+    "operations": {
+      "items": {
+        "additionalProperties": true,
+        "type": "object"
+      },
+      "maxItems": 50,
+      "title": "Operations",
+      "type": "array"
+    },
+    "native_runtime": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/NativeRuntimeRegistration"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "sidecar": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/NativeSidecarRegistration"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    }
+  },
+  "required": [
+    "environment",
+    "endpoint"
+  ],
+  "title": "InstallationRegistration",
+  "type": "object"
+}

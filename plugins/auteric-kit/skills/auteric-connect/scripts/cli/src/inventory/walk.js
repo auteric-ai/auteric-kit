@@ -8,7 +8,7 @@ export const DEFAULT_BUDGET = { maxFiles: 200, maxBytes: 2_000_000, maxFileBytes
 
 const IGNORE_DIRS = new Set([
   'node_modules', '.git', '.hg', '.svn', 'dist', 'build', 'out', 'coverage',
-  '__pycache__', '.venv', 'venv', 'vendor', '.next', '.nuxt', '.auteric',
+  '__pycache__', '.venv', 'venv', 'vendor', '.next', '.nuxt', '.auteric', '.state',
   'target', '.turbo', '.cache', '.idea', '.vscode',
 ]);
 
@@ -54,7 +54,7 @@ export function walkRepo(root, budget = {}) {
       const path = join(directory, entry.name);
       if (entry.isSymbolicLink()) { stats.skipped.symlinks += 1; continue; }
       if (entry.isDirectory()) {
-        if (IGNORE_DIRS.has(entry.name)) { stats.skipped.ignored_dirs += 1; continue; }
+        if (IGNORE_DIRS.has(entry.name) || (directory===root && entry.name==='auteric')) { stats.skipped.ignored_dirs += 1; continue; }
         visit(path);
         continue;
       }

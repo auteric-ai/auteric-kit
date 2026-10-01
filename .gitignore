@@ -6,3 +6,6 @@ dist/
 runtime/sdk/build/
 runtime/sdk/src/*.egg-info/
 .DS_Store
+
+node_modules/
+*.tgz

@@ -103,6 +103,7 @@ class AddRequest(CartRequest):
     product_id: Identifier
     variant_id: Identifier | None = None
     quantity: int = Field(ge=1, le=10000, strict=True)
+    expected_revision: int | None = Field(default=None, ge=0, strict=True)
 
 
 class UpdateRequest(CartRequest):

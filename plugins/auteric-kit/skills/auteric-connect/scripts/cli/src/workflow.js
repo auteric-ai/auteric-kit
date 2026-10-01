@@ -2,6 +2,7 @@ import { createHash, randomBytes } from 'node:crypto';
 import { existsSync, lstatSync, mkdirSync, readFileSync, writeFileSync, renameSync, unlinkSync, openSync, closeSync, readdirSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
+import { stateDirectory } from './connect/layout.js';
 
 export function safePath(path) {
   for (let item = resolve(path); ; item = dirname(item)) {
@@ -27,8 +28,8 @@ export function readJSON(path) {
   catch (error) { if (error.code === 'ENOENT') return null; throw error; }
 }
 
-export function journal(root, phase, status, extra = {}) {
-  const path = join(root, '.auteric/workflow.json');
+export function journal(root, phase, status, extra = {}, directory = stateDirectory(root)) {
+  const path = join(root, directory, 'workflow.json');
   const previous = readJSON(path) || { version: 1, steps: {} };
   const value = { ...previous, phase, status, updated_at: new Date().toISOString(), ...extra };
   value.steps = { ...previous.steps, [phase]: { status, at: value.updated_at } };
@@ -36,16 +37,16 @@ export function journal(root, phase, status, extra = {}) {
   return value;
 }
 
-export function connectionStatus(root, update = {}) {
-  const path = join(root, '.auteric/connection-status.json');
+export function connectionStatus(root, update = {}, directory = stateDirectory(root)) {
+  const path = join(root, directory, 'connection-status.json');
   const previous = readJSON(path) || { version: 1 };
   const value = { ...previous, ...update, updated_at: new Date().toISOString() };
   atomicJSON(path, value);
   return value;
 }
 
-export function lockProject(root) {
-  const path = safePath(join(root, '.auteric/connect.lock'));
+export function lockProject(root, directory = stateDirectory(root)) {
+  const path = safePath(join(root, directory, 'connect.lock'));
   mkdirSync(dirname(path), { recursive: true, mode: 0o700 });
   for (let attempt = 0; attempt < 2; attempt++) {
     try {
@@ -55,7 +56,7 @@ export function lockProject(root) {
     } catch (error) {
       if (error.code !== 'EEXIST') throw error;
       const pid = Number(readFileSync(path, 'utf8'));
-      if (!Number.isSafeInteger(pid) || pid <= 0) throw Error('Invalid connection lock; inspect .auteric/connect.lock');
+      if (!Number.isSafeInteger(pid) || pid <= 0) throw Error('Invalid connection lock; inspect ' + path);
       try { process.kill(pid, 0); throw Error('Another Connect process is already running for this project'); }
       catch (probe) { if (probe.code !== 'ESRCH') throw probe; }
       unlinkSync(path);
@@ -83,7 +84,7 @@ export function projectDigest(root) {
     for (const item of readdirSync(dir, { withFileTypes: true }).sort((a, b) => a.name.localeCompare(b.name))) {
       if (item.isSymbolicLink() || skip.has(item.name)) continue;
       const relative = prefix + item.name;
-      if (item.isDirectory()) { if (item.name === '.auteric') continue; visit(join(dir, item.name), relative + '/'); }
+      if (item.isDirectory()) { if (item.name === '.auteric' || relative === 'auteric') continue; visit(join(dir, item.name), relative + '/'); }
       else if (/\.(js|mjs|cjs|jsx|ts|mts|cts|tsx|py|json|toml|graphql|php|rb|go|rs|java|cs|yaml|yml)$/.test(item.name) && !/secret|credential|token|lock/i.test(item.name)) {
         const content = readFileSync(join(dir, item.name));
         bytes += content.length;

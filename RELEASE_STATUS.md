@@ -1,3 +1,29 @@
+# 0.7.4 Connect qualification
+
+Custom Connect defaults to the current coding model plus a small module adapter.
+The CLI supplies deterministic installation, generic runtime and contract tests.
+The published qualified runtime is reused; no merchant-specific image is built.
+The local Gateway test still requires an existing compatible Auteric monorepo.
+
+The packaged CLI was installed in a clean consumer and run with the same domain
+and `--no-agent` arguments on Custom Store. All 38 scenarios passed, including
+five MCP operations and two runtime restarts. The merchant diff was unchanged.
+This verifies local code preparation, not public merchant activation.
+
+The complete generated installation request was tested against the exact deployed
+Control image: owner browser PKCE, store creation, policy review, registration,
+native/Sidecar configuration, module enrollment and signed discovery passed.
+Unknown fields and unauthorized requests remain rejected. `runtime_kind` is no
+longer sent; the full registration schema is pinned and validated locally.
+64 JavaScript and 32 Python tests passed in the standalone public repository.
+
+No merchant deployment is performed by Connect. Owner enrollment requires a real
+owned target and valid deployment configuration; an existing live installation
+is preserved rather than silently overwritten. Public discovery and protection
+require deployment and runtime verification.
+
+---
+
 # 0.6.1 GitHub release
 
 This update copies a signed UCP document into an existing built static storefront

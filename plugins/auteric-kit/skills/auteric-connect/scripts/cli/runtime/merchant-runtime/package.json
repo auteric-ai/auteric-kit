@@ -1,0 +1,28 @@
+{
+  "name": "@auteric/merchant-runtime",
+  "version": "0.1.0-development.2",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22.13"
+  },
+  "exports": {
+    "./mapping": "./src/mapping.js",
+    "./bridge": "./src/application-bridge.js",
+    "./release": "./src/release.js"
+  },
+  "files": [
+    "src",
+    "schemas",
+    "release-manifest.json",
+    "README.md"
+  ],
+  "dependencies": {
+    "@aws-sdk/client-secrets-manager": "3.1144.0",
+    "ajv": "8.20.0",
+    "pg": "8.16.3"
+  },
+  "scripts": {
+    "test": "node --test tests/*.test.js"
+  }
+}

@@ -1,0 +1,137 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "deployment.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "schema": {
+      "const": "auteric-deployment/v1"
+    },
+    "platform": {
+      "type": "string",
+      "enum": [
+        "compose",
+        "ecs-fargate"
+      ]
+    },
+    "runtime_image_digest": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 500,
+      "pattern": "^[a-z0-9./:_-]+@sha256:[0-9a-f]{64}$"
+    },
+    "architecture": {
+      "type": "string",
+      "enum": [
+        "linux/amd64",
+        "linux/arm64"
+      ]
+    },
+    "secret_ref": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256,
+      "pattern": "^(env:[A-Z][A-Z0-9_]{0,100}|file:/[A-Za-z0-9_./-]{1,200}|arn:aws:secretsmanager:[a-z0-9-]+:[0-9]{12}:secret:[A-Za-z0-9_/-]+)$"
+    },
+    "state_ref": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "profile": {
+          "type": "string",
+          "enum": [
+            "sqlite-local-volume/v1",
+            "postgresql/v1"
+          ]
+        },
+        "reference": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 500
+        }
+      },
+      "required": [
+        "profile",
+        "reference"
+      ]
+    },
+    "discovery_mount": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256,
+      "pattern": "^(?:/[A-Za-z0-9_./-]+|[A-Za-z][A-Za-z0-9_-]{0,63})$"
+    },
+    "network_ref": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256
+    },
+    "merchant_service": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256
+    },
+    "runtime_port": {
+      "type": "integer",
+      "minimum": 1024,
+      "maximum": 65535
+    },
+    "runtime_user": {
+      "type": "string",
+      "pattern": "^[1-9][0-9]{0,8}:[1-9][0-9]{0,8}$"
+    },
+    "ingress_ref": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256
+    },
+    "adapter_mount": {
+      "type": "string",
+      "pattern": "^[A-Za-z][A-Za-z0-9_-]{0,63}$"
+    },
+    "application_secret_ref": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 500
+    },
+    "task_definition": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "platform": {
+            "const": "compose"
+          }
+        },
+        "required": [
+          "platform"
+        ]
+      },
+      "then": {
+        "properties": {
+          "runtime_user": {}
+        },
+        "required": [
+          "runtime_user"
+        ]
+      }
+    }
+  ],
+  "required": [
+    "schema",
+    "platform",
+    "runtime_image_digest",
+    "architecture",
+    "secret_ref",
+    "state_ref",
+    "discovery_mount",
+    "network_ref",
+    "merchant_service",
+    "runtime_port"
+  ]
+}

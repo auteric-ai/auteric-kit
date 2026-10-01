@@ -17,7 +17,7 @@
   "src/auteric_edge/integration_plan.py": "eac0ec816e4deab86af2169782104d77a78ea0b8ea8fe823b62c33f36b3d462e",
   "src/auteric_edge/manual.py": "8bfc979cac3a9ba28602565aa95c5faa1c0fcdbf0e988a159bbed3a1484dc6c4",
   "src/auteric_edge/mapping.py": "b0a905ead191f3ae743cae71fd065264e0244016d561b17fe294ba64b7be2a22",
-  "src/auteric_edge/models.py": "bd93b44e46d023980c516560789b26bf599e03b4eeb423a62b96b183090dc8f6",
+  "src/auteric_edge/models.py": "d919b8509be2583b2fa501e9d9cb92bb2f00ec954f432e5e574304fa26ddd22b",
   "src/auteric_edge/onboarding.py": "060c7c2ca9826eb527cb91e3579708cda7bd9a8f1fd02cec6a1253ff11964240",
   "src/auteric_edge/platforms/__init__.py": "33d3c27ac052d984539d3647be32d095f15d22e4955b2522d0bb28c8d8972c6e",
   "src/auteric_edge/platforms/adobe.py": "268ac4f00239df29d50201051a338775bb0c7d6bd2b46427e500d2403e998806",

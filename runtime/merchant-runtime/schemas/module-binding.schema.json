@@ -1,0 +1,50 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "module-binding.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "schema": {
+      "const": "auteric-module-binding/v1"
+    },
+    "registry_digest": {
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$"
+    },
+    "adapter_fingerprint": {
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$"
+    },
+    "operations": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 20,
+      "uniqueItems": true,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "operation": {
+            "type": "string"
+          },
+          "side_effect": {
+            "enum": [
+              "read",
+              "write"
+            ]
+          }
+        },
+        "required": [
+          "operation",
+          "side_effect"
+        ]
+      }
+    }
+  },
+  "required": [
+    "schema",
+    "registry_digest",
+    "adapter_fingerprint",
+    "operations"
+  ]
+}
