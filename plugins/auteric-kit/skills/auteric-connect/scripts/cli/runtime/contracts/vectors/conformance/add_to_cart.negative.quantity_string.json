@@ -1,0 +1,9 @@
+{
+  "error_category": "invalid_type",
+  "input": {
+    "product_id": "prod_01H8PROD0001",
+    "quantity": "2"
+  },
+  "name": "quantity_string",
+  "operation": "add_to_cart"
+}

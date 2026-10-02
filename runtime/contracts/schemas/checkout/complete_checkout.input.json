@@ -1,0 +1,35 @@
+{
+  "$id": "https://contracts.auteric.dev/schemas/checkout/complete_checkout.input.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "expected_revision": {
+      "minimum": 0,
+      "type": "integer"
+    },
+    "payment": {
+      "additionalProperties": false,
+      "properties": {
+        "handler": {
+          "maxLength": 64,
+          "minLength": 1,
+          "type": "string"
+        },
+        "token": {
+          "maxLength": 4096,
+          "minLength": 1,
+          "type": "string"
+        }
+      },
+      "required": [
+        "handler",
+        "token"
+      ],
+      "type": "object"
+    }
+  },
+  "required": [
+    "payment"
+  ],
+  "type": "object"
+}

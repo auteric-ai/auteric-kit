@@ -1,0 +1,14 @@
+{
+  "$id": "https://contracts.auteric.dev/schemas/orders/cancel_order.input.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "reason": {
+      "maxLength": 500,
+      "minLength": 0,
+      "type": "string"
+    }
+  },
+  "required": [],
+  "type": "object"
+}

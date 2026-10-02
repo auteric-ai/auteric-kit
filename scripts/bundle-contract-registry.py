@@ -14,3 +14,6 @@ shutil.copy2(source / "registry.json", destination / "registry.json")
 shutil.copytree(source / "operations", destination / "operations")
 shutil.copy2(generated_source, destination.parent / "generated.ts")
 print(destination)
+
+for name in ("schemas", "vectors"):
+    shutil.copytree(source.parent / name, destination.parent / name, dirs_exist_ok=True)

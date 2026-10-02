@@ -1,0 +1,24 @@
+{
+  "$id": "https://contracts.auteric.dev/schemas/checkout/lock_checkout.output.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "checkout_id": {
+      "$ref": "../common/ids.json#/$defs/checkout_id"
+    },
+    "lock_token": {
+      "pattern": "^lck_[A-Za-z0-9]{8,64}$",
+      "type": "string"
+    },
+    "locked_until": {
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$",
+      "type": "string"
+    }
+  },
+  "required": [
+    "checkout_id",
+    "lock_token",
+    "locked_until"
+  ],
+  "type": "object"
+}

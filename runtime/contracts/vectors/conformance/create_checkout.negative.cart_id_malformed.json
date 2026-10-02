@@ -1,0 +1,8 @@
+{
+  "error_category": "invalid_value",
+  "input": {
+    "cart_id": "cart_short"
+  },
+  "name": "cart_id_malformed",
+  "operation": "create_checkout"
+}

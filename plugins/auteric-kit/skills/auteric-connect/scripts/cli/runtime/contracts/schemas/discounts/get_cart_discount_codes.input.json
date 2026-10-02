@@ -1,0 +1,8 @@
+{
+  "$id": "https://contracts.auteric.dev/schemas/discounts/get_cart_discount_codes.input.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {},
+  "required": [],
+  "type": "object"
+}

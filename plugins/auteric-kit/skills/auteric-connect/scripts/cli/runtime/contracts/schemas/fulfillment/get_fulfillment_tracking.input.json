@@ -1,0 +1,8 @@
+{
+  "$id": "https://contracts.auteric.dev/schemas/fulfillment/get_fulfillment_tracking.input.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {},
+  "required": [],
+  "type": "object"
+}

@@ -1,0 +1,23 @@
+{
+  "$id": "https://contracts.auteric.dev/schemas/cart/create_cart.input.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "currency": {
+      "pattern": "^[A-Z]{3}$",
+      "type": "string"
+    },
+    "line_items": {
+      "items": {
+        "$ref": "../common/line_item_input.json"
+      },
+      "maxItems": 200,
+      "minItems": 0,
+      "type": "array"
+    }
+  },
+  "required": [
+    "currency"
+  ],
+  "type": "object"
+}

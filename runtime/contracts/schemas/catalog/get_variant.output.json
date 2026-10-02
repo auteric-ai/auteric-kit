@@ -1,0 +1,5 @@
+{
+  "$id": "https://contracts.auteric.dev/schemas/catalog/get_variant.output.json",
+  "$ref": "variant.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

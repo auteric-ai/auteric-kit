@@ -1,0 +1,8 @@
+{
+  "error_category": "unknown_field",
+  "input": {
+    "checkout_id": "chk_01H8CHK00001"
+  },
+  "name": "path_param_not_input",
+  "operation": "get_checkout"
+}

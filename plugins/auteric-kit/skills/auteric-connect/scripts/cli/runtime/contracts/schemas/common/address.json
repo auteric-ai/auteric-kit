@@ -1,0 +1,52 @@
+{
+  "$id": "https://contracts.auteric.dev/schemas/common/address.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "city": {
+      "maxLength": 100,
+      "minLength": 1,
+      "type": "string"
+    },
+    "country_code": {
+      "pattern": "^[A-Z]{2}$",
+      "type": "string"
+    },
+    "line1": {
+      "maxLength": 200,
+      "minLength": 1,
+      "type": "string"
+    },
+    "line2": {
+      "maxLength": 200,
+      "minLength": 1,
+      "type": "string"
+    },
+    "phone": {
+      "pattern": "^[+0-9][0-9 -]{4,30}$",
+      "type": "string"
+    },
+    "postal_code": {
+      "maxLength": 20,
+      "minLength": 1,
+      "type": "string"
+    },
+    "recipient_name": {
+      "maxLength": 100,
+      "minLength": 1,
+      "type": "string"
+    },
+    "region": {
+      "maxLength": 100,
+      "minLength": 1,
+      "type": "string"
+    }
+  },
+  "required": [
+    "line1",
+    "city",
+    "postal_code",
+    "country_code"
+  ],
+  "type": "object"
+}

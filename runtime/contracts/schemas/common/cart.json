@@ -1,0 +1,63 @@
+{
+  "$id": "https://contracts.auteric.dev/schemas/common/cart.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "cart_id": {
+      "$ref": "ids.json#/$defs/cart_id"
+    },
+    "currency": {
+      "pattern": "^[A-Z]{3}$",
+      "type": "string"
+    },
+    "discount_total": {
+      "$ref": "money.json"
+    },
+    "discounts": {
+      "items": {
+        "$ref": "discount.json"
+      },
+      "maxItems": 20,
+      "minItems": 0,
+      "type": "array"
+    },
+    "line_items": {
+      "items": {
+        "$ref": "line_item.json"
+      },
+      "maxItems": 200,
+      "minItems": 0,
+      "type": "array"
+    },
+    "resource_revision": {
+      "minimum": 0,
+      "type": "integer"
+    },
+    "status": {
+      "enum": [
+        "active",
+        "cancelled",
+        "converted"
+      ],
+      "type": "string"
+    },
+    "subtotal": {
+      "$ref": "money.json"
+    },
+    "total": {
+      "$ref": "money.json"
+    }
+  },
+  "required": [
+    "cart_id",
+    "resource_revision",
+    "status",
+    "currency",
+    "line_items",
+    "discounts",
+    "subtotal",
+    "discount_total",
+    "total"
+  ],
+  "type": "object"
+}

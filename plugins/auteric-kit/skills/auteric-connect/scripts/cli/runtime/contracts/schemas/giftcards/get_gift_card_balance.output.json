@@ -1,0 +1,19 @@
+{
+  "$id": "https://contracts.auteric.dev/schemas/giftcards/get_gift_card_balance.output.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "balance": {
+      "$ref": "../common/money.json"
+    },
+    "gift_card_id": {
+      "pattern": "^gc_[A-Za-z0-9]{8,64}$",
+      "type": "string"
+    }
+  },
+  "required": [
+    "gift_card_id",
+    "balance"
+  ],
+  "type": "object"
+}

@@ -1,0 +1,18 @@
+{
+  "$id": "https://contracts.auteric.dev/schemas/cart/apply_discount_code.input.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "code": {
+      "$ref": "../common/ids.json#/$defs/discount_code"
+    },
+    "expected_revision": {
+      "minimum": 0,
+      "type": "integer"
+    }
+  },
+  "required": [
+    "code"
+  ],
+  "type": "object"
+}

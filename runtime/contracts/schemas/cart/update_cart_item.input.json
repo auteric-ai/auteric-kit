@@ -1,0 +1,20 @@
+{
+  "$id": "https://contracts.auteric.dev/schemas/cart/update_cart_item.input.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "expected_revision": {
+      "minimum": 0,
+      "type": "integer"
+    },
+    "quantity": {
+      "maximum": 999,
+      "minimum": 1,
+      "type": "integer"
+    }
+  },
+  "required": [
+    "quantity"
+  ],
+  "type": "object"
+}

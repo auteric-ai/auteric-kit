@@ -1,0 +1,6 @@
+{
+  "error_category": "invalid_type",
+  "input": null,
+  "name": "input_not_object",
+  "operation": "get_cart"
+}

@@ -1,0 +1,28 @@
+{
+  "$id": "https://contracts.auteric.dev/schemas/returns/list_returns.input.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "cursor": {
+      "$ref": "../common/ids.json#/$defs/cursor"
+    },
+    "limit": {
+      "maximum": 100,
+      "minimum": 1,
+      "type": "integer"
+    },
+    "status": {
+      "enum": [
+        "requested",
+        "approved",
+        "rejected",
+        "received",
+        "refunded",
+        "cancelled"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [],
+  "type": "object"
+}

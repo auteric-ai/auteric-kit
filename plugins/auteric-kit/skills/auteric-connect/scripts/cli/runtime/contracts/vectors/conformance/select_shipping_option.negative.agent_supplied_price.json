@@ -1,0 +1,12 @@
+{
+  "error_category": "unknown_field",
+  "input": {
+    "option_id": "opt_standard01",
+    "price": {
+      "amount_minor": 1,
+      "currency": "USD"
+    }
+  },
+  "name": "agent_supplied_price",
+  "operation": "select_shipping_option"
+}

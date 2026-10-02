@@ -1,0 +1,19 @@
+{
+  "$id": "https://contracts.auteric.dev/schemas/discounts/get_cart_discount_codes.output.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "discounts": {
+      "items": {
+        "$ref": "../common/discount.json"
+      },
+      "maxItems": 20,
+      "minItems": 0,
+      "type": "array"
+    }
+  },
+  "required": [
+    "discounts"
+  ],
+  "type": "object"
+}

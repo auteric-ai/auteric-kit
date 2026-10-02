@@ -1,0 +1,14 @@
+{
+  "$id": "https://contracts.auteric.dev/schemas/checkout/lock_checkout.input.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "ttl_seconds": {
+      "maximum": 900,
+      "minimum": 30,
+      "type": "integer"
+    }
+  },
+  "required": [],
+  "type": "object"
+}

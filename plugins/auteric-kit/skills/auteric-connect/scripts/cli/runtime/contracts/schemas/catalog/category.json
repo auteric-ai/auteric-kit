@@ -1,0 +1,25 @@
+{
+  "$id": "https://contracts.auteric.dev/schemas/catalog/category.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "category_id": {
+      "pattern": "^cat_[A-Za-z0-9]{8,64}$",
+      "type": "string"
+    },
+    "name": {
+      "maxLength": 120,
+      "minLength": 1,
+      "type": "string"
+    },
+    "parent_id": {
+      "pattern": "^cat_[A-Za-z0-9]{8,64}$",
+      "type": "string"
+    }
+  },
+  "required": [
+    "category_id",
+    "name"
+  ],
+  "type": "object"
+}

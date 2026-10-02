@@ -1,3 +1,16 @@
+# 0.7.5 Portable Connect
+
+The Kit includes the immutable generic Gateway harness and canonical contracts.
+Local acceptance no longer searches for or requires an Auteric monorepo.
+First use prepares a versioned cache outside the merchant and pulls the existing
+public runtime image automatically. Explicit source flags are development-only.
+
+The Gateway input schema now preserves `expected_revision` for `add_to_cart`.
+The enforcement implementation is unchanged. The independent harness passed all
+38 Custom Store scenarios, including stale-revision rejection and five MCP tools.
+Cloud Control/MCP deployment and public clean-install qualification are recorded
+separately; no merchant deployment is performed by this release.
+
 # 0.7.4 Connect qualification
 
 Custom Connect defaults to the current coding model plus a small module adapter.

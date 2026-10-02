@@ -79,11 +79,11 @@ node /path/to/auteric/kits/auteric-kit/bin/auteric.js connect --local-acceptance
   --runtime-commit 81fbacaff3a81670e49cf34afe566ac04ece265f
 ```
 
-Normal acceptance reuses the qualified immutable generic runtime image. The installed CLI locates an existing Auteric monorepo beside the merchant; the model selects `--runtime-source` internally if several baselines exist. The local Gateway and contract vectors require that source environment. A source image build is only the unqualified development fallback; merchant files are
+Normal acceptance reuses the qualified immutable generic runtime image. The installed Kit includes the versioned Gateway test harness, pinned Python dependencies and canonical vectors. It prepares its private cache outside the merchant repository automatically. No Auteric checkout or private-repository access is required. Node 22.13+, Python 3.11+ and a running Docker daemon are local prerequisites. A source image build is only the unqualified development fallback; merchant files are
 mounted, never copied into that image. Gateway/MCP use real local sockets and the
 existing signed bootstrap journey. Reports are under ignored `auteric/.state/`.
 No AWS, public domain, release qualification or hosted redeployment is involved.
-Dependencies for local Gateway tests belong to the Auteric source environment.
+Gateway test dependencies are installed automatically into the versioned Auteric cache. Explicit source/baseline flags are development overrides only.
 
 `disconnect` removes unchanged owned artifacts/state and reverses exact hooks,
 preserving unrelated edits. An edited owned artifact/hook refuses cleanup.

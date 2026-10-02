@@ -1,0 +1,21 @@
+{
+  "$id": "https://contracts.auteric.dev/schemas/checkout/create_checkout.input.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "buyer_principal": {
+      "$ref": "../common/ids.json#/$defs/principal_id"
+    },
+    "cart_id": {
+      "$ref": "../common/ids.json#/$defs/cart_id"
+    },
+    "expected_cart_revision": {
+      "minimum": 0,
+      "type": "integer"
+    }
+  },
+  "required": [
+    "cart_id"
+  ],
+  "type": "object"
+}

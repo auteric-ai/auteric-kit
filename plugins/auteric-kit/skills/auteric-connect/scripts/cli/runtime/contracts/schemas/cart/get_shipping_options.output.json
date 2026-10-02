@@ -1,0 +1,19 @@
+{
+  "$id": "https://contracts.auteric.dev/schemas/cart/get_shipping_options.output.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "options": {
+      "items": {
+        "$ref": "../common/shipping_option.json"
+      },
+      "maxItems": 50,
+      "minItems": 0,
+      "type": "array"
+    }
+  },
+  "required": [
+    "options"
+  ],
+  "type": "object"
+}

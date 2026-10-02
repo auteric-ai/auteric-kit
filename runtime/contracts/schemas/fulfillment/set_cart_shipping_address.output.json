@@ -1,0 +1,5 @@
+{
+  "$id": "https://contracts.auteric.dev/schemas/fulfillment/set_cart_shipping_address.output.json",
+  "$ref": "../common/cart.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

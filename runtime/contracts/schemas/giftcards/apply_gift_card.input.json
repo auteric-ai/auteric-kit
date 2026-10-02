@@ -1,0 +1,15 @@
+{
+  "$id": "https://contracts.auteric.dev/schemas/giftcards/apply_gift_card.input.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "code": {
+      "pattern": "^[A-Z0-9][A-Z0-9-]{7,31}$",
+      "type": "string"
+    }
+  },
+  "required": [
+    "code"
+  ],
+  "type": "object"
+}

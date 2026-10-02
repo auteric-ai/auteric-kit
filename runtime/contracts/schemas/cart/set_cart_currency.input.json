@@ -1,0 +1,15 @@
+{
+  "$id": "https://contracts.auteric.dev/schemas/cart/set_cart_currency.input.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "currency": {
+      "pattern": "^[A-Z]{3}$",
+      "type": "string"
+    }
+  },
+  "required": [
+    "currency"
+  ],
+  "type": "object"
+}

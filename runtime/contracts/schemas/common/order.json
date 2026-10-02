@@ -1,0 +1,86 @@
+{
+  "$id": "https://contracts.auteric.dev/schemas/common/order.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "buyer_principal": {
+      "$ref": "ids.json#/$defs/buyer_principal_id"
+    },
+    "cart_id": {
+      "$ref": "ids.json#/$defs/cart_id"
+    },
+    "checkout_id": {
+      "$ref": "ids.json#/$defs/checkout_id"
+    },
+    "created_at": {
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$",
+      "type": "string"
+    },
+    "discount_total": {
+      "$ref": "money.json"
+    },
+    "discounts": {
+      "items": {
+        "$ref": "discount.json"
+      },
+      "maxItems": 20,
+      "minItems": 0,
+      "type": "array"
+    },
+    "line_items": {
+      "items": {
+        "$ref": "line_item.json"
+      },
+      "maxItems": 200,
+      "minItems": 0,
+      "type": "array"
+    },
+    "order_id": {
+      "$ref": "ids.json#/$defs/order_id"
+    },
+    "shipping_address": {
+      "$ref": "address.json"
+    },
+    "shipping_option": {
+      "$ref": "shipping_option.json"
+    },
+    "shipping_total": {
+      "$ref": "money.json"
+    },
+    "status": {
+      "enum": [
+        "confirmed",
+        "fulfilled",
+        "cancelled"
+      ],
+      "type": "string"
+    },
+    "subtotal": {
+      "$ref": "money.json"
+    },
+    "tax_total": {
+      "$ref": "money.json"
+    },
+    "total": {
+      "$ref": "money.json"
+    }
+  },
+  "required": [
+    "order_id",
+    "checkout_id",
+    "cart_id",
+    "buyer_principal",
+    "status",
+    "line_items",
+    "discounts",
+    "subtotal",
+    "discount_total",
+    "shipping_total",
+    "tax_total",
+    "total",
+    "shipping_address",
+    "shipping_option",
+    "created_at"
+  ],
+  "type": "object"
+}

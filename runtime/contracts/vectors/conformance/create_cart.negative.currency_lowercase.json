@@ -1,0 +1,8 @@
+{
+  "error_category": "invalid_value",
+  "input": {
+    "currency": "usd"
+  },
+  "name": "currency_lowercase",
+  "operation": "create_cart"
+}

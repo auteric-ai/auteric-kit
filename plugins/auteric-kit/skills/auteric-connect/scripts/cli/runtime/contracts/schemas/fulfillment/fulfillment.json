@@ -1,0 +1,67 @@
+{
+  "$defs": {
+    "fulfillment_id": {
+      "pattern": "^ful_[A-Za-z0-9]{8,64}$",
+      "type": "string"
+    }
+  },
+  "$id": "https://contracts.auteric.dev/schemas/fulfillment/fulfillment.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "carrier": {
+      "maxLength": 64,
+      "minLength": 1,
+      "type": "string"
+    },
+    "created_at": {
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$",
+      "type": "string"
+    },
+    "fulfillment_id": {
+      "$ref": "#/$defs/fulfillment_id"
+    },
+    "line_items": {
+      "items": {
+        "$ref": "../common/line_item.json"
+      },
+      "maxItems": 200,
+      "minItems": 0,
+      "type": "array"
+    },
+    "order_id": {
+      "$ref": "../common/ids.json#/$defs/order_id"
+    },
+    "status": {
+      "enum": [
+        "pending",
+        "in_transit",
+        "delivered",
+        "failed"
+      ],
+      "type": "string"
+    },
+    "tracking_number": {
+      "maxLength": 64,
+      "minLength": 1,
+      "type": "string"
+    },
+    "tracking_url": {
+      "maxLength": 500,
+      "pattern": "^https://",
+      "type": "string"
+    },
+    "updated_at": {
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$",
+      "type": "string"
+    }
+  },
+  "required": [
+    "fulfillment_id",
+    "order_id",
+    "status",
+    "line_items",
+    "created_at"
+  ],
+  "type": "object"
+}

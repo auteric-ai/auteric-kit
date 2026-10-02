@@ -6,6 +6,7 @@ import { tmpdir } from 'node:os';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { randomBytes, createHash } from 'node:crypto';
 import { runtimeRoot, shared } from './shared.js';
+import { bundledHarness } from './harness.js';
 import { buildReport, operationRecord } from '../acceptance/report.js';
 import { loadVectors, buildScenarioPlan } from '../acceptance/scenarios.js';
 import { loadOperationsRegistry } from '../inventory/operations.js';
@@ -69,13 +70,16 @@ export function buildLocalImage(source) {
 
 export async function localAcceptance(root, options={}) {
   const connection=join(root,'auteric/connection.json'), {config,fingerprint}=await (await shared('module-adapter')).loadAdapter(connection);
-  const source=resolveRuntimeSource(root, options);
-  const sourceCommit=execFileSync('git',['rev-parse','HEAD'],{cwd:source,encoding:'utf8'}).trim();
+  const explicitSource=options['runtime-source'] || process.env.AUTERIC_RUNTIME_SOURCE;
+  const context=explicitSource ? {source:resolveRuntimeSource(root,options)} : bundledHarness(options);
+  const source=context.source;
+  const sourceCommit=context.sourceCommit || execFileSync('git',['rev-parse','HEAD'],{cwd:source,encoding:'utf8'}).trim();
   if(options['runtime-commit'] && options['runtime-commit']!==sourceCommit)throw Error('runtime source commit differs from requested baseline');
   const release=(await shared('release')).bundledRelease();
   const image=options['runtime-image'] || (release.qualification?.passed && release.image ? release.image : buildLocalImage(source));
+  try {execFileSync('docker',['image','inspect',image],{stdio:'ignore'});} catch {execFileSync('docker',['pull',image],{stdio:'inherit'});}
   const imageId=JSON.parse(execFileSync('docker',['image','inspect',image],{encoding:'utf8'}))[0].Id;
-  const state=join(root,'auteric/.state'), python=options.python || (existsSync(join(source,'.venv/bin/python')) ? join(source,'.venv/bin/python') : 'python3');
+  const state=join(root,'auteric/.state'), python=context.python || options.python || (existsSync(join(source,'.venv/bin/python')) ? join(source,'.venv/bin/python') : 'python3');
   const merchantPort=await port(), gatewayPort=await port(), sidecarPort=await port();
   const applicationToken=randomBytes(32).toString('hex'), bridgeToken=randomBytes(32).toString('hex'), adminToken=randomBytes(32).toString('hex');
   const {containedFile}=await shared('module-adapter');
@@ -115,7 +119,7 @@ export async function localAcceptance(root, options={}) {
       AUTERIC_MERCHANT_ORIGIN:'http://host.docker.internal:'+merchantPort,AUTERIC_APPLICATION_TOKEN:applicationToken,
       AUTERIC_BRIDGE_TOKEN:bridgeToken,AUTERIC_CONTROL_TOKEN:scope.sidecar_token,AUTERIC_SIDECAR_GATEWAY_TOKEN:scope.sidecar_token,AUTERIC_BRIDGE_STATE:'/merchant/.state/bridge.sqlite',
       AUTERIC_SIDECAR_CONFIG:'/merchant/.state/sidecar.json',AUTERIC_LOCAL_GATEWAY_PORT:gatewayPort}).map(([k,v])=>k+'='+v).join('\n')+'\n',{mode:0o600});
-    execFileSync('docker',['run','-d','--name',name,'--user',process.getuid()+':'+process.getgid(),'--env-file',envFile,
+    execFileSync('docker',['run','-d','--name',name,...(process.platform==='linux'?['--add-host','host.docker.internal:host-gateway']:[]),'--user',process.getuid()+':'+process.getgid(),'--env-file',envFile,
       '-p','127.0.0.1:'+sidecarPort+':7070','-v',join(root,'auteric')+':/merchant',image,'--local-acceptance'],{stdio:'pipe'});
     await ready('http://127.0.0.1:'+sidecarPort+'/health/live',child);
     atomicJSON(join(state,'runtime-ready.json'),{imageId,name});

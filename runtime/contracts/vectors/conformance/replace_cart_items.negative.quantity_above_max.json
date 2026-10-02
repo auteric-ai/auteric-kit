@@ -1,0 +1,13 @@
+{
+  "error_category": "invalid_value",
+  "input": {
+    "items": [
+      {
+        "product_id": "prod_01H8PROD0001",
+        "quantity": 1000
+      }
+    ]
+  },
+  "name": "quantity_above_max",
+  "operation": "replace_cart_items"
+}

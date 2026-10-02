@@ -1,0 +1,8 @@
+{
+  "error_category": "invalid_value",
+  "input": {
+    "quantity": 0
+  },
+  "name": "quantity_zero",
+  "operation": "update_cart_item"
+}

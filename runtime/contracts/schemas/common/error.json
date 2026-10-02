@@ -1,0 +1,56 @@
+{
+  "$id": "https://contracts.auteric.dev/schemas/common/error.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "error": {
+      "additionalProperties": false,
+      "properties": {
+        "action_id": {
+          "$ref": "ids.json#/$defs/action_id"
+        },
+        "code": {
+          "enum": [
+            "INVALID_INPUT",
+            "UNAUTHENTICATED",
+            "FORBIDDEN",
+            "RESOURCE_NOT_FOUND",
+            "REVISION_CONFLICT",
+            "OUT_OF_STOCK",
+            "IDEMPOTENCY_CONFLICT",
+            "CAPABILITY_DISABLED",
+            "CONTRACT_MISMATCH",
+            "RATE_LIMITED",
+            "EXECUTION_UNCERTAIN",
+            "PAYMENT_PENDING",
+            "UPSTREAM_ERROR",
+            "SSRF_BLOCKED"
+          ],
+          "type": "string"
+        },
+        "details": {
+          "type": "object"
+        },
+        "message": {
+          "maxLength": 500,
+          "minLength": 1,
+          "type": "string"
+        },
+        "retryable": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "code",
+        "message",
+        "retryable",
+        "action_id"
+      ],
+      "type": "object"
+    }
+  },
+  "required": [
+    "error"
+  ],
+  "type": "object"
+}

@@ -1,0 +1,8 @@
+{
+  "error_category": "unknown_field",
+  "input": {
+    "code": "WELCOME10"
+  },
+  "name": "code_not_input",
+  "operation": "remove_discount_code"
+}

@@ -1,0 +1,46 @@
+{
+  "$id": "https://contracts.auteric.dev/schemas/b2b/create_quote.input.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "company_id": {
+      "$ref": "company.json#/$defs/company_id"
+    },
+    "items": {
+      "items": {
+        "additionalProperties": false,
+        "properties": {
+          "quantity": {
+            "maximum": 9999,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "variant_id": {
+            "$ref": "../common/ids.json#/$defs/variant_id"
+          }
+        },
+        "required": [
+          "variant_id",
+          "quantity"
+        ],
+        "type": "object"
+      },
+      "maxItems": 200,
+      "minItems": 1,
+      "type": "array"
+    },
+    "location_id": {
+      "$ref": "company.json#/$defs/location_id"
+    },
+    "note": {
+      "maxLength": 1000,
+      "minLength": 0,
+      "type": "string"
+    }
+  },
+  "required": [
+    "company_id",
+    "items"
+  ],
+  "type": "object"
+}

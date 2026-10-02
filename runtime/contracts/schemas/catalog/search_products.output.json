@@ -1,0 +1,23 @@
+{
+  "$id": "https://contracts.auteric.dev/schemas/catalog/search_products.output.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "page": {
+      "$ref": "../common/pagination.json"
+    },
+    "results": {
+      "items": {
+        "$ref": "../common/product.json"
+      },
+      "maxItems": 100,
+      "minItems": 0,
+      "type": "array"
+    }
+  },
+  "required": [
+    "results",
+    "page"
+  ],
+  "type": "object"
+}

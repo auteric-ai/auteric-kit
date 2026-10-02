@@ -1,0 +1,82 @@
+{
+  "$defs": {
+    "subscription_id": {
+      "pattern": "^sub_[A-Za-z0-9]{8,64}$",
+      "type": "string"
+    }
+  },
+  "$id": "https://contracts.auteric.dev/schemas/subscriptions/subscription.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "created_at": {
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$",
+      "type": "string"
+    },
+    "interval": {
+      "enum": [
+        "day",
+        "week",
+        "month",
+        "year"
+      ],
+      "type": "string"
+    },
+    "interval_count": {
+      "maximum": 52,
+      "minimum": 1,
+      "type": "integer"
+    },
+    "items": {
+      "items": {
+        "additionalProperties": false,
+        "properties": {
+          "product_id": {
+            "$ref": "../common/ids.json#/$defs/product_id"
+          },
+          "quantity": {
+            "maximum": 99,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "variant_id": {
+            "$ref": "../common/ids.json#/$defs/variant_id"
+          }
+        },
+        "required": [
+          "product_id",
+          "quantity"
+        ],
+        "type": "object"
+      },
+      "maxItems": 50,
+      "minItems": 1,
+      "type": "array"
+    },
+    "next_billing_at": {
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$",
+      "type": "string"
+    },
+    "status": {
+      "enum": [
+        "active",
+        "paused",
+        "cancelled",
+        "expired"
+      ],
+      "type": "string"
+    },
+    "subscription_id": {
+      "$ref": "#/$defs/subscription_id"
+    }
+  },
+  "required": [
+    "subscription_id",
+    "status",
+    "items",
+    "interval",
+    "interval_count",
+    "created_at"
+  ],
+  "type": "object"
+}

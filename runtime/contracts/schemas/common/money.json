@@ -1,0 +1,20 @@
+{
+  "$id": "https://contracts.auteric.dev/schemas/common/money.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "amount_minor": {
+      "minimum": 0,
+      "type": "integer"
+    },
+    "currency": {
+      "pattern": "^[A-Z]{3}$",
+      "type": "string"
+    }
+  },
+  "required": [
+    "amount_minor",
+    "currency"
+  ],
+  "type": "object"
+}

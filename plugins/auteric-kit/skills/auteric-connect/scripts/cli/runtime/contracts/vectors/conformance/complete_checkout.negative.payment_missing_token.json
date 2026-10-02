@@ -1,0 +1,10 @@
+{
+  "error_category": "missing_required",
+  "input": {
+    "payment": {
+      "handler": "stripe"
+    }
+  },
+  "name": "payment_missing_token",
+  "operation": "complete_checkout"
+}

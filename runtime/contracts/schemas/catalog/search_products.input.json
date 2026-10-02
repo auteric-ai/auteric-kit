@@ -1,0 +1,41 @@
+{
+  "$id": "https://contracts.auteric.dev/schemas/catalog/search_products.input.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "category": {
+      "maxLength": 120,
+      "minLength": 1,
+      "type": "string"
+    },
+    "currency": {
+      "pattern": "^[A-Z]{3}$",
+      "type": "string"
+    },
+    "cursor": {
+      "$ref": "../common/ids.json#/$defs/cursor"
+    },
+    "limit": {
+      "maximum": 100,
+      "minimum": 1,
+      "type": "integer"
+    },
+    "price_max_minor": {
+      "minimum": 0,
+      "type": "integer"
+    },
+    "price_min_minor": {
+      "minimum": 0,
+      "type": "integer"
+    },
+    "q": {
+      "maxLength": 200,
+      "minLength": 1,
+      "type": "string"
+    }
+  },
+  "required": [
+    "q"
+  ],
+  "type": "object"
+}

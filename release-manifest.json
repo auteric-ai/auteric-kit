@@ -7,9 +7,9 @@
     "runtime": "sha256:a109374780b5a7a678632f070efc4b4bf6b9d97967c490b31d403d79d5323502",
     "sidecar": "sha256:eece33eeb386e877d903b6abcbb81f5f160757b0c503bbffc8edfc488c06a26c",
     "merchant_node": "sha256:3370c894d72380a327c9cddf73224d127b602ea9e5bf655408abb4a89b625ed2",
-    "cli": "sha256:fcaf39c31b8fdb72d8d69b503a9226a2975bb1e6feaa25dcdc02d03ea8647b79"
+    "cli": "sha256:ee4e4492385771f0a2273cbe151731531ca5afda6bbe67c087f93de536ddaf71"
   },
-  "cli_version": "0.7.4",
+  "cli_version": "0.7.5",
   "merchant_node_version": "0.1.0",
   "merchant_python_version": "0.1.1.dev1",
   "bridge_protocol": "1",

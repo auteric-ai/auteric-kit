@@ -65,6 +65,11 @@ def main():
     gateway_url = 'http://127.0.0.1:' + str(LAB['gatewayPort'])
     sidecar_url = 'http://127.0.0.1:' + str(LAB['sidecarPort'])
     app = create_app(str(STATE / 'gateway.sqlite'), public_url=gateway_url, development=True)
+    try:
+        from services.commerce.runtime_protocol import install as install_protocol
+        install_protocol(app)
+    except ImportError:
+        pass  # Explicit compatible development sources may already own this boundary.
     server = uvicorn.Server(uvicorn.Config(app, host='0.0.0.0', port=LAB['gatewayPort'], log_level='warning'))
     thread = threading.Thread(target=server.run, daemon=True)
     thread.start()
@@ -264,7 +269,9 @@ def main():
             capabilities=json.loads((STATE/'capabilities.json').read_text())
             report=dict(status='passed',operations=OPS,scenarios=RESULTS,bootstrap_probes=connection_run['phase1_probes'],
                 capability_classification=capabilities,local_only=True,production_ready=False,
-                runtime_image_id=LAB['imageId'],runtime_source_commit=LAB['sourceCommit'],
+                runtime_image_id=LAB['imageId'],
+                runtime_source_commit=LAB['sourceCommit'] if len(LAB['sourceCommit']) == 40 else None,
+                gateway_control_image=LAB['sourceCommit'] if '@sha256:' in LAB['sourceCommit'] else None,
                 runtime_image_restarts=2,canonical_scenarios=LAB['canonical_scenarios'],scenario_plan=LAB['scenario_plan'],payment_completed=False)
             save('acceptance.json',report)
             print('Local contract acceptance passed:',len(RESULTS),'scenarios; 5 MCP operations; no payment')

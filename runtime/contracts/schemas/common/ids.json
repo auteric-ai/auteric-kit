@@ -1,0 +1,55 @@
+{
+  "$defs": {
+    "action_id": {
+      "pattern": "^action_[A-Za-z0-9]{8,64}$",
+      "type": "string"
+    },
+    "buyer_principal_id": {
+      "pattern": "^buyer_[A-Za-z0-9]{8,64}$",
+      "type": "string"
+    },
+    "cart_id": {
+      "pattern": "^cart_[A-Za-z0-9]{8,64}$",
+      "type": "string"
+    },
+    "checkout_id": {
+      "pattern": "^chk_[A-Za-z0-9]{8,64}$",
+      "type": "string"
+    },
+    "cursor": {
+      "pattern": "^[A-Za-z0-9_-]{1,256}$",
+      "type": "string"
+    },
+    "discount_code": {
+      "pattern": "^[A-Z0-9][A-Z0-9_-]{2,31}$",
+      "type": "string"
+    },
+    "line_id": {
+      "pattern": "^line_[A-Za-z0-9]{8,64}$",
+      "type": "string"
+    },
+    "order_id": {
+      "pattern": "^ord_[A-Za-z0-9]{8,64}$",
+      "type": "string"
+    },
+    "principal_id": {
+      "pattern": "^(buyer|guest)_[A-Za-z0-9]{8,64}$",
+      "type": "string"
+    },
+    "product_id": {
+      "pattern": "^prod_[A-Za-z0-9]{8,64}$",
+      "type": "string"
+    },
+    "shipping_option_id": {
+      "pattern": "^opt_[A-Za-z0-9]{3,64}$",
+      "type": "string"
+    },
+    "variant_id": {
+      "pattern": "^var_[A-Za-z0-9]{8,64}$",
+      "type": "string"
+    }
+  },
+  "$id": "https://contracts.auteric.dev/schemas/common/ids.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object"
+}

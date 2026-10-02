@@ -1,0 +1,9 @@
+{
+  "error_category": "invalid_type",
+  "input": {
+    "limit": "10",
+    "q": "runner"
+  },
+  "name": "limit_wrong_type",
+  "operation": "search_products"
+}

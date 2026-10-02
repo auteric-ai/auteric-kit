@@ -1,0 +1,6 @@
+{
+  "error_category": "missing_required",
+  "input": {},
+  "name": "missing_quantity",
+  "operation": "update_cart_item"
+}

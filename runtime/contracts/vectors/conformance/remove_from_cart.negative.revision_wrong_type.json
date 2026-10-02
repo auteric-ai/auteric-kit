@@ -1,0 +1,8 @@
+{
+  "error_category": "invalid_type",
+  "input": {
+    "expected_revision": "3"
+  },
+  "name": "revision_wrong_type",
+  "operation": "remove_from_cart"
+}

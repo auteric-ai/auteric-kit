@@ -1,0 +1,8 @@
+{
+  "error_category": "missing_required",
+  "input": {
+    "quantity": 2
+  },
+  "name": "missing_product_id",
+  "operation": "add_to_cart"
+}

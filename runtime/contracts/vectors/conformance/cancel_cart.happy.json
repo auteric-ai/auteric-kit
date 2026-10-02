@@ -1,0 +1,43 @@
+{
+  "input": {
+    "expected_revision": 3,
+    "reason": "buyer changed mind"
+  },
+  "operation": "cancel_cart",
+  "output": {
+    "cart_id": "cart_01H8CART0001",
+    "currency": "USD",
+    "discount_total": {
+      "amount_minor": 0,
+      "currency": "USD"
+    },
+    "discounts": [],
+    "line_items": [
+      {
+        "line_id": "line_01H8LINE0001",
+        "product_id": "prod_01H8PROD0001",
+        "quantity": 2,
+        "title": "Auteric Runner",
+        "total_price": {
+          "amount_minor": 25800,
+          "currency": "USD"
+        },
+        "unit_price": {
+          "amount_minor": 12900,
+          "currency": "USD"
+        },
+        "variant_id": "var_01H8VAR00001"
+      }
+    ],
+    "resource_revision": 3,
+    "status": "active",
+    "subtotal": {
+      "amount_minor": 25800,
+      "currency": "USD"
+    },
+    "total": {
+      "amount_minor": 25800,
+      "currency": "USD"
+    }
+  }
+}

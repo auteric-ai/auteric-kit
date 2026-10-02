@@ -1,0 +1,8 @@
+{
+  "error_category": "unknown_field",
+  "input": {
+    "order_id": "ord_01H8ORD00001"
+  },
+  "name": "path_param_not_input",
+  "operation": "get_order"
+}

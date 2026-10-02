@@ -1,0 +1,13 @@
+{
+  "error_category": "unknown_field",
+  "input": {
+    "price": {
+      "amount_minor": 1,
+      "currency": "USD"
+    },
+    "product_id": "prod_01H8PROD0001",
+    "quantity": 2
+  },
+  "name": "unknown_field",
+  "operation": "add_to_cart"
+}

@@ -1,0 +1,39 @@
+{
+  "$id": "https://contracts.auteric.dev/schemas/checkout/get_payment_status.output.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "amount": {
+      "$ref": "../common/money.json"
+    },
+    "checkout_id": {
+      "$ref": "../common/ids.json#/$defs/checkout_id"
+    },
+    "failure_reason": {
+      "maxLength": 200,
+      "minLength": 0,
+      "type": "string"
+    },
+    "payment_id": {
+      "pattern": "^pay_[A-Za-z0-9]{8,64}$",
+      "type": "string"
+    },
+    "status": {
+      "enum": [
+        "requires_confirmation",
+        "requires_action",
+        "processing",
+        "succeeded",
+        "failed"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "payment_id",
+    "checkout_id",
+    "status",
+    "amount"
+  ],
+  "type": "object"
+}

@@ -1,0 +1,32 @@
+{
+  "$id": "https://contracts.auteric.dev/schemas/common/discount.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "amount": {
+      "$ref": "money.json"
+    },
+    "code": {
+      "$ref": "ids.json#/$defs/discount_code"
+    },
+    "description": {
+      "maxLength": 200,
+      "minLength": 0,
+      "type": "string"
+    },
+    "kind": {
+      "enum": [
+        "percentage",
+        "fixed_amount",
+        "free_shipping"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "code",
+    "kind",
+    "amount"
+  ],
+  "type": "object"
+}

@@ -1,0 +1,8 @@
+{
+  "error_category": "unknown_field",
+  "input": {
+    "product_id": "prod_01H8PROD0001"
+  },
+  "name": "path_param_not_input",
+  "operation": "get_product"
+}

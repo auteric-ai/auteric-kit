@@ -1,0 +1,27 @@
+{
+  "$id": "https://contracts.auteric.dev/schemas/giftcards/apply_gift_card.output.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "applied_amount": {
+      "$ref": "../common/money.json"
+    },
+    "checkout_id": {
+      "$ref": "../common/ids.json#/$defs/checkout_id"
+    },
+    "gift_card_id": {
+      "pattern": "^gc_[A-Za-z0-9]{8,64}$",
+      "type": "string"
+    },
+    "remaining_balance": {
+      "$ref": "../common/money.json"
+    }
+  },
+  "required": [
+    "checkout_id",
+    "gift_card_id",
+    "applied_amount",
+    "remaining_balance"
+  ],
+  "type": "object"
+}

@@ -1,0 +1,63 @@
+{
+  "$id": "https://contracts.auteric.dev/schemas/fulfillment/get_fulfillment_tracking.output.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "order_id": {
+      "$ref": "../common/ids.json#/$defs/order_id"
+    },
+    "shipments": {
+      "items": {
+        "additionalProperties": false,
+        "properties": {
+          "carrier": {
+            "maxLength": 64,
+            "minLength": 1,
+            "type": "string"
+          },
+          "fulfillment_id": {
+            "$ref": "fulfillment.json#/$defs/fulfillment_id"
+          },
+          "status": {
+            "enum": [
+              "label_created",
+              "in_transit",
+              "out_for_delivery",
+              "delivered",
+              "exception"
+            ],
+            "type": "string"
+          },
+          "tracking_number": {
+            "maxLength": 64,
+            "minLength": 1,
+            "type": "string"
+          },
+          "tracking_url": {
+            "maxLength": 500,
+            "pattern": "^https://",
+            "type": "string"
+          },
+          "updated_at": {
+            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "fulfillment_id",
+          "status",
+          "updated_at"
+        ],
+        "type": "object"
+      },
+      "maxItems": 50,
+      "minItems": 0,
+      "type": "array"
+    }
+  },
+  "required": [
+    "order_id",
+    "shipments"
+  ],
+  "type": "object"
+}

@@ -1,0 +1,21 @@
+{
+  "$id": "https://contracts.auteric.dev/schemas/returns/cancel_return.output.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "return_id": {
+      "$ref": "return.json#/$defs/return_id"
+    },
+    "status": {
+      "enum": [
+        "cancelled"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "return_id",
+    "status"
+  ],
+  "type": "object"
+}

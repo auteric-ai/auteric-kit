@@ -1,0 +1,83 @@
+{
+  "$defs": {
+    "return_id": {
+      "pattern": "^ret_[A-Za-z0-9]{8,64}$",
+      "type": "string"
+    }
+  },
+  "$id": "https://contracts.auteric.dev/schemas/returns/return.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "created_at": {
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$",
+      "type": "string"
+    },
+    "items": {
+      "items": {
+        "additionalProperties": false,
+        "properties": {
+          "line_id": {
+            "$ref": "../common/ids.json#/$defs/line_id"
+          },
+          "note": {
+            "maxLength": 500,
+            "minLength": 0,
+            "type": "string"
+          },
+          "quantity": {
+            "maximum": 999,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "reason": {
+            "enum": [
+              "defective",
+              "wrong_item",
+              "no_longer_needed",
+              "other"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "line_id",
+          "quantity",
+          "reason"
+        ],
+        "type": "object"
+      },
+      "maxItems": 50,
+      "minItems": 1,
+      "type": "array"
+    },
+    "order_id": {
+      "$ref": "../common/ids.json#/$defs/order_id"
+    },
+    "refund_total": {
+      "$ref": "../common/money.json"
+    },
+    "return_id": {
+      "$ref": "#/$defs/return_id"
+    },
+    "status": {
+      "enum": [
+        "requested",
+        "approved",
+        "rejected",
+        "received",
+        "refunded",
+        "cancelled"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "return_id",
+    "order_id",
+    "status",
+    "items",
+    "created_at"
+  ],
+  "type": "object"
+}

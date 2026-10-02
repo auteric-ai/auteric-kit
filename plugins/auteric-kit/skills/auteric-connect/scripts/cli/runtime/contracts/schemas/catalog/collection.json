@@ -1,0 +1,30 @@
+{
+  "$id": "https://contracts.auteric.dev/schemas/catalog/collection.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "collection_id": {
+      "pattern": "^col_[A-Za-z0-9]{8,64}$",
+      "type": "string"
+    },
+    "description": {
+      "maxLength": 2000,
+      "minLength": 0,
+      "type": "string"
+    },
+    "product_count": {
+      "minimum": 0,
+      "type": "integer"
+    },
+    "title": {
+      "maxLength": 300,
+      "minLength": 1,
+      "type": "string"
+    }
+  },
+  "required": [
+    "collection_id",
+    "title"
+  ],
+  "type": "object"
+}

@@ -1,0 +1,21 @@
+{
+  "input": {
+    "currency": "USD"
+  },
+  "operation": "get_shipping_options",
+  "output": {
+    "options": [
+      {
+        "carrier": "AutericPost",
+        "eta_days_max": 5,
+        "eta_days_min": 3,
+        "label": "Standard",
+        "option_id": "opt_standard01",
+        "price": {
+          "amount_minor": 590,
+          "currency": "USD"
+        }
+      }
+    ]
+  }
+}

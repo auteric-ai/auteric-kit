@@ -1,0 +1,38 @@
+{
+  "$id": "https://contracts.auteric.dev/schemas/pricing/get_price.output.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "compare_at_unit_price": {
+      "$ref": "../common/money.json"
+    },
+    "quantity": {
+      "minimum": 1,
+      "type": "integer"
+    },
+    "source": {
+      "enum": [
+        "catalog",
+        "price_list"
+      ],
+      "type": "string"
+    },
+    "total_price": {
+      "$ref": "../common/money.json"
+    },
+    "unit_price": {
+      "$ref": "../common/money.json"
+    },
+    "variant_id": {
+      "$ref": "../common/ids.json#/$defs/variant_id"
+    }
+  },
+  "required": [
+    "variant_id",
+    "quantity",
+    "unit_price",
+    "total_price",
+    "source"
+  ],
+  "type": "object"
+}

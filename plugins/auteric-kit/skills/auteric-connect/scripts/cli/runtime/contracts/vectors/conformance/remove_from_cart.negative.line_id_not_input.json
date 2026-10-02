@@ -1,0 +1,8 @@
+{
+  "error_category": "unknown_field",
+  "input": {
+    "line_id": "line_01H8LINE0001"
+  },
+  "name": "line_id_not_input",
+  "operation": "remove_from_cart"
+}

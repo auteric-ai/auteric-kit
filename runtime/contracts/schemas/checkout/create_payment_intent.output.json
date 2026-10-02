@@ -1,0 +1,34 @@
+{
+  "$id": "https://contracts.auteric.dev/schemas/checkout/create_payment_intent.output.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "amount": {
+      "$ref": "../common/money.json"
+    },
+    "checkout_id": {
+      "$ref": "../common/ids.json#/$defs/checkout_id"
+    },
+    "payment_intent_id": {
+      "pattern": "^pi_[A-Za-z0-9]{8,64}$",
+      "type": "string"
+    },
+    "status": {
+      "enum": [
+        "requires_confirmation",
+        "requires_action",
+        "processing",
+        "succeeded",
+        "failed"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "payment_intent_id",
+    "checkout_id",
+    "status",
+    "amount"
+  ],
+  "type": "object"
+}

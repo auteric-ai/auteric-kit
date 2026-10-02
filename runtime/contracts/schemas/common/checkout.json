@@ -1,0 +1,89 @@
+{
+  "$id": "https://contracts.auteric.dev/schemas/common/checkout.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "buyer_principal": {
+      "$ref": "ids.json#/$defs/principal_id"
+    },
+    "cart_id": {
+      "$ref": "ids.json#/$defs/cart_id"
+    },
+    "checkout_id": {
+      "$ref": "ids.json#/$defs/checkout_id"
+    },
+    "discount_total": {
+      "$ref": "money.json"
+    },
+    "payment": {
+      "additionalProperties": false,
+      "properties": {
+        "handler": {
+          "maxLength": 64,
+          "minLength": 1,
+          "type": "string"
+        },
+        "status": {
+          "enum": [
+            "not_started",
+            "pending",
+            "authorized",
+            "paid",
+            "failed"
+          ],
+          "type": "string"
+        }
+      },
+      "required": [
+        "status"
+      ],
+      "type": "object"
+    },
+    "resource_revision": {
+      "minimum": 0,
+      "type": "integer"
+    },
+    "shipping_address": {
+      "$ref": "address.json"
+    },
+    "shipping_option": {
+      "$ref": "shipping_option.json"
+    },
+    "shipping_total": {
+      "$ref": "money.json"
+    },
+    "status": {
+      "enum": [
+        "pending",
+        "ready",
+        "completing",
+        "completed",
+        "cancelled",
+        "payment_pending"
+      ],
+      "type": "string"
+    },
+    "subtotal": {
+      "$ref": "money.json"
+    },
+    "tax_total": {
+      "$ref": "money.json"
+    },
+    "total": {
+      "$ref": "money.json"
+    }
+  },
+  "required": [
+    "checkout_id",
+    "cart_id",
+    "resource_revision",
+    "status",
+    "subtotal",
+    "discount_total",
+    "shipping_total",
+    "tax_total",
+    "total",
+    "payment"
+  ],
+  "type": "object"
+}

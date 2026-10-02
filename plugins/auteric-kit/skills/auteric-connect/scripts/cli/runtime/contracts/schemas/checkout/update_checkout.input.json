@@ -1,0 +1,19 @@
+{
+  "$id": "https://contracts.auteric.dev/schemas/checkout/update_checkout.input.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "buyer_principal": {
+      "$ref": "../common/ids.json#/$defs/principal_id"
+    },
+    "expected_revision": {
+      "minimum": 0,
+      "type": "integer"
+    },
+    "shipping_address": {
+      "$ref": "../common/address.json"
+    }
+  },
+  "required": [],
+  "type": "object"
+}

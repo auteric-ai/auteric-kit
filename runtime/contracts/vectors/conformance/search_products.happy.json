@@ -1,0 +1,40 @@
+{
+  "input": {
+    "category": "shoes",
+    "currency": "USD",
+    "limit": 10,
+    "price_max_minor": 20000,
+    "price_min_minor": 5000,
+    "q": "runner"
+  },
+  "operation": "search_products",
+  "output": {
+    "page": {
+      "has_more": false,
+      "next_cursor": "cur_01H8NEXT"
+    },
+    "results": [
+      {
+        "description": "Lightweight road running shoe.",
+        "product_id": "prod_01H8PROD0001",
+        "tags": [
+          "shoes",
+          "running"
+        ],
+        "title": "Auteric Runner",
+        "variants": [
+          {
+            "available": true,
+            "price": {
+              "amount_minor": 12900,
+              "currency": "USD"
+            },
+            "title": "US 9",
+            "variant_id": "var_01H8VAR00001"
+          }
+        ],
+        "vendor": "Auteric"
+      }
+    ]
+  }
+}

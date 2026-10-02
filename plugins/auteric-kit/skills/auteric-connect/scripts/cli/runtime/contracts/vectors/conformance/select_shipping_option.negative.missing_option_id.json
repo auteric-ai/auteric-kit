@@ -1,0 +1,6 @@
+{
+  "error_category": "missing_required",
+  "input": {},
+  "name": "missing_option_id",
+  "operation": "select_shipping_option"
+}

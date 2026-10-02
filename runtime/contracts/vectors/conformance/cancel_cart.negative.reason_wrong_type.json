@@ -1,0 +1,8 @@
+{
+  "error_category": "invalid_type",
+  "input": {
+    "reason": 5
+  },
+  "name": "reason_wrong_type",
+  "operation": "cancel_cart"
+}

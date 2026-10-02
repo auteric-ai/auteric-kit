@@ -1,0 +1,8 @@
+{
+  "error_category": "invalid_value",
+  "input": {
+    "expected_revision": -1
+  },
+  "name": "revision_negative",
+  "operation": "cancel_checkout"
+}

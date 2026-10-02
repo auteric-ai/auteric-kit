@@ -1,0 +1,49 @@
+{
+  "$id": "https://contracts.auteric.dev/schemas/returns/request_return.input.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "items": {
+      "items": {
+        "additionalProperties": false,
+        "properties": {
+          "line_id": {
+            "$ref": "../common/ids.json#/$defs/line_id"
+          },
+          "note": {
+            "maxLength": 500,
+            "minLength": 0,
+            "type": "string"
+          },
+          "quantity": {
+            "maximum": 999,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "reason": {
+            "enum": [
+              "defective",
+              "wrong_item",
+              "no_longer_needed",
+              "other"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "line_id",
+          "quantity",
+          "reason"
+        ],
+        "type": "object"
+      },
+      "maxItems": 50,
+      "minItems": 1,
+      "type": "array"
+    }
+  },
+  "required": [
+    "items"
+  ],
+  "type": "object"
+}

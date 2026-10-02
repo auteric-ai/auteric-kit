@@ -1,31 +1,31 @@
-# Auteric Kit development: managed HTTP Connect
+# Auteric Connect
 
-Custom-store Connect now defaults to the shared HTTP runtime described in
-[managed HTTP Connect](plugins/auteric-kit/skills/auteric-connect/references/managed-http.md).
-It accepts explicit OpenAPI/mapping profiles for five catalog/cart operations,
-keeps inventory local, and returns precise gaps without invoking a coding agent.
-Node 22.13+ is required. From a source checkout or the bundled plugin CLI, run
-`npm ci --ignore-scripts` in the CLI directory before using this development code.
-Merchant applications receive no runtime dependency in this path.
+Inside the current frontier coding model, run `auteric connect --domain STORE`.
+The Auteric Kit skill scans the real merchant code, generates a small adapter
+under `auteric/`, and continues its internal installation and contract tests.
+A terminal without a coding model returns a continuation for that model.
 
-Every generated repository file in this path lives under `auteric/`:
-connection/deployment config, private `.state/` reports/enrollment, ignored
-`discovery/` bytes and a local `.gitignore`. Existing OpenAPI/deployment inputs
-are read without modification; keep new input profiles in that same folder.
-`auteric disconnect` revokes this installation and enrollment, stops only its
-owned Compose service, and removes unchanged generated config, bootstrap secret
-and discovery. It retains edited files and persistent audit/state. A failed
-local stop remains resumable as `cleanup_pending`; external state volumes are
-never deleted. Owner CLI sessions remain in the existing private user cache.
+The Kit includes a pinned generic Gateway test harness and canonical schemas and
+vectors. No Auteric monorepo, private repository access, AWS credentials or public
+merchant deployment is required for local acceptance. Node 22.13+, Python 3.11+
+and a running Docker daemon are local prerequisites. First use installs pinned
+Python test dependencies in the private Auteric cache outside the merchant repo
+and anonymously pulls the qualified generic runtime image if missing.
 
-The bundled release is **unqualified**. The CLI stops before owner pairing or
-installation registration until the runtime image, clean install, frozen
-Sidecar release compatibility and Control bootstrap provider are qualified. A local
-image build is not a published connection. See the
-[implementation evidence](../../docs/connect-plug-and-play-implementation.md)
-for remaining requirements. Checkout/payment and automatic SDK fallback are
-outside this implementation. ECS rendering is a preview, blocked by unsupported
-storage and credential delivery.
+The Sidecar/Bridge runtime image is shared and contains no merchant business code.
+Generated adapters are mounted separately. Auth, ownership, transactions,
+idempotency, audit and revisions remain owned by the merchant application.
+A normal local Connect request does not deploy or activate public traffic.
+
+After local acceptance, the model prepares the merchant's actual deployment and
+UCP routes. Owner enrollment requires browser approval, a real owned target and
+valid storage/network/secret references. Public access requires deployment and
+runtime verification. Existing active installations are preserved.
+
+Declarative HTTP bindings are available for simple APIs matching the contract.
+The qualified runtime supports five catalog/cart operations; remaining registry
+operations require compatible runtime support and a tested merchant adapter.
+Unsupported capabilities are reported and remain disabled.
 
 ## Existing outbound installer (explicit `--legacy-connector`)
 

@@ -1,0 +1,12 @@
+{
+  "error_category": "missing_required",
+  "input": {
+    "address": {
+      "city": "Tel Aviv",
+      "country_code": "IL",
+      "line1": "1 Market St"
+    }
+  },
+  "name": "address_missing_postal_code",
+  "operation": "set_shipping_address"
+}

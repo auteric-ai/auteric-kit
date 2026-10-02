@@ -1,0 +1,39 @@
+{
+  "$id": "https://contracts.auteric.dev/schemas/common/shipping_option.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "carrier": {
+      "maxLength": 64,
+      "minLength": 1,
+      "type": "string"
+    },
+    "eta_days_max": {
+      "maximum": 60,
+      "minimum": 0,
+      "type": "integer"
+    },
+    "eta_days_min": {
+      "maximum": 60,
+      "minimum": 0,
+      "type": "integer"
+    },
+    "label": {
+      "maxLength": 120,
+      "minLength": 1,
+      "type": "string"
+    },
+    "option_id": {
+      "$ref": "ids.json#/$defs/shipping_option_id"
+    },
+    "price": {
+      "$ref": "money.json"
+    }
+  },
+  "required": [
+    "option_id",
+    "label",
+    "price"
+  ],
+  "type": "object"
+}

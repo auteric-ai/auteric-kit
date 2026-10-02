@@ -1,0 +1,23 @@
+{
+  "$id": "https://contracts.auteric.dev/schemas/cart/replace_cart_items.input.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "expected_revision": {
+      "minimum": 0,
+      "type": "integer"
+    },
+    "items": {
+      "items": {
+        "$ref": "../common/line_item_input.json"
+      },
+      "maxItems": 200,
+      "minItems": 0,
+      "type": "array"
+    }
+  },
+  "required": [
+    "items"
+  ],
+  "type": "object"
+}

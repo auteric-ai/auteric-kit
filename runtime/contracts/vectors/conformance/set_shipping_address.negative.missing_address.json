@@ -1,0 +1,8 @@
+{
+  "error_category": "missing_required",
+  "input": {
+    "expected_revision": 1
+  },
+  "name": "missing_address",
+  "operation": "set_shipping_address"
+}

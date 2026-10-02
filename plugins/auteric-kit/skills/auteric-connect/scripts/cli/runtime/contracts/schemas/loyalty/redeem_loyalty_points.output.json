@@ -1,0 +1,34 @@
+{
+  "$id": "https://contracts.auteric.dev/schemas/loyalty/redeem_loyalty_points.output.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "cart_id": {
+      "$ref": "../common/ids.json#/$defs/cart_id"
+    },
+    "discount": {
+      "$ref": "../common/money.json"
+    },
+    "points": {
+      "minimum": 1,
+      "type": "integer"
+    },
+    "redemption_id": {
+      "pattern": "^red_[A-Za-z0-9]{8,64}$",
+      "type": "string"
+    },
+    "status": {
+      "enum": [
+        "applied"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "redemption_id",
+    "points",
+    "discount",
+    "status"
+  ],
+  "type": "object"
+}

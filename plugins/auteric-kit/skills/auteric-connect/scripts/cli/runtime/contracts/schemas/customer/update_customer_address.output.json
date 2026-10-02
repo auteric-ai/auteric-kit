@@ -1,0 +1,18 @@
+{
+  "$id": "https://contracts.auteric.dev/schemas/customer/update_customer_address.output.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "address": {
+      "$ref": "../common/address.json"
+    },
+    "address_id": {
+      "$ref": "customer.json#/$defs/address_id"
+    }
+  },
+  "required": [
+    "address_id",
+    "address"
+  ],
+  "type": "object"
+}

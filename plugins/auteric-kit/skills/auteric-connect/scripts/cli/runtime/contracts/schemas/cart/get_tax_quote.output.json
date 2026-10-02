@@ -1,0 +1,51 @@
+{
+  "$id": "https://contracts.auteric.dev/schemas/cart/get_tax_quote.output.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "cart_id": {
+      "$ref": "../common/ids.json#/$defs/cart_id"
+    },
+    "estimated": {
+      "type": "boolean"
+    },
+    "lines": {
+      "items": {
+        "additionalProperties": false,
+        "properties": {
+          "amount": {
+            "$ref": "../common/money.json"
+          },
+          "label": {
+            "maxLength": 120,
+            "minLength": 1,
+            "type": "string"
+          },
+          "rate_basis_points": {
+            "maximum": 10000,
+            "minimum": 0,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "label",
+          "amount"
+        ],
+        "type": "object"
+      },
+      "maxItems": 50,
+      "minItems": 0,
+      "type": "array"
+    },
+    "tax_total": {
+      "$ref": "../common/money.json"
+    }
+  },
+  "required": [
+    "cart_id",
+    "tax_total",
+    "lines",
+    "estimated"
+  ],
+  "type": "object"
+}

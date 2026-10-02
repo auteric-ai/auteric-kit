@@ -1,6 +1,6 @@
 {
   "name": "@auteric/cli",
-  "version": "0.7.4",
+  "version": "0.7.5",
   "description": "Connect a custom storefront to an Auteric Commerce control plane",
   "type": "module",
   "bin": {
@@ -22,7 +22,11 @@
     "schemas",
     "release-manifest.json",
     "plugins/auteric-kit/skills/auteric-connect/SKILL.md",
-    "plugins/auteric-kit/skills/auteric-connect/references/model-connect.md"
+    "plugins/auteric-kit/skills/auteric-connect/references",
+    "runtime/connect-harness.zip",
+    "runtime/connect-harness.json",
+    "runtime/contracts/schemas",
+    "runtime/contracts/vectors"
   ],
   "engines": {
     "node": ">=22.13"

@@ -1,0 +1,57 @@
+{
+  "input": {
+    "expected_revision": 1,
+    "option_id": "opt_standard01"
+  },
+  "operation": "select_shipping_option",
+  "output": {
+    "buyer_principal": "buyer_01H8BUYER001",
+    "cart_id": "cart_01H8CART0001",
+    "checkout_id": "chk_01H8CHK00001",
+    "discount_total": {
+      "amount_minor": 0,
+      "currency": "USD"
+    },
+    "payment": {
+      "status": "not_started"
+    },
+    "resource_revision": 1,
+    "shipping_address": {
+      "city": "Tel Aviv",
+      "country_code": "IL",
+      "line1": "1 Market St",
+      "phone": "+972-3-555-0100",
+      "postal_code": "6100001",
+      "recipient_name": "Dana Agent",
+      "region": "TA"
+    },
+    "shipping_option": {
+      "carrier": "AutericPost",
+      "eta_days_max": 5,
+      "eta_days_min": 3,
+      "label": "Standard",
+      "option_id": "opt_standard01",
+      "price": {
+        "amount_minor": 590,
+        "currency": "USD"
+      }
+    },
+    "shipping_total": {
+      "amount_minor": 590,
+      "currency": "USD"
+    },
+    "status": "ready",
+    "subtotal": {
+      "amount_minor": 25800,
+      "currency": "USD"
+    },
+    "tax_total": {
+      "amount_minor": 4386,
+      "currency": "USD"
+    },
+    "total": {
+      "amount_minor": 30776,
+      "currency": "USD"
+    }
+  }
+}

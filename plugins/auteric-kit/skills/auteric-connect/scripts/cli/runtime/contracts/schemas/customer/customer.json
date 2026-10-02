@@ -1,0 +1,40 @@
+{
+  "$defs": {
+    "address_id": {
+      "pattern": "^addr_[A-Za-z0-9]{8,64}$",
+      "type": "string"
+    },
+    "customer_id": {
+      "pattern": "^cust_[A-Za-z0-9]{8,64}$",
+      "type": "string"
+    }
+  },
+  "$id": "https://contracts.auteric.dev/schemas/customer/customer.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "created_at": {
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$",
+      "type": "string"
+    },
+    "customer_id": {
+      "$ref": "#/$defs/customer_id"
+    },
+    "email": {
+      "maxLength": 254,
+      "pattern": "^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$",
+      "type": "string"
+    },
+    "name": {
+      "maxLength": 200,
+      "minLength": 1,
+      "type": "string"
+    }
+  },
+  "required": [
+    "customer_id",
+    "email",
+    "created_at"
+  ],
+  "type": "object"
+}

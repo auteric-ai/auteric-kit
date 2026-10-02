@@ -1,0 +1,71 @@
+{
+  "$id": "https://contracts.auteric.dev/schemas/common/product.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "description": {
+      "maxLength": 5000,
+      "minLength": 0,
+      "type": "string"
+    },
+    "product_id": {
+      "$ref": "ids.json#/$defs/product_id"
+    },
+    "tags": {
+      "items": {
+        "maxLength": 64,
+        "minLength": 1,
+        "type": "string"
+      },
+      "maxItems": 50,
+      "minItems": 0,
+      "type": "array"
+    },
+    "title": {
+      "maxLength": 300,
+      "minLength": 1,
+      "type": "string"
+    },
+    "variants": {
+      "items": {
+        "additionalProperties": false,
+        "properties": {
+          "available": {
+            "type": "boolean"
+          },
+          "price": {
+            "$ref": "money.json"
+          },
+          "title": {
+            "maxLength": 300,
+            "minLength": 1,
+            "type": "string"
+          },
+          "variant_id": {
+            "$ref": "ids.json#/$defs/variant_id"
+          }
+        },
+        "required": [
+          "variant_id",
+          "price",
+          "available"
+        ],
+        "type": "object"
+      },
+      "maxItems": 250,
+      "minItems": 1,
+      "type": "array"
+    },
+    "vendor": {
+      "maxLength": 120,
+      "minLength": 1,
+      "type": "string"
+    }
+  },
+  "required": [
+    "product_id",
+    "title",
+    "variants"
+  ],
+  "type": "object"
+}

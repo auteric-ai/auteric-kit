@@ -1,0 +1,8 @@
+{
+  "error_category": "invalid_value",
+  "input": {
+    "code": "welcome10"
+  },
+  "name": "code_lowercase",
+  "operation": "apply_discount_code"
+}

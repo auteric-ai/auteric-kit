@@ -1,0 +1,8 @@
+{
+  "error_category": "invalid_value",
+  "input": {
+    "buyer_principal": "intruder_01H8"
+  },
+  "name": "principal_malformed",
+  "operation": "update_checkout"
+}

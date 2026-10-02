@@ -1,0 +1,17 @@
+{
+  "$id": "https://contracts.auteric.dev/schemas/common/pagination.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "has_more": {
+      "type": "boolean"
+    },
+    "next_cursor": {
+      "$ref": "ids.json#/$defs/cursor"
+    }
+  },
+  "required": [
+    "has_more"
+  ],
+  "type": "object"
+}
