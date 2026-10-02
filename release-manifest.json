@@ -1,17 +1,20 @@
 {
   "schema": "auteric-runtime-release/v1",
-  "version": "0.1.0-development.2",
-  "source_sha": "89b727321952b6605e682664b60b0ab3b5c5e35c",
+  "version": "0.2.0",
+  "source_sha": "40231514b43e1a4f555aaad5f46823fd9c14551a",
   "base_sha": "bc430da3a3c2f46d8857fccfc02c16b3585fe5a8",
   "component_digests": {
-    "runtime": "sha256:a109374780b5a7a678632f070efc4b4bf6b9d97967c490b31d403d79d5323502",
+    "runtime": "sha256:2aacdf44af4c9be01f08e87d00d208f80da140731d6454fb631b65e6dd83fc2b",
+    "storage_overlay": "sha256:4a611c51f5678c09f1fe5909e5ee4d53aaf367af9f98a2da6797adba9f82d110",
     "sidecar": "sha256:eece33eeb386e877d903b6abcbb81f5f160757b0c503bbffc8edfc488c06a26c",
     "merchant_node": "sha256:3370c894d72380a327c9cddf73224d127b602ea9e5bf655408abb4a89b625ed2",
-    "cli": "sha256:4609899fa707dd2bb4c6843bd6c8be65b22efa937ca0e12c9ff0f9ab2451495a"
+    "cli": "sha256:176c8c1030e943947e80fbc9fd0a9093bfcee81d2e9db16c4e8d460a3e30161a"
   },
-  "cli_version": "0.7.6",
+  "cli_version": "0.8.0",
   "merchant_node_version": "0.1.0",
   "merchant_python_version": "0.1.1.dev1",
+  "runtime_state_protocol": "auteric-runtime-state/v1",
+  "frozen_sidecar_image": "public.ecr.aws/k1b9o2d4/auteric/merchant-runtime@sha256:c4d8868615c8bc63cb4a13d4da7dc6afc00cd4bbb81ff1726ea59f43fe980ea8",
   "bridge_protocol": "1",
   "sidecar_schema": "auteric-sidecar/v1",
   "registry_digest": "sha256:671bd2cb706dd60773de5fdecbe5d35a5822a0d33fafdcfb92f62ddd33134c0c",
@@ -19,23 +22,24 @@
     "bridge-mapping": "sha256:231f89e4b90dfd7b6e46b0e443173eb17816ef2b2902bc69aee6b58ba9adfca0",
     "module-binding": "sha256:1834ee70701b106c0cae69446bc1b92ca2335d809392ec0dad85608817a8c42b",
     "connection": "sha256:092543b40f2dbe66a0b79096500777b0b659684334ce66f747b6ec9ed67aa8a5",
-    "deployment": "sha256:c4fc12dfd59a521870fcd6b9dbf2bc4957ce9af298f4c37d834eac27e21189b1"
+    "deployment": "sha256:51b8db8310930cbb0524171fd51d074cf844b632f9147538e46f23ee82fed91c"
   },
-  "image": "public.ecr.aws/k1b9o2d4/auteric/merchant-runtime@sha256:c4d8868615c8bc63cb4a13d4da7dc6afc00cd4bbb81ff1726ea59f43fe980ea8",
+  "image": "public.ecr.aws/k1b9o2d4/auteric/merchant-runtime@sha256:9a597ba373fc14dd97a9615a1c3eee50e0e4f41d64c63358914919e8d4e252bc",
   "architectures": [
     "linux/amd64"
   ],
   "deployment_profiles": [
-    "ecs-fargate:postgresql/v1",
-    "compose:sqlite-local-volume/v1",
-    "compose:postgresql/v1"
+    "ecs-fargate:gateway/v1",
+    "compose:gateway/v1"
   ],
   "control_api": "auteric-runtime-enrollment/v1",
   "qualification": {
     "passed": true,
     "anonymous_pull": true,
     "clean_install": true,
-    "production_bootstrap_postgres": true,
+    "gateway_postgres": true,
+    "restart_without_state_volume": true,
+    "frozen_enforcement_preserved": true,
     "public_merchant_end_to_end": false
   },
   "blockers": []

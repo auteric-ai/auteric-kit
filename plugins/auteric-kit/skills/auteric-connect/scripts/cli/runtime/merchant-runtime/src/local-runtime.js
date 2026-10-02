@@ -1,3 +1,4 @@
+import { remoteState } from './remote-store.js';
 import { spawn } from 'node:child_process';
 import { moduleAdapters } from './module-adapter.js';
 import { createApplicationBridge } from './bridge-server.js';
@@ -23,12 +24,12 @@ export async function startLocalRuntime() {
   const translator = await moduleAdapters(process.env.AUTERIC_CONNECTION, {
     origin: process.env.AUTERIC_MERCHANT_ORIGIN, installationId: process.env.AUTERIC_INSTALLATION_ID,
     applicationToken: process.env.AUTERIC_APPLICATION_TOKEN, statePath: process.env.AUTERIC_BRIDGE_STATE,
-    bindingDigest,
+    bindingDigest, store:remoteState({url:process.env.AUTERIC_RUNTIME_STATE_URL,token:process.env.AUTERIC_SIDECAR_GATEWAY_TOKEN}),
     privateHosts: [new URL(process.env.AUTERIC_MERCHANT_ORIGIN).hostname],
   });
   const bridge = createApplicationBridge({ adapters: translator.adapters, token: process.env.AUTERIC_BRIDGE_TOKEN, port:3101 });
   await bridge.listen();
-  const sidecar = spawn('python', ['-m','auteric_merchant.sidecar_app','--config',process.env.AUTERIC_SIDECAR_CONFIG,
+  const sidecar = spawn('python', ['-m','auteric_merchant.remote_app','--config',process.env.AUTERIC_SIDECAR_CONFIG,
     '--host','0.0.0.0','--port','7070'], {env:process.env,stdio:'inherit'});
   let closing;
   const close = () => closing ||= (async () => { await stopChild(sidecar,3000); await bridge.close(); await translator.close(); gateway?.close(); })();

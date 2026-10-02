@@ -1,7 +1,7 @@
 {
   "schema": "auteric-connect-harness/v1",
-  "control_image": "416153530465.dkr.ecr.us-east-2.amazonaws.com/auteric-commerce-commerce@sha256:f3ad10d66de46e6d94c6c389ab5ad90dc2947889daa87498c2a63375ceaec7ab",
-  "sha256": "1bd5cbffb753a36b25e40fb12661ec78350e1f2b10f5937d1b51e53eec6c4ea7",
+  "control_image": "416153530465.dkr.ecr.us-east-2.amazonaws.com/auteric-commerce-commerce@sha256:1dd4ad83a738f975bb0632f1273dcae3730421ef0301effa41421a34595efbbc",
+  "sha256": "e7fa517741ffac2a19dd71f57ac76cf766c0c8d9fc851641b9b17b9ff6cf3f9b",
   "python_minimum": "3.11",
   "merchant_code_included": false
 }

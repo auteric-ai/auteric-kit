@@ -1,7 +1,9 @@
+import { remoteState } from './remote-store.js';
 import { readFileSync } from 'node:fs';
 import { applicationAdapters } from './application-bridge.js';
 import { createApplicationBridge } from './bridge-server.js';
 const options={origin:process.env.AUTERIC_MERCHANT_ORIGIN,installationId:process.env.AUTERIC_INSTALLATION_ID,statePath:process.env.AUTERIC_BRIDGE_STATE,bindingDigest:process.env.AUTERIC_BINDING_DIGEST,databaseUrl:process.env.AUTERIC_STATE_DATABASE_URL,applicationToken:process.env.AUTERIC_APPLICATION_TOKEN,privateHosts:[new URL(process.env.AUTERIC_MERCHANT_ORIGIN).hostname]};
+if(process.env.AUTERIC_RUNTIME_STATE_URL)options.store=remoteState({url:process.env.AUTERIC_RUNTIME_STATE_URL,token:process.env.AUTERIC_SIDECAR_GATEWAY_TOKEN});
 const translator=process.env.AUTERIC_ADAPTER_CONNECTION
   ? await (await import('./module-adapter.js')).moduleAdapters(process.env.AUTERIC_ADAPTER_CONNECTION,options)
   : applicationAdapters(JSON.parse(readFileSync(process.env.AUTERIC_MAPPING,'utf8')),options);

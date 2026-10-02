@@ -17,7 +17,10 @@ Generated adapters are mounted separately. Auth, ownership, transactions,
 idempotency, audit and revisions remain owned by the merchant application.
 A normal local Connect request does not deploy or activate public traffic.
 
-After local acceptance, Connect emits `auteric/deployment-plan.json` and the
+After local acceptance, Connect opens Control owner authorization. It returns
+`authentication_pending` immediately and resumes verified PKCE approval in the
+same request, preserving unchanged passing local work across timeout/retry.
+After authorization, Connect emits `auteric/deployment-plan.json` and the
 model must resolve its preparation continuation in the same request. Shared ECS
 resource templates are generated from verified deployment evidence, avoiding
 merchant-specific provisioning scripts. Cloud access, resource costs and business
@@ -25,7 +28,10 @@ data migrations still require the relevant owner decisions.
 
 After local acceptance, the model prepares the merchant's actual deployment and
 UCP routes. Owner enrollment requires browser approval, a real owned target and
-valid storage/network/secret references. Public access requires deployment and
+verified network/task and installation secret references. Auteric runtime state
+uses `gateway/v1`: no merchant-side runtime PostgreSQL/RDS or persistent state
+volume is required. Secrets remain in platform storage (or a dedicated private
+Compose identity directory); the business database remains merchant-owned. Public access requires deployment and
 runtime verification. Existing active installations are preserved.
 
 Declarative HTTP bindings are available for simple APIs matching the contract.
@@ -47,14 +53,10 @@ currency and optional catalog data, and reports contract failures explicitly.
 Linux and macOS CI run both Python and Node suites. These simulations do not
 establish universal framework support or production checkout compatibility.
 
-Connect first attempts deterministic catalog discovery. If no connector can be
-prepared, it detects an installed coding CLI (Codex, Claude Code, Cursor CLI or
-Copilot CLI), invokes one bounded adapter task, and independently validates the
-result before sign-in. This uses the assistant's existing account and normal
-permissions; model usage and data handling follow that provider. `--no-agent`
-disables automatic invocation. An editor installation alone may not include an
-authenticated CLI. Missing tools, credentials and unsupported semantics are
-reported as incomplete, never as a successful connection.
+Normal Connect uses the current coding model and never launches a second agent.
+Legacy opt-in catalog preparation retains its separate deterministic/CLI fallback
+for compatibility. The model-driven Skill is the supported default for custom
+merchant adapters, including application-owned internal service boundaries.
 
 Codex automatic adapter creation has been exercised against a fresh custom HTTP
 merchant. The other provider command adapters have argument-level tests only;

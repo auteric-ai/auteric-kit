@@ -1,25 +1,27 @@
 # Supported coding agents
 
-Auteric Kit uses one shared integration workflow across supported coding agents. The wording and completion states are identical: inspect → plan → approval → implement → verify.
+Normal Connect uses the capable coding model already working in the merchant
+repository. The shared Skill supplies contracts, adapter interfaces, tests and
+deployment helpers. It does not start a second coding agent or implement merchant
+business logic in the CLI. A terminal alone returns an implementation continuation.
 
-The source repository also contains an unpublished CLI preview with `--localhost`
-for the local Commerce API. It performs shared browser authorization, pending
-store registration and local UCP checks independently of the coding agent. Agent installation and
-automatic invocation are not yet implemented by that CLI.
+| Host | Start |
+| --- | --- |
+| Codex | Install/update Auteric Kit, then request `auteric connect --domain STORE` in the merchant task. |
+| Claude Code | Invoke the Auteric storefront command or request the same connection with the shared Skill installed. |
+| Cursor / other Skills-compatible hosts | Install the shared Skill and request connection inside the merchant repository. |
 
-| Agent | How the merchant starts | What happens next |
-| --- | --- | --- |
-| Codex | Choose **Prepare this storefront for shopping agents with Auteric** from the plugin starter actions, or ask naturally. | The shared storefront workflow starts. |
-| Claude Code | Run `/auteric-kit:prepare-storefront`, or ask naturally to prepare the store for shopping agents. | The command supplies the same user-facing workflow; natural requests activate the shared skill. |
-| Cursor | Ask naturally to prepare the store for shopping agents after installing the skills. | Cursor discovers the shared skill from its installed skills directory. |
-| Other Skills-compatible agents | Ask naturally to prepare the storefront for shopping agents. | The shared skill description supplies the same trigger and workflow. |
+The model scans the code, generates small isolated files under `auteric/`, runs
+canonical contract tests through the generic image and bundled local Gateway/MCP,
+then prepares the existing deployment. Node 22.13+, Python 3.11+ and Docker are
+local prerequisites; private monorepo access and AWS are not required locally.
 
-The hosts do not expose identical interface controls: Codex has starter prompts, Claude Code has plugin commands, and Cursor exposes installed skills through its own interface. They do share the same safety boundary: plugin installation changes no store code; implementation begins only after the merchant approves the plan.
+The owner signs in to Control after local acceptance. Authorization is resumable
+and verified with PKCE. A login timeout preserves unchanged passing integration
+work. Only a real approved account can enroll an installation.
 
-## Natural request examples
-
-- “Prepare this store for shopping agents.”
-- “Make this ecommerce site agent-ready.”
-- “Review catalog, cart, and checkout for agentic commerce.”
-
-The merchant never needs to know an internal Skill name.
+The released runtime uses `auteric-runtime-state/v1` and `gateway/v1`. It needs no
+merchant-side runtime database or persistent execution-state volume. Installation
+and application credentials still use platform secret storage; Compose may use
+its dedicated private identity directory. Merchant business persistence is separate.
+Public connection needs the prepared merchant deployment and public verification.

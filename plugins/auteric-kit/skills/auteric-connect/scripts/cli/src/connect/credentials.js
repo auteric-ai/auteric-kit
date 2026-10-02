@@ -1,4 +1,4 @@
-import { existsSync, lstatSync, readFileSync } from 'node:fs';
+import { existsSync, lstatSync, readFileSync,mkdirSync } from 'node:fs';
 import { resolve, join } from 'node:path';
 import { shared } from './shared.js';
 import { initializeManaged } from './artifacts.js';
@@ -10,12 +10,13 @@ export async function credentialTarget(root,deployment) {
     if(current?.token && !current.installation_id)throw Error('existing secret contains an unrelated credential');
     return deployment.secret_ref;
   }
-  if(deployment.platform!=='compose'||!deployment.secret_ref.startsWith('file:/'))throw Error('credential_delivery_required: only persistent file secret delivery is implemented; ECS rotation/storage is not qualified');
+  if(deployment.platform!=='compose'||!deployment.secret_ref.startsWith('file:/'))throw Error('credential_delivery_required: a supported installation credential provider is required');
   const path=deployment.secret_ref.slice(5);
-  if(resolve(path)!==join(resolve(root),'auteric/.state/enrollment.json'))throw Error('deployment_prerequisite_missing: secret_ref must reference auteric/.state/enrollment.json inside this project');
+  if(resolve(path)!==join(resolve(root),'auteric/.state/identity/enrollment.json'))throw Error('deployment_prerequisite_missing: secret_ref must reference auteric/.state/identity/enrollment.json inside this project');
   const {safeTarget}=await shared('atomic');safeTarget(path);
   initializeManaged(root);
-  if(Number(deployment.runtime_user.split(':')[0])!==process.getuid())throw Error('deployment_prerequisite_missing: Compose runtime UID must match the enrollment file owner; retain matching writable state/discovery mounts');
+  mkdirSync(join(root,'auteric/.state/identity'),{recursive:true,mode:0o700});
+  if(Number(deployment.runtime_user.split(':')[0])!==process.getuid())throw Error('deployment_prerequisite_missing: Compose runtime UID must match the enrollment file owner; retain the dedicated writable identity directory');
   if(!existsSync(path))return path;
   if(!lstatSync(path).isFile()||lstatSync(path).mode&0o077)throw Error('deployment_prerequisite_missing: enrollment secret must be a private regular file with mode 0600');
   if(lstatSync(path).uid!==Number(deployment.runtime_user.split(':')[0]))throw Error('deployment_prerequisite_missing: Compose runtime UID must own the enrollment file');

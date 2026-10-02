@@ -12,6 +12,7 @@ export function validateBundle(bundle, connection, now = Date.now() / 1000) {
   if (bundle.schema !== 'auteric-runtime-bundle/v1' || bundle.installation_id !== connection.installation_id
       || bundle.mapping_digest !== connection.mapping_digest || digest(bundle.mapping) !== connection.mapping_digest
       || !Number.isFinite(bundle.expires_at) || bundle.expires_at <= now) throw Error('runtime configuration scope, digest or expiry mismatch');
+  if(bundle.runtime_state_protocol!=='auteric-runtime-state/v1')throw Error('Gateway runtime state protocol is unsupported');
   validateMapping(bundle.mapping);
   if(bundle.engine_profile && bundle.engine_profile!==process.env.AUTERIC_ENGINE_PROFILE) throw Error('runtime engine profile differs from the pinned SDK');
   const installation = bundle.sidecar?.installation;
@@ -56,7 +57,7 @@ export async function manage(connection, {
   validateConnection(connection, { privateHosts: [new URL(connection.backend.origin).hostname] });
   const release = bundledRelease();
   if (connection.runtime_release !== release.version || connection.mapping.registry_digest !== release.registry_digest) throw Error('runtime release or registry incompatibility');
-  if (!statePath || (!secretPath && !secretStore) || !discoveryPath) throw Error('persistent state, service secret file and discovery mount required');
+  if (!statePath || (!secretPath && !secretStore) || !discoveryPath) throw Error('temporary configuration path, durable installation credential and discovery path required');
   const isModule=connection.mapping.schema==='auteric-module-binding/v1';
   if(isModule && (!adapterConnection || digest(await moduleBinding(adapterConnection))!==connection.mapping_digest))throw Error('deployed adapter differs from enrolled binding');
   const serviceRoot = `${connection.control_origin}/api/commerce/stores/${encodeURIComponent(connection.store_id)}/runtime-enrollment`;
@@ -118,9 +119,9 @@ export async function manage(connection, {
     write(join(generation, 'sidecar.json'), JSON.stringify(sidecar));
     const env = { ...process.env, AUTERIC_BRIDGE_TOKEN: bridgeToken, AUTERIC_MAPPING: join(generation, 'mapping.json'),
       AUTERIC_SIDECAR_CONFIG: join(generation, 'sidecar.json'), AUTERIC_MERCHANT_ORIGIN: connection.backend.origin,
-      AUTERIC_INSTALLATION_ID: connection.installation_id, ...(isModule ? {AUTERIC_ADAPTER_CONNECTION:adapterConnection,AUTERIC_BINDING_DIGEST:next.mapping.adapter_fingerprint} : {}), AUTERIC_SIDECAR_GATEWAY_TOKEN: activeToken.token, AUTERIC_SIDECAR_DATABASE_URL:databaseUrl, AUTERIC_BRIDGE_STATE: join(statePath, 'bridge.sqlite'), ...(databaseUrl?{AUTERIC_STATE_DATABASE_URL:databaseUrl}:{}) };
+      AUTERIC_RUNTIME_STATE_URL: `${connection.control_origin}/api/commerce/stores/${encodeURIComponent(connection.store_id)}/runtime-state/${encodeURIComponent(connection.installation_id)}`, AUTERIC_INSTALLATION_ID: connection.installation_id, ...(isModule ? {AUTERIC_ADAPTER_CONNECTION:adapterConnection,AUTERIC_BINDING_DIGEST:next.mapping.adapter_fingerprint} : {}), AUTERIC_SIDECAR_GATEWAY_TOKEN: activeToken.token, AUTERIC_RUNTIME_STATE_PROTOCOL: 'auteric-runtime-state/v1' };
     children = [spawnChild(process.execPath, [new URL('./bridge-cli.js', import.meta.url).pathname], { env, stdio: 'inherit' }),
-      spawnChild('python3', ['-m', 'auteric_merchant.sidecar_app', '--host', '127.0.0.1', '--port', '7070'], { env, stdio: 'inherit' })];
+      spawnChild('python3', ['-m', 'auteric_merchant.remote_app', '--host', '127.0.0.1', '--port', '7070'], { env, stdio: 'inherit' })];
     for (const child of children) {
       const failed = () => { if (!closed && children.includes(child)) { health = 'degraded'; void stop(); } };
       child.once('exit', failed); child.once('error', failed);
@@ -142,6 +143,8 @@ export async function manage(connection, {
       let next;
       try { next = validateBundle(received, connection, clock()); }
       catch (error) { error.status = 409; throw error; }
+      // Control's job ledger is authoritative after replacement.
+      if(!uncertain && next.verification_state && ['running','uncertain'].includes(next.verification_state.state))uncertain={run_id:next.verification_state.run_id,state:next.verification_state.state};
       if (uncertain) {
         if (uncertain.request_id) {
           const observed=await api('GET','/verification');
@@ -150,7 +153,7 @@ export async function manage(connection, {
           }
         }
         if(uncertain && typeof uncertain.run_id === 'string' && uncertain.run_id
-            && next.verification_state?.run_id === uncertain.run_id && next.verification_state?.state === 'reconciled') {
+            && next.verification_state?.run_id === uncertain.run_id && (next.verification_state?.state === 'reconciled' || (uncertain.state==='running' && ['passed','failed'].includes(next.verification_state?.state)))) {
           await saveState(null); uncertain = null;
         } else if(uncertain) { const error = Error('Uncertain verification requires authoritative reconciliation'); error.status = 409; throw error; }
       }

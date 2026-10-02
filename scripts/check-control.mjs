@@ -9,7 +9,7 @@ async function request(path,options={}) {
 }
 const ready=await request('/ready');
 const runtime=await request('/api/commerce/runtime-compatibility');
-if(runtime.available!==true || runtime.registry_digest!==release.registry_digest || runtime.protocol!==release.control_api || !runtime.binding_kinds.includes('auteric-module-binding/v1') || !runtime.environments.includes('production'))throw Error('Control and the published Kit are incompatible');
+if(runtime.runtime_state_protocol!=='auteric-runtime-state/v1' || runtime.available!==true || runtime.registry_digest!==release.registry_digest || runtime.protocol!==release.control_api || !runtime.binding_kinds.includes('auteric-module-binding/v1') || !runtime.environments.includes('production'))throw Error('Control and the published Kit are incompatible');
 const verifier=randomBytes(32).toString('base64url');
 const auth=await request('/api/commerce/cli/start',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({challenge:createHash('sha256').update(verifier).digest('base64url'),state:randomBytes(32).toString('base64url'),approval_mode:'browser'})});
 if(auth.approval_mode!=='browser')throw Error('Browser approval mode is incompatible');

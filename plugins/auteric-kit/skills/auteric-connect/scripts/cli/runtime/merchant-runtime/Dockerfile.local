@@ -1,0 +1,20 @@
+# Pin the exact deployed SDK bytes. No merchant runtime or credentials are copied.
+FROM public.ecr.aws/k1b9o2d4/auteric/merchant-runtime@sha256:c4d8868615c8bc63cb4a13d4da7dc6afc00cd4bbb81ff1726ea59f43fe980ea8 AS frozen-sdk
+FROM node:22-bookworm-slim
+RUN apt-get update && apt-get install -y --no-install-recommends python3 python3-venv && rm -rf /var/lib/apt/lists/*
+RUN python3 -m venv /opt/auteric-python
+ENV PATH="/opt/auteric-python/bin:${PATH}"
+RUN pip install --no-cache-dir 'cryptography>=44,<47' 'httpx>=0.27,<1' 'fastapi>=0.115,<1' 'uvicorn>=0.30,<1' 'psycopg[binary]>=3.2,<4'
+COPY --from=frozen-sdk /app/python/auteric_merchant /app/python/auteric_merchant
+ENV PYTHONPATH=/app/python PYTHONDONTWRITEBYTECODE=1 AUTERIC_ENGINE_PROFILE=frozen-rc7/v1
+WORKDIR /app
+COPY packages/merchant-runtime/package.json packages/merchant-runtime/package-lock.json ./
+RUN npm ci --omit=dev --ignore-scripts
+COPY packages/merchant-runtime/src ./src
+COPY packages/merchant-runtime/python/remote_app.py /app/python/auteric_merchant/remote_app.py
+COPY packages/merchant-runtime/schemas ./schemas
+COPY packages/merchant-runtime/release-manifest.json ./
+RUN groupadd -g 10001 auteric && useradd -u 10001 -g auteric -M auteric
+USER 10001:10001
+EXPOSE 7080
+ENTRYPOINT ["node", "/app/src/cli.js"]

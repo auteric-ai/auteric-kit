@@ -17,6 +17,7 @@ import { initializeManaged } from './connect/artifacts.js';
 import { disconnectHTTP } from './connect/disconnect.js';
 import { integrationDossier, installModule, disconnectModule } from './connect/module.js';
 import { localAcceptance } from './connect/local-acceptance.js';
+import { ownerSession } from './connect/auth.js';
 import { prepareDeployment } from './deploy/prepare.js';
 import { validateRegistration } from './connect/control-contract.js';
 import { createHash, randomBytes } from 'node:crypto';
@@ -1229,7 +1230,19 @@ export async function run(argv, root = process.cwd()) {
           stop_for_user:false}};
       console.log(JSON.stringify(result,null,2));return result;
     }
-    const result=await localAcceptance(root,options);
+    const prior=readJSON(join(root,'auteric/.state/resume-acceptance.json'));
+    const adapter=(await (await shared('module-adapter')).loadAdapter(join(root,'auteric/connection.json'))).fingerprint;
+    const merchantDigest=projectDigest(root);
+    const releaseKey=(await (await shared('release')).bundledRelease()).image;
+    const cachedReport=readJSON(join(root,'auteric/.state/acceptance.json'));
+    const result=cachedReport?.status==='passed' && prior?.runtime_image===releaseKey && prior?.merchant_digest===merchantDigest && prior?.adapter_fingerprint===adapter && Date.now()-prior.completed_at<3600000
+      ? cachedReport : await localAcceptance(root,options);
+    if(result?.status!=='passed')throw Error('local acceptance is not passing');
+    atomicJSON(join(root,'auteric/.state/resume-acceptance.json'),{merchant_digest:merchantDigest,adapter_fingerprint:adapter,runtime_image:releaseKey,completed_at:Date.now()});
+    if(!options['local-acceptance'] && options.domain) {
+      const auth=await ownerSession(root,apiUrl(options),options.domain,options,{request,openBrowser});
+      if(!auth.authorized) {console.log(JSON.stringify({...auth,local_acceptance:'passed',production_ready:false},null,2));return auth;}
+    }
     const deploymentPlan=await prepareDeployment(root,options);
     const deployment=deploymentPlan.deployment;
     if(deployment) {

@@ -70,6 +70,8 @@ def main():
         install_protocol(app)
     except ImportError:
         pass  # Explicit compatible development sources may already own this boundary.
+    from services.commerce.runtime_state import attach_runtime_state
+    attach_runtime_state(app,app.state.store)
     server = uvicorn.Server(uvicorn.Config(app, host='0.0.0.0', port=LAB['gatewayPort'], log_level='warning'))
     thread = threading.Thread(target=server.run, daemon=True)
     thread.start()
@@ -98,13 +100,13 @@ def main():
 
             def configuration():
                 config = checked(admin.get(config_url))
-                config['operational'].update(execution_store='sqlite:/merchant/.state/sidecar.sqlite',audit_store='sqlite:/merchant/.state/audit.sqlite')
+                config['operational'].update(storage_mode='durable')
                 save('sidecar.json', config)
                 return config
 
             configuration()
             token = checked(admin.post(root+'/sidecar/credential'))['token']
-            save('lab-scope.json', {'installation_id':iid,'sidecar_token':token})
+            save('lab-scope.json', {'store_id':store,'installation_id':iid,'sidecar_token':token})
             wait(lambda:(STATE/'runtime-ready.json').exists(), 'generic runtime did not start')
             installation = Installation.from_row(get_installation_by_id(app.state.store, iid))
             principal = 'guest_' + secrets.token_hex(16)
@@ -216,10 +218,9 @@ def main():
                 inventory(LAB['selection']['stock'])
 
             def owned_carts():
-                with sqlite3.connect(STATE/'bridge.sqlite') as db:
-                    row=db.execute('SELECT cookie FROM bridge_sessions WHERE installation=? AND subject=?',(iid,principal)).fetchone()
-                assert row, 'test buyer has no merchant-owned session'
-                return checked(httpx.get(LAB['merchantOrigin']+LAB['selection']['cartsPath'],headers={'cookie':row[0]}))
+                value=app.state.runtime_state.call(iid,'kv_get',['session',[principal]])['value']
+                assert value, 'test buyer has no merchant-owned session'
+                return checked(httpx.get(LAB['merchantOrigin']+LAB['selection']['cartsPath'],headers={'cookie':value['cookie']}))
 
             def atomic_create():
                 before=owned_carts()

@@ -1,72 +1,64 @@
-# Complete deployment preparation in the current Connect request
+# Deployment preparation and owner authorization
 
-After local acceptance the CLI always writes owned `auteric/deployment-plan.json`.
-`deployment_preparation_required` is a continuation for this same coding model,
-not permission to finish at a successful local test. Read its blockers and resolve
-every model-owned item before reporting. No second agent or merchant-specific
-deployment generator is required.
+Run canonical local acceptance before enrollment. A passing local test does not
+activate public traffic. Connect then opens Control authorization immediately,
+before cloud infrastructure preparation. `authentication_pending` is a resumable
+boundary: show the owner the URL and expiry, end the model turn, and continue the
+same Connect request after they sign in. Control must verify PKCE approval;
+a user message alone is not authorization. Expired authorization can restart
+without regenerating the adapter or discarding passing, unchanged local work.
 
-1. Inspect the actual Dockerfile, startup, CI deploy workflow, task/Compose,
-   proxy and persistence. A repository task can be historical. When authorized
-   cloud credentials exist, use read-only `aws sts get-caller-identity`, ECS
-   describe-services/describe-task-definition, EC2 describe-security-groups and
-   describe-subnets, ALB describe-listeners/rules and Secrets Manager list/describe
-   metadata. Do not print secret values. Confirm account/region/service against
-   the requested store. Do not select a shared preview belonging to another
-   installation or infer a task from an unrelated service. If access is missing,
-   ask for login/access, not for a list of manually copied resource ARNs.
-2. Reuse the real merchant database, command, roles, VPC, private subnets and
-   deployment route. Check that business data survives task replacement. If a
-   historical file uses `/tmp`, first inspect live state. An actual migration
-   needs a backup, migration plan and owner's business-data decision. Never
-   silently replace the merchant database to unblock Connect.
-3. Put non-secret evidence in ignored `auteric/.state/deployment-context.json`.
-   It can contain `platform`, `task_definition` (verified source path),
-   `merchant_service`, `live_task_verified` and `deployment` (the existing pinned
-   deployment/v1 schema). For ECS, the source must contain current durable
-   merchant settings and valid healthcheck. A sanitized current task snapshot
-   can live under ignored `.state`; generated final task must be reviewed for
-   plaintext environment secrets before tracking. The context is installation
-   evidence, not a commerce DSL. Determine dev/sandbox/staging/production from
-   the requested target and continue internally with `--environment`.
-4. For missing Auteric-owned ECS resources, supply `infrastructure` in that
-   context: verified `vpc_id`, `subnet_ids` in at least two AZs,
-   `merchant_security_group`, task/execution IAM role names, and either an
-   existing runtime PostgreSQL URL `database_secret_ref` or `create_database:true`.
-   The reusable Kit emits `auteric/infrastructure.json`: two private secrets,
-   narrowly scoped role policies, and optionally an encrypted private PostgreSQL
-   database. It never changes merchant business storage or the public service.
-   Database creation incurs cost; present the concrete change and obtain the
-   required cost/infrastructure authorization. Existing custom KMS secrets need
-   separately verified decrypt permissions. Unsupported hosting needs its actual
-   provider's template; do not pretend the ECS template applies everywhere.
-5. When infrastructure execution is authorized, apply that owned CloudFormation
-   template using the verified account/region, a unique installation stack name
-   and CAPABILITY_NAMED_IAM. Use a change set for existing stacks. Retrieve only
-   output references: EnrollmentSecret, ApplicationSecret, RuntimeDatabaseSecret.
-   Do not copy values into repository files. Map outputs into deployment/v1
-   `secret_ref`, `application_secret_ref`, and `state_ref.reference`. The empty
-   enrollment secret is filled automatically by Connect after real Control login.
-   Public merchant deployment remains a separate authorization.
-6. Resume the original Connect internally with the completed evidence. It
-   validates the deployment, opens Control login if a valid owner session is
-   absent, enrolls the exact tested binding, and renders runtime connection,
-   ECS task plus `auteric/ingress.json`, or the Compose overlay. Secrets are
-   delivered through the existing private credential mechanism. The Sidecar
-   image and Control/MCP code need no per-merchant rebuild or redeployment.
-7. Complete reversible Dockerfile/workflow/proxy patches in the owned adapter
-   plan. Feed the generated ECS task into the existing workflow, preserve image
-   selection by merchant container name, and apply ingress intent to actual ALB
-   rules. For Compose, reuse the existing network, create owned state volume if
-   necessary and attach the merchant private token/runtime origin correctly.
-   Preserve existing UCP integrations. Never substitute local test discovery.
+The generic runtime uses `state_ref.profile: "gateway/v1"`. Execution claims,
+validated receipts, nonce replay protection, audit, identity mappings and bridge
+session references live in Auteric's existing authenticated storage service.
+Do not create a merchant-side runtime database, RDS, storage volume, or inject a
+merchant database URL into the runtime. Do not propose PostgreSQL as an onboarding
+prerequisite. Gateway unavailability fails closed; it never falls back to local
+state or blindly repeats an uncertain merchant write.
 
-Ask only for unavailable access, an ambiguous target, business-data migration,
-required resource costs or actual deployment authorization. A user saying not to
-deploy the store does not prevent preparing files; it does prevent publishing
-the merchant. If infrastructure provisioning is also withheld, render its
-template and explain that enrollment/final task await real stack outputs.
-Report artifact preparation, infrastructure provisioning, enrollment, merchant
-deployment and public verification separately. Never call a pending plan ready
-for production. Disconnect removes unchanged owned files, not cloud resources
-or merchant/runtime data; external resource cleanup is explicit and separate.
+1. Inspect Dockerfile, startup, deployment workflow, task/Compose, proxy, existing
+   credentials and business persistence. When authorized, inspect the actual
+   cloud account/region/service read-only. Historical source files are not proof
+   of live configuration. Ask for missing access rather than manually copied ARNs.
+2. Preserve the merchant command, auth, transactions, database and existing UCP.
+   Business persistence remains merchant-owned. A genuine business-data migration
+   requires its own backup, plan and owner decision; Connect cannot silently
+   replace that database. It is separate from Auteric runtime storage.
+3. Put verified deployment references under ignored
+   `auteric/.state/deployment-context.json`: `live_task_verified`, `deployment`,
+   and environment evidence. Use the immutable qualified runtime image, existing
+   network/task source, `gateway/v1`, and installation-scoped secret references.
+4. Secrets are still needed: installation identity authenticates the runtime to
+   Auteric; the private application token authenticates the bridge to the merchant
+   hook. Reuse suitable installation-owned secret infrastructure. For missing ECS
+   secrets, `infrastructure` needs only verified task/execution role names. The
+   Kit emits two Secrets Manager entries and narrowly scoped IAM policies, with
+   no database, disk, VPC, subnets or business resource changes. Provision only
+   when authorized; secret services may have costs. Inspect KMS permissions when
+   applicable. Unsupported platforms need their actual provider's secret mechanism.
+5. Enrollment uses the real owner's verified Control session and exact tested
+   adapter. It issues installation identifiers and limited enrollment credentials;
+   do not invent merchant IDs or copy development credentials. Deliver through
+   platform secrets, never source code. Existing identities must be inspected,
+   not silently replaced or revoked.
+6. Render the runtime connection, ECS task/ingress intent or Compose overlay, and
+   connect those artifacts to the merchant's existing deployment workflow. Keep
+   the bridge private. ECS uses Secrets Manager for credential rotation and only
+   task-local immutable adapter/discovery volumes. Compose uses temporary runtime
+   state and a dedicated private `auteric/.state/identity/` directory for rotating
+   installation credentials; this stores secrets, not an execution database.
+   Its runtime UID must own that directory. Application secrets remain read-only.
+7. Prepare the merchant discovery route/proxy before SPA fallback. It serves exact
+   Control-issued bytes from the runtime and fails closed when unavailable. Cloud
+   deployment and public Connection Test require separate deployment authorization.
+
+`deployment_preparation_required` is a continuation for the same coding model.
+Resolve model-owned blockers and prepare all reversible files before requesting
+missing access, target clarification or deployment authorization. Never introduce
+an unrelated live preview as the target. No per-merchant Sidecar rebuild or
+Control/MCP redeployment is needed.
+
+Report local tests, owner authentication, enrollment, artifact preparation,
+merchant deployment and public verification separately. Disconnect revokes the
+installation and removes unchanged owned files. It preserves merchant data,
+edited files and central audit; cloud resource cleanup is explicit and separate.

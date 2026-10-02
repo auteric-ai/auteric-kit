@@ -122,8 +122,9 @@ For Compose, attach the overlay to the merchant's existing deploy command,
 set `AUTERIC_APPLICATION_TOKEN` for the merchant from the same private secret
 file mounted as `AUTERIC_APPLICATION_TOKEN_FILE` in runtime, and configure
 `AUTERIC_RUNTIME_ORIGIN` to that private runtime service. Preserve the existing
-merchant network and persistent business database. Runtime state uses the
-existing durable volume; never publish the Bridge port.
+merchant network and persistent business database. Auteric execution state is Gateway-owned (`gateway/v1`); the runtime uses
+temporary configuration/cache only. Installation credentials use a dedicated
+private identity directory. Never publish the Bridge port.
 
 For ECS, the model prepares an owned Dockerfile patch that copies `auteric/`
 into the final merchant image, excludes `.state`/`discovery` through `.dockerignore`,
@@ -131,7 +132,7 @@ and exports only adapter/config to `VOLUME ["/auteric-integration"]`, with the
 merchant user's directory/file ownership. The renderer mounts this task-local
 artifact volume read-only into `/integration` in the generic runtime. This volume
 contains immutable merchant code, not durable business/runtime data. Add the real
-shared private application secret reference, runtime PostgreSQL secret reference,
+shared private application and installation secret references, `gateway/v1`,
 `adapter_mount`, and the existing `task_definition` source to deployment config.
 The renderer preserves the original merchant command, supplies private runtime
 origin/auth, and adds one runtime container. Make the existing workflow deploy

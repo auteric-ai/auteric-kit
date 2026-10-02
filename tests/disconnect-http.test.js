@@ -13,7 +13,8 @@ async function fixture() {
   writeFileSync(join(root,'merchant.json'),'{"unchanged":true}');
   await writeArtifacts(root,{'auteric/connection.json':'{"owned":true}\n','auteric/compose.yaml':'name: owned-runtime\n'});
   writeFileSync(join(root,'auteric/.state/bridge-test.sqlite'),'durable state');
-  writeFileSync(join(root,'auteric/.state/enrollment.json'),JSON.stringify({installation_id:'install_a',token:'private-scoped-credential'}),{mode:0o600});
+  mkdirSync(join(root,'auteric/.state/identity'),{mode:0o700});
+  writeFileSync(join(root,'auteric/.state/identity/enrollment.json'),JSON.stringify({installation_id:'install_a',token:'private-scoped-credential'}),{mode:0o600});
   const discovery='{"ucp":{"version":"synthetic-only"}}\n';
   mkdirSync(join(root,'auteric/discovery'));
   writeFileSync(join(root,'auteric/discovery/ucp'),discovery);
@@ -31,7 +32,7 @@ test('disconnect revokes only its installation, stops owned service, removes gen
     const result=await disconnectHTTP(f.root,f.state,f.callbacks);
     assert.deepEqual(f.events,['owner','POST /api/commerce/stores/store_a/installations/install_a/revoke','DELETE /api/commerce/stores/store_a/runtime-enrollment/install_a','stop']);
     assert.equal(result.status,'disconnected');
-    for(const path of ['connection.json','compose.yaml','discovery/ucp','.state/enrollment.json'])assert.equal(existsSync(join(f.root,'auteric',path)),false);
+    for(const path of ['connection.json','compose.yaml','discovery/ucp','.state/identity/enrollment.json'])assert.equal(existsSync(join(f.root,'auteric',path)),false);
     assert.equal(readFileSync(join(f.root,'auteric/.state/bridge-test.sqlite'),'utf8'),'durable state');
     assert.deepEqual(readdirSync(f.root).sort(),['auteric','merchant.json']);
     assert.equal(readFileSync(join(f.root,'merchant.json'),'utf8'),'{"unchanged":true}');
@@ -44,7 +45,7 @@ test('revocation failure preserves credentials and artifacts without stopping ru
     await assert.rejects(disconnectHTTP(f.root,f.state,{...f.callbacks,request:async()=>{throw Error('control offline');}}),/offline/);
     assert.equal(f.events.includes('stop'),false);
     assert.equal(existsSync(join(f.root,'auteric/connection.json')),true);
-    assert.equal(existsSync(join(f.root,'auteric/.state/enrollment.json')),true);
+    assert.equal(existsSync(join(f.root,'auteric/.state/identity/enrollment.json')),true);
     const status=JSON.parse(readFileSync(join(f.root,'auteric/.state/connection-status.json')));
     assert.equal(status.status,'revocation_pending');assert.equal(status.production_ready,false);
   } finally {f.close();}

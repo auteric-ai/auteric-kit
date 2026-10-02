@@ -3,7 +3,7 @@ import argparse,hashlib,json,os,shutil,subprocess,tempfile,zipfile
 from pathlib import Path
 
 KIT=Path(__file__).resolve().parents[1]
-IMAGE='416153530465.dkr.ecr.us-east-2.amazonaws.com/auteric-commerce-commerce@sha256:f3ad10d66de46e6d94c6c389ab5ad90dc2947889daa87498c2a63375ceaec7ab'
+IMAGE='416153530465.dkr.ecr.us-east-2.amazonaws.com/auteric-commerce-commerce@sha256:1dd4ad83a738f975bb0632f1273dcae3730421ef0301effa41421a34595efbbc'
 parser=argparse.ArgumentParser();parser.add_argument('--image',default=IMAGE)
 IMAGE=parser.parse_args().image
 with tempfile.TemporaryDirectory() as temporary:

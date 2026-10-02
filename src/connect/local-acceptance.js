@@ -47,14 +47,14 @@ export function resolveRuntimeSource(root, options={}) {
 }
 
 export function buildLocalImage(source) {
-  const runtime=fileURLToPath(runtimeRoot), paths=['src','schemas','package.json','package-lock.json','release-manifest.json'];
+  const runtime=fileURLToPath(runtimeRoot), paths=['src','schemas','python','package.json','package-lock.json','release-manifest.json'];
   const sdk=join(source,'packages/merchant-python/src/auteric_merchant'), hash=createHash('sha256');
   function visit(path) { for(const name of readdirSync(path,{withFileTypes:true}).sort((a,b)=>a.name.localeCompare(b.name))) {
     if(name.name==='__pycache__' || name.name.endsWith('.pyc')) continue;
     const file=join(path,name.name); if(name.isDirectory())visit(file);else hash.update(name.name).update(readFileSync(file));
   } }
-  visit(join(runtime,'src'));visit(join(runtime,'schemas'));visit(sdk);
-  for(const name of paths.slice(2))hash.update(readFileSync(join(runtime,name)));
+  visit(join(runtime,'src'));visit(join(runtime,'schemas'));visit(join(runtime,'python'));
+  for(const name of paths.slice(3))hash.update(readFileSync(join(runtime,name)));
   hash.update(readFileSync(join(runtime,'Dockerfile.local')));
   const tag='auteric-merchant-runtime:local-'+hash.digest('hex').slice(0,16);
   try {execFileSync('docker',['image','inspect',tag],{stdio:'ignore'});return tag;}catch{}
@@ -62,8 +62,7 @@ export function buildLocalImage(source) {
   try {
     mkdirSync(join(context,'packages/merchant-runtime'),{recursive:true});
     for(const name of paths)cpSync(join(runtime,name),join(context,'packages/merchant-runtime',name),{recursive:true});
-    cpSync(sdk,join(context,'packages/merchant-python/src/auteric_merchant'),{recursive:true,filter:path=>!path.includes('__pycache__')});
-    execFileSync('docker',['build','--pull=false','-f',join(runtime,'Dockerfile.local'),'-t',tag,context],{stdio:'inherit'});
+    execFileSync('docker',['build','--platform','linux/amd64','--pull=false','-f',join(runtime,'Dockerfile.local'),'-t',tag,context],{stdio:'inherit'});
     return tag;
   } finally {rmSync(context,{recursive:true,force:true});}
 }
@@ -77,7 +76,7 @@ export async function localAcceptance(root, options={}) {
   if(options['runtime-commit'] && options['runtime-commit']!==sourceCommit)throw Error('runtime source commit differs from requested baseline');
   const release=(await shared('release')).bundledRelease();
   const image=options['runtime-image'] || (release.qualification?.passed && release.image ? release.image : buildLocalImage(source));
-  try {execFileSync('docker',['image','inspect',image],{stdio:'ignore'});} catch {execFileSync('docker',['pull',image],{stdio:'inherit'});}
+  try {execFileSync('docker',['image','inspect',image],{stdio:'ignore'});} catch {execFileSync('docker',['pull','--platform','linux/amd64',image],{stdio:'inherit'});}
   const imageId=JSON.parse(execFileSync('docker',['image','inspect',image],{encoding:'utf8'}))[0].Id;
   const state=join(root,'auteric/.state'), python=context.python || options.python || (existsSync(join(source,'.venv/bin/python')) ? join(source,'.venv/bin/python') : 'python3');
   const merchantPort=await port(), gatewayPort=await port(), sidecarPort=await port();
@@ -117,10 +116,10 @@ export async function localAcceptance(root, options={}) {
     const envFile=join(state,'runtime.env');
     writeFileSync(envFile,Object.entries({AUTERIC_CONNECTION:'/merchant/connection.json',AUTERIC_INSTALLATION_ID:scope.installation_id,
       AUTERIC_MERCHANT_ORIGIN:'http://host.docker.internal:'+merchantPort,AUTERIC_APPLICATION_TOKEN:applicationToken,
-      AUTERIC_BRIDGE_TOKEN:bridgeToken,AUTERIC_CONTROL_TOKEN:scope.sidecar_token,AUTERIC_SIDECAR_GATEWAY_TOKEN:scope.sidecar_token,AUTERIC_BRIDGE_STATE:'/merchant/.state/bridge.sqlite',
+      AUTERIC_BRIDGE_TOKEN:bridgeToken,AUTERIC_CONTROL_TOKEN:scope.sidecar_token,AUTERIC_SIDECAR_GATEWAY_TOKEN:scope.sidecar_token,AUTERIC_RUNTIME_STATE_URL:`http://127.0.0.1:${gatewayPort}/api/commerce/stores/${scope.store_id}/runtime-state/${scope.installation_id}`,
       AUTERIC_SIDECAR_CONFIG:'/merchant/.state/sidecar.json',AUTERIC_LOCAL_GATEWAY_PORT:gatewayPort}).map(([k,v])=>k+'='+v).join('\n')+'\n',{mode:0o600});
-    execFileSync('docker',['run','-d','--name',name,...(process.platform==='linux'?['--add-host','host.docker.internal:host-gateway']:[]),'--user',process.getuid()+':'+process.getgid(),'--env-file',envFile,
-      '-p','127.0.0.1:'+sidecarPort+':7070','-v',join(root,'auteric')+':/merchant',image,'--local-acceptance'],{stdio:'pipe'});
+    execFileSync('docker',['run','--platform','linux/amd64','-d','--name',name,...(process.platform==='linux'?['--add-host','host.docker.internal:host-gateway']:[]),'--user',process.getuid()+':'+process.getgid(),'--env-file',envFile,
+      '-p','127.0.0.1:'+sidecarPort+':7070','-v',join(root,'auteric')+':/merchant:ro',image,'--local-acceptance'],{stdio:'pipe'});
     await ready('http://127.0.0.1:'+sidecarPort+'/health/live',child);
     atomicJSON(join(state,'runtime-ready.json'),{imageId,name});
     const code=child.exitCode ?? await new Promise(ok=>child.once('exit',ok));
@@ -128,7 +127,10 @@ export async function localAcceptance(root, options={}) {
     const report=readJSON(join(state,'acceptance.json'));
     if(report?.status!=='passed')throw Error('local acceptance did not produce passing evidence');
     if((await (await shared('module-adapter')).loadAdapter(connection)).fingerprint!==fingerprint)throw Error('adapter changed during local acceptance');
-    report.adapter_fingerprint=fingerprint;atomicJSON(join(state,'acceptance.json'),report);
+    report.adapter_fingerprint=fingerprint;
+    report.runtime_state_profile='gateway/v1';
+    report.unsupported_operations=Object.keys(registry.operations).filter(op=>!report.operations.includes(op)).map(operation=>({operation,reason:'No tested adapter binding in this installation'}));
+    atomicJSON(join(state,'acceptance.json'),report);
     const canonicalReport=buildReport({validation:{ok:true},operations:report.operations.map(op=>operationRecord(op,report.scenarios.filter(s=>s.operation===op)))});
     atomicJSON(join(state,'contract-report.json'),canonicalReport);
     atomicJSON(join(state,'deployment-preview.json'),{status:'deployment_pending',image:imageId,containers:1,adapter_mount:'./auteric:/merchant',

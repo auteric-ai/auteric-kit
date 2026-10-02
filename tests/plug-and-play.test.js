@@ -20,8 +20,8 @@ function specFor(mapping) {
   for(const op of operations){const {operation,target,...config}=op;paths[target.path]||={};paths[target.path][target.method.toLowerCase()]={operationId:operation,'x-auteric':config};}
   return {openapi:'3.0.3',info:{title:'Merchant',version:'1'},'x-auteric':metadata,paths};
 }
-const deployment={schema:'auteric-deployment/v1',platform:'compose',runtime_image_digest:'registry.example/runtime@sha256:'+'a'.repeat(64),architecture:'linux/amd64',secret_ref:'file:/external/secret.json',state_ref:{profile:'sqlite-local-volume/v1',reference:'merchant_state'},discovery_mount:'/srv/discovery',network_ref:'merchant_private',merchant_service:'shop',runtime_port:7080,runtime_user:'10001:10001'};
-async function qualifiedTestRelease(){const {bundledRelease}=await shared('release');return {...bundledRelease(),image:deployment.runtime_image_digest,architectures:['linux/amd64'],deployment_profiles:['compose:sqlite-local-volume/v1'],qualification:{passed:true,anonymous_pull:true,clean_install:true}};}
+const deployment={schema:'auteric-deployment/v1',platform:'compose',runtime_image_digest:'registry.example/runtime@sha256:'+'a'.repeat(64),architecture:'linux/amd64',secret_ref:'file:/external/identity/secret.json',state_ref:{profile:'gateway/v1',reference:'merchant_state'},discovery_mount:'/srv/discovery',network_ref:'merchant_private',merchant_service:'shop',runtime_port:7080,runtime_user:'10001:10001'};
+async function qualifiedTestRelease(){const {bundledRelease}=await shared('release');return {...bundledRelease(),image:deployment.runtime_image_digest,architectures:['linux/amd64'],deployment_profiles:['compose:gateway/v1'],qualification:{passed:true,anonymous_pull:true,clean_install:true}};}
 async function connection(){const {digest}=await shared('mapping');const mapping=fixtureMapping();return {schema:'auteric-connection/v1',domain:'shop.example',environment:'staging',control_origin:'https://control.example',store_id:'store_test',installation_id:'installation_a',runtime_release:'test',backend:{transport:'http',origin:'http://shop:3000'},mapping_digest:digest(mapping),mapping};}
 
 test('OpenAPI selection uses explicit provenance, never route-name guesses',async()=>{
@@ -86,7 +86,7 @@ test('mapping input in the root auteric folder resolves independently of a neste
   }finally{rmSync(root,{recursive:true,force:true});}
 });
 test('enrollment delivery respects non-root secret ownership and preserves scoped identity',async()=>{
-  const root=mkdtempSync(join(realpathSync(tmpdir()),'auteric-secrets-')),merchant=join(root,'merchant'),path=join(merchant,'auteric/.state/enrollment.json');
+  const root=mkdtempSync(join(realpathSync(tmpdir()),'auteric-secrets-')),merchant=join(root,'merchant'),path=join(merchant,'auteric/.state/identity/enrollment.json');
   mkdirSync(merchant);
   try {
     const target={...deployment,secret_ref:'file:'+path,runtime_user:`${process.getuid()}:${process.getgid()}`};
@@ -114,9 +114,9 @@ test('module ECS renderer delivers adapter separately and preserves merchant com
   const doc={...(await connection()),backend:{transport:'http',origin:'http://127.0.0.1:8080'},mapping,mapping_digest:digest(mapping)};
   const config={...deployment,platform:'ecs-fargate',secret_ref:'arn:aws:secretsmanager:us-east-2:123456789012:secret:runtime',
     application_secret_ref:'arn:aws:secretsmanager:us-east-2:123456789012:secret:private-application',
-    state_ref:{profile:'postgresql/v1',reference:'arn:aws:secretsmanager:us-east-2:123456789012:secret:runtime-database'},
+    state_ref:{profile:'gateway/v1',reference:'arn:aws:secretsmanager:us-east-2:123456789012:secret:runtime-database'},
     discovery_mount:'discovery',adapter_mount:'integration'};
-  const release={...(await qualifiedTestRelease()),deployment_profiles:['ecs-fargate:postgresql/v1']};
+  const release={...(await qualifiedTestRelease()),deployment_profiles:['ecs-fargate:gateway/v1']};
   const task={family:'merchant',networkMode:'awsvpc',requiresCompatibilities:['FARGATE'],executionRoleArn:'role',
     volumes:[{name:'discovery'}],containerDefinitions:[{name:'shop',image:'merchant-image',command:['node','server/index.js'],
       healthCheck:{command:['CMD','health']},environment:[{name:'PORT',value:'8080'}]}]};

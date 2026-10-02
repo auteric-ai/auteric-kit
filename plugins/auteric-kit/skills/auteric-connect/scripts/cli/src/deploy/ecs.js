@@ -5,7 +5,7 @@ export async function renderECS(task, connection, deployment, release) {
   const {validateConnection}=await shared('mapping');const {qualifyRelease}=await shared('release');
   validateConnection(connection,{privateHosts:[deployment.merchant_service]});qualifyRelease(release,deployment);
   if(deployment.platform!=='ecs-fargate'||!deployment.secret_ref.startsWith('arn:aws:secretsmanager:'))throw Error('ECS requires an existing Secrets Manager reference');
-  if(deployment.state_ref.profile!=='postgresql/v1')throw Error('storage_profile_unsupported: ECS requires qualified PostgreSQL; ephemeral SQLite and EFS WAL are unsupported');
+  if(deployment.state_ref.profile!=='gateway/v1')throw Error('storage_profile_unsupported: ECS requires Gateway-backed state; merchant-side PostgreSQL is not required');
   if(task.networkMode!=='awsvpc'||!task.requiresCompatibilities?.includes('FARGATE')||!task.executionRoleArn)throw Error('existing Fargate task and execution role required');
   const isModule=connection.mapping.schema==='auteric-module-binding/v1';
   if(isModule && (!deployment.adapter_mount || !deployment.application_secret_ref?.startsWith('arn:aws:secretsmanager:')))
@@ -14,7 +14,7 @@ export async function renderECS(task, connection, deployment, release) {
 
   if(!out.containerDefinitions?.some(c=>c.name===deployment.merchant_service))throw Error('selected merchant container missing');
   if(out.containerDefinitions.some(c=>c.name==='auteric-runtime'))throw Error('existing runtime must be reconciled explicitly');
-  if(!out.volumes?.some(v=>v.name===deployment.discovery_mount))throw Error('existing discovery volume reference required');
+  out.volumes ||= [];
   if(isModule) {
     const merchant=out.containerDefinitions.find(c=>c.name===deployment.merchant_service);
     if(!out.volumes?.some(v=>v.name===deployment.adapter_mount))out.volumes.push({name:deployment.adapter_mount});
@@ -33,9 +33,9 @@ export async function renderECS(task, connection, deployment, release) {
       {name:'AUTERIC_INSTALLATION_ID',value:connection.installation_id},{name:'AUTERIC_MAPPING_DIGEST',value:connection.mapping_digest},
       {name:'AUTERIC_RUNTIME_RELEASE',value:connection.runtime_release},{name:'AUTERIC_MERCHANT_ORIGIN',value:connection.backend.origin},
       {name:'AUTERIC_SERVICE_SECRET',value:deployment.secret_ref},{name:'AUTERIC_STATE',value:'/tmp/auteric'},
-      {name:'AUTERIC_DISCOVERY',value:'/discovery/ucp'},{name:'AUTERIC_RUNTIME_PORT',value:String(deployment.runtime_port)}],
-    secrets:[{name:'AUTERIC_STATE_DATABASE_URL',valueFrom:deployment.state_ref.reference},...(isModule?[{name:'AUTERIC_APPLICATION_TOKEN',valueFrom:deployment.application_secret_ref}]:[])],
-    mountPoints:[{sourceVolume:deployment.discovery_mount,containerPath:'/discovery',readOnly:false},...(isModule?[{sourceVolume:deployment.adapter_mount,containerPath:'/integration',readOnly:true}]:[])],
+      {name:'AUTERIC_DISCOVERY',value:'/tmp/auteric-discovery/ucp'},{name:'AUTERIC_RUNTIME_PORT',value:String(deployment.runtime_port)}],
+    secrets:[...(isModule?[{name:'AUTERIC_APPLICATION_TOKEN',valueFrom:deployment.application_secret_ref}]:[])],
+    mountPoints:[...(isModule?[{sourceVolume:deployment.adapter_mount,containerPath:'/integration',readOnly:true}]:[])],
     user:'10001:10001',
     ...(out.containerDefinitions.find(c=>c.name===deployment.merchant_service)?.logConfiguration?{logConfiguration:structuredClone(out.containerDefinitions.find(c=>c.name===deployment.merchant_service).logConfiguration)}:{}),
     healthCheck:{command:['CMD','node','/app/src/healthcheck.js'],interval:15,timeout:5,retries:3,startPeriod:30}});

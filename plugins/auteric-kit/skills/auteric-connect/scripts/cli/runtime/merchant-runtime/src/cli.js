@@ -1,10 +1,8 @@
 import { readFileSync } from 'node:fs';
 import { manage } from './manager.js';
-import { retainServiceIdentity } from './identity.js';
 import { validateConnection } from './mapping.js';
 import { bundledRelease } from './release.js';
 import { serviceSecret } from './secret-store.js';
-import { managerState } from './manager-state.js';
 if (process.argv.includes('--local-acceptance')) {
   await (await import('./local-runtime.js')).startLocalRuntime();
 } else {
@@ -17,11 +15,10 @@ if(connection.runtime_release!==release.version || connection.mapping.registry_d
 const secret=process.env.AUTERIC_SERVICE_SECRET;
 const databaseUrl=process.env.AUTERIC_STATE_DATABASE_URL;
 let credentialPath,secretStore,durableState;
-if(secret?.startsWith('file:/')) credentialPath=retainServiceIdentity(process.env.AUTERIC_STATE,JSON.parse(readFileSync(secret.slice(5),'utf8')),connection.installation_id);
-else {
-  if(!databaseUrl)throw Error('ECS runtime requires PostgreSQL for durable translation and uncertainty state');
-  secretStore=serviceSecret(secret); durableState=managerState(databaseUrl,connection.installation_id);
-}
+// Identity is persisted by the deployment secret provider, not runtime disk.
+secretStore=serviceSecret(secret);
+// Control verification jobs are authoritative; restart reconstructs them from /config.
+durableState={read:async()=>null,save:async()=>{},close:async()=>{}};
 const manager=await manage(connection,{statePath:process.env.AUTERIC_STATE,secretPath:credentialPath,secretStore,durableState,databaseUrl,discoveryPath:process.env.AUTERIC_DISCOVERY,port:Number(process.env.AUTERIC_RUNTIME_PORT||7080)});
 process.once('SIGTERM',()=>void manager.close().finally(()=>durableState?.close()));process.once('SIGINT',()=>void manager.close().finally(()=>durableState?.close()));
 }

@@ -72,10 +72,13 @@ export async function removeArtifacts(root, installationId) {
       unlinkSync(discovery);unlinkSync(receipt);removed.push('auteric/discovery/ucp');
     } else retained.push('auteric/discovery/ucp');
   }
-  const secret=safeTarget(managedPath(root,'enrollment.json'));
-  if(existsSync(secret)) {
-    if(readJSON(secret)?.installation_id===installationId){unlinkSync(secret);removed.push('auteric/.state/enrollment.json');}
-    else retained.push('auteric/.state/enrollment.json');
+  // Keep legacy installations removable without silently migrating identities.
+  for(const relative of ['auteric/.state/identity/enrollment.json','auteric/.state/enrollment.json']) {
+    const secret=safeTarget(join(root,relative));
+    if(existsSync(secret)) {
+      if(readJSON(secret)?.installation_id===installationId){unlinkSync(secret);removed.push(relative);}
+      else retained.push(relative);
+    }
   }
   return {removed,retained};
 }

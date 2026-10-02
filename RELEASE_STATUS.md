@@ -1,3 +1,36 @@
+# 0.8.0 Gateway-owned runtime state and resumable authorization
+
+The generic runtime 0.2.0 uses `gateway/v1` and the installation-scoped
+`auteric-runtime-state/v1` API. Execution claims/receipts, uncertain outcomes,
+nonce replay protection, audit, bridge sessions and identity mappings remain in
+Auteric's existing durable storage. Sidecar/Bridge need no merchant runtime
+PostgreSQL, RDS or persistent execution-state volume. Installation/application
+credentials remain in platform secret storage; Compose uses a dedicated private
+identity directory for file-based credential rotation. Merchant business storage
+and transaction/auth/ownership/idempotency boundaries remain unchanged.
+
+Control/MCP use immutable image `sha256:1dd4ad83a738f975bb0632f1273dcae3730421ef0301effa41421a34595efbbc`;
+task revisions 57/35 are fully rolled out and ALB healthy. The published generic
+runtime is `public.ecr.aws/k1b9o2d4/auteric/merchant-runtime@sha256:9a597ba373fc14dd97a9615a1c3eee50e0e4f41d64c63358914919e8d4e252bc`.
+Clean runners qualified anonymous pull, two independent merchant HTTP layouts,
+production bootstrap, replacement without runtime state volumes and unchanged
+verification run IDs. Central state tests cover atomic concurrency, restart,
+nonce reuse, expired/revoked identity, uncertainty and lost completion responses.
+The portable pinned Gateway/MCP harness passes 38 real merchant contract scenarios.
+Only linux/amd64 is qualified; ARM hosts use explicit Docker emulation.
+
+After local acceptance, Connect opens Control owner authorization before cloud
+preparation. It returns a resumable PKCE continuation immediately. Expiry does
+not discard the adapter or unchanged passing local work. Approval is always
+verified with Control. Skill deployment preparation no longer creates runtime
+RDS, network or disk resources. Secret references are still required for managed
+installation credentials and the private merchant hook.
+
+No Connect was run against the owner's Custom Store repository and no merchant
+infrastructure or deployment was provisioned. This release proves the released
+local/runtime flow and shared Auteric service compatibility; it is not a new
+public merchant deployment or checkout/payment qualification.
+
 # 0.7.6 Deployment preparation continuation
 
 Connect now always creates an owned deployment plan after local acceptance.

@@ -37,28 +37,25 @@ test('owned plan refreshes during continuation but merchant edits are preserved'
   assert.equal(readFileSync(path,'utf8'),'merchant edit');
  }finally{rmSync(root,{recursive:true,force:true});}
 });
-test('runtime infrastructure reuses database with scoped role access and no merchant resources',()=>{
- const out=runtimeInfrastructure(infra);assert.equal(out.Resources.RuntimeDatabase,undefined);
- assert.equal(out.Outputs.RuntimeDatabaseSecret.Value,infra.database_secret_ref);
+test('runtime infrastructure creates installation secrets only, with scoped access',()=>{
+ const out=runtimeInfrastructure(infra);
+ assert.equal(out.Metadata.Auteric.runtime_storage,'gateway/v1');
  assert.equal(out.Resources.ApplicationToken.Properties.GenerateSecretString.PasswordLength,64);
- assert.ok(Object.values(out.Resources).every(r=>!['AWS::ECS::Service','AWS::ECS::TaskDefinition'].includes(r.Type)));
+ assert.deepEqual(Object.values(out.Resources).map(r=>r.Type).sort(),['AWS::IAM::Policy','AWS::IAM::Policy','AWS::SecretsManager::Secret','AWS::SecretsManager::Secret']);
  assert.equal(JSON.stringify(out).includes('"Resource":"*"'),false);
+ assert.equal(JSON.stringify(out).includes('RuntimeDatabase'),false);
 });
-test('new runtime PostgreSQL remains private and retains data; incomplete references fail',()=>{
- const out=runtimeInfrastructure({...infra,create_database:true});
- assert.equal(out.Resources.RuntimeDatabase.Properties.PubliclyAccessible,false);
- assert.equal(out.Resources.RuntimeDatabase.Properties.DeletionProtection,true);
- assert.equal(out.Resources.RuntimeDatabase.DeletionPolicy,'Snapshot');
- assert.equal(out.Metadata.Auteric.requires_cost_approval,true);
- assert.throws(()=>runtimeInfrastructure({...infra,subnet_ids:['subnet-abcd1234']}),/two availability zones/);
- assert.throws(()=>runtimeInfrastructure({...infra,database_secret_ref:''}),/creation decision/);
+test('runtime database provisioning is rejected, networking is not required',()=>{
+ assert.throws(()=>runtimeInfrastructure({...infra,create_database:true}),/requires no PostgreSQL/);
+ assert.ok(runtimeInfrastructure({task_role:'task',execution_role:'execution'}).Outputs.EnrollmentSecret);
+ assert.throws(()=>runtimeInfrastructure({task_role:'task'}),/role names required/);
 });
 test('verified durable deployment context generates the enrollment input automatically',async()=>{
  const root=fixture();try {
   mkdirSync(join(root,'deploy'));mkdirSync(join(root,'auteric/.state'),{recursive:true,mode:0o700});
   writeFileSync(join(root,'deploy/task-definition.json'),JSON.stringify({containerDefinitions:[{name:'store',environment:[{name:'DATABASE_PATH',value:'/data/store.sqlite'}],mountPoints:[{containerPath:'/data',sourceVolume:'merchant-data'}]}]}));
   const release=(await shared('release')).bundledRelease();
-  const deployment={schema:'auteric-deployment/v1',platform:'ecs-fargate',runtime_image_digest:release.image,architecture:'linux/amd64',secret_ref:infra.database_secret_ref,state_ref:{profile:'postgresql/v1',reference:infra.database_secret_ref},discovery_mount:'discovery',network_ref:'vpc-abcd1234',merchant_service:'store',runtime_port:7080,task_definition:'deploy/task-definition.json',application_secret_ref:infra.database_secret_ref,adapter_mount:'auteric-integration'};
+  const deployment={schema:'auteric-deployment/v1',platform:'ecs-fargate',runtime_image_digest:release.image || 'registry.example/runtime@sha256:'+'a'.repeat(64),architecture:'linux/amd64',secret_ref:infra.database_secret_ref,state_ref:{profile:'gateway/v1',reference:'installation'},discovery_mount:'discovery',network_ref:'vpc-abcd1234',merchant_service:'store',runtime_port:7080,task_definition:'deploy/task-definition.json',application_secret_ref:infra.database_secret_ref,adapter_mount:'auteric-integration'};
   writeFileSync(join(root,'auteric/.state/deployment-context.json'),JSON.stringify({live_task_verified:true,deployment}));
   const plan=await prepareDeployment(root,{domain:'shop.example',environment:'staging'});
   assert.equal(plan.status,'enrollment_pending');assert.deepEqual(plan.blockers,[]);

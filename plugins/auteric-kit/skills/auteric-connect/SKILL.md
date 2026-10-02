@@ -34,7 +34,14 @@ Runtime source/baseline options, when needed, are internal model setup details.
 Prepare discovery routing from actual verified capabilities and report local
 verification separately from public deployment. Do not use the legacy installer
 for a single-command request.
-After local acceptance read `references/deployment-preparation.md` and the
+After local acceptance Connect opens Control authorization before cloud resource
+preparation. For `authentication_pending`, show the URL/expiry and stop this turn;
+resume the same request once the owner signs in. Approval must be checked with
+Control. Preserve unchanged local results across authorization timeout/retry.
+Use Gateway-owned runtime state (`gateway/v1`); never create a runtime PostgreSQL,
+RDS or persistent execution-state disk in the merchant deployment. Installation
+and private application credentials still require the platform's secret storage.
+After owner authorization read `references/deployment-preparation.md` and the
 generated `auteric/deployment-plan.json`. Continue model-owned deployment work
 in the same request. Missing references require inspection and preparation,
 not handing a manual deployment checklist back to the merchant.

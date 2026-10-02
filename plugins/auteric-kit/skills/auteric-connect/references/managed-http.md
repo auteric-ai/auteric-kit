@@ -37,21 +37,21 @@ create their own buyers and carts and prove translation only. They do not prove
 signatures, policy, replay or Gateway enforcement. Never use an existing
 customer's cart or a payment/checkout route as verification data.
 
-Release qualification is mandatory before owner pairing/enrollment. The
-bundled development release is intentionally unqualified: main currently lacks
-a compatible Sidecar bootstrap provider and ECS storage/rotation qualification.
-Report these precise product gaps; do not activate capabilities, patch frozen
-Sidecar state, extend evidence TTL or treat a locally built image as published.
+Release qualification is mandatory before enrollment. Check that the released
+runtime and Control both support `auteric-runtime-state/v1`. An unqualified local
+image cannot activate public capabilities or substitute for released artifacts.
 
 A qualified Compose deployment uses a fixed runtime digest, existing private
-network and persistent local volume. Every new repository file belongs under
+network and Gateway-backed state. Every new repository file belongs under
 `auteric/`: connection/deployment config, private `.state/` reports and
 enrollment, ignored `discovery/`, and `.gitignore`. Existing merchant files are
 read without modification. If input mapping/deployment profiles need creating,
 put those under `auteric/` too. Set `secret_ref` to
-`file:/ABSOLUTE/MERCHANT/ROOT/auteric/.state/enrollment.json` and
+`file:/ABSOLUTE/MERCHANT/ROOT/auteric/.state/identity/enrollment.json` and
 `discovery_mount` to `/ABSOLUTE/MERCHANT/ROOT/auteric/discovery`. The non-root
-runtime UID must match the CLI user's file ownership and writable mounts.
+runtime UID must own the dedicated private identity directory for atomic
+credential rotation. No runtime database or persistent execution-state volume
+is required. Discovery is served by the runtime from refreshed Control bytes.
 The owner credential is used for onboarding
 only. The runtime exchanges the limited enrollment for installation-scoped
 service identity, fetches exact service-issued configuration, and renews through
