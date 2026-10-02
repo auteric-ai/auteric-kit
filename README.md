@@ -17,6 +17,12 @@ Generated adapters are mounted separately. Auth, ownership, transactions,
 idempotency, audit and revisions remain owned by the merchant application.
 A normal local Connect request does not deploy or activate public traffic.
 
+After local acceptance, Connect emits `auteric/deployment-plan.json` and the
+model must resolve its preparation continuation in the same request. Shared ECS
+resource templates are generated from verified deployment evidence, avoiding
+merchant-specific provisioning scripts. Cloud access, resource costs and business
+data migrations still require the relevant owner decisions.
+
 After local acceptance, the model prepares the merchant's actual deployment and
 UCP routes. Owner enrollment requires browser approval, a real owned target and
 valid storage/network/secret references. Public access requires deployment and

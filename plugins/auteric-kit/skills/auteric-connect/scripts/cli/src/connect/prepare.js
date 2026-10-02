@@ -71,6 +71,7 @@ export async function prepareHTTP(root,options,{layout,base,domain,authenticate,
           if(!deployment.task_definition)throw Error('deployment_prerequisite_missing: model must identify the existing ECS task definition');
           const rendered=await renderECS(readJSON(resolve(root,deployment.task_definition)),previous,deployment,release);
           files['auteric/task-definition.json']=json(rendered.taskDefinition);
+          files['auteric/ingress.json']=json(rendered.ingress);
         }
       }
       const unchanged=await writeArtifacts(root,files,{dryRun:true});
@@ -106,6 +107,7 @@ export async function prepareHTTP(root,options,{layout,base,domain,authenticate,
       if(!deployment.task_definition)throw Error('deployment_prerequisite_missing: model must identify the existing ECS task definition');
       const rendered=await renderECS(readJSON(resolve(root,deployment.task_definition)),connection,deployment,release);
       files['auteric/task-definition.json']=json(rendered.taskDefinition);
+      files['auteric/ingress.json']=json(rendered.ingress);
     }
   }
   // No UCP is invented while enrollment is pending. Runtime publishes exact Control-issued bytes after bootstrap.

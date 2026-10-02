@@ -34,6 +34,10 @@ Runtime source/baseline options, when needed, are internal model setup details.
 Prepare discovery routing from actual verified capabilities and report local
 verification separately from public deployment. Do not use the legacy installer
 for a single-command request.
+After local acceptance read `references/deployment-preparation.md` and the
+generated `auteric/deployment-plan.json`. Continue model-owned deployment work
+in the same request. Missing references require inspection and preparation,
+not handing a manual deployment checklist back to the merchant.
 
 Start at the merchant repository root. The CLI searches for a frontend and API
 service beneath it. If it finds one of each, it chooses them automatically. If it

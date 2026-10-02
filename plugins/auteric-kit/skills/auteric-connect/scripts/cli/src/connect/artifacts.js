@@ -5,7 +5,7 @@ import { shared } from './shared.js';
 import { atomicJSON, readJSON, safePath } from '../workflow.js';
 import { managedPath } from './layout.js';
 
-const ARTIFACTS = new Set(['auteric/connection.json','auteric/runtime-connection.json','auteric/deployment.json','auteric/deploy.json','auteric/task-definition.json','auteric/compose.yaml']);
+const ARTIFACTS = new Set(['auteric/connection.json','auteric/runtime-connection.json','auteric/deployment.json','auteric/deploy.json','auteric/task-definition.json','auteric/compose.yaml','auteric/deployment-plan.json','auteric/infrastructure.json','auteric/ingress.json']);
 const allowedArtifact = relative => ARTIFACTS.has(relative) || relative === 'auteric/.gitignore'
   || /^auteric\/(?:adapter|private-hook)\.mjs$/.test(relative)
   || /^auteric\/tests\/[a-zA-Z0-9_-]+\.mjs$/.test(relative);
@@ -41,6 +41,17 @@ export async function ownedArtifact(root, relative) {
   const path=safeTarget(join(root,relative));
   const ledger=readJSON(managedPath(root,'artifacts.json')) || {};
   return existsSync(path) && ledger[relative]===fingerprint(readFileSync(path));
+}
+
+/** Refresh only derived installation planning evidence; never replace merchant edits. */
+export async function writeDeploymentPlan(root,content) {
+  const relative='auteric/deployment-plan.json',path=join(root,relative);
+  if(!existsSync(path)||readFileSync(path,'utf8')===content)return writeArtifacts(root,{[relative]:content});
+  if(!await ownedArtifact(root,relative))throw Error('artifact_conflict: merchant edited deployment plan; preserve it and reconcile explicitly');
+  const {atomicWrite}=await shared('atomic');
+  const ledgerPath=managedPath(root,'artifacts.json'),ledger=readJSON(ledgerPath)||{};
+  atomicJSON(ledgerPath,{...ledger,[relative]:fingerprint(content)});
+  atomicWrite(path,content,0o644);
 }
 
 export async function removeArtifacts(root, installationId) {

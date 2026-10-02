@@ -90,6 +90,12 @@ preserving unrelated edits. An edited owned artifact/hook refuses cleanup.
 
 ## Prepare the normal merchant deployment in the same request
 
+Read [deployment preparation](deployment-preparation.md). Connect now always
+emits an owned deployment plan after acceptance, including a continuation when
+references are missing. Resolve the model-owned blockers in this same request.
+Use the reusable infrastructure renderer rather than generating merchant-specific
+provisioning scripts or requesting manual copies of references from the owner.
+
 After local acceptance, continue preparing the existing deployment. Do not report
 Connect complete after acceptance alone. Read the actual Dockerfile, startup,
 CI deployment, task definition/Compose services, reverse proxy, persistence and

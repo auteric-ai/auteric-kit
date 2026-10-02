@@ -1,3 +1,23 @@
+# 0.7.6 Deployment preparation continuation
+
+Connect now always creates an owned deployment plan after local acceptance.
+Missing references produce a continuation for the current coding model, rather
+than a successful-looking terminal result. The Skill traces the deployment,
+compares authorized live metadata, reuses existing resources and prepares
+reversible workflow/proxy changes before ending the request.
+
+The reusable ECS infrastructure template can prepare enrollment/application
+secrets, narrow role grants, and optionally private durable runtime PostgreSQL.
+Applying it requires actual infrastructure/cost authorization. It does not
+modify merchant business data, deploy the merchant service or invent enrollment.
+ECS preparation now includes explicit ingress intent. Owned plans can refresh;
+merchant edits remain protected and disconnect can remove unchanged artifacts.
+
+The immutable Sidecar/Bridge image and deployed Control/MCP are unchanged.
+No merchant Connect, merchant deployment or infrastructure provisioning was
+performed for this release. New infrastructure templates are locally tested;
+applying them to a new merchant still needs provider validation and live proof.
+
 # 0.7.5 Portable Connect
 
 The Kit includes the immutable generic Gateway harness and canonical contracts.

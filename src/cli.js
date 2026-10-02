@@ -17,6 +17,7 @@ import { initializeManaged } from './connect/artifacts.js';
 import { disconnectHTTP } from './connect/disconnect.js';
 import { integrationDossier, installModule, disconnectModule } from './connect/module.js';
 import { localAcceptance } from './connect/local-acceptance.js';
+import { prepareDeployment } from './deploy/prepare.js';
 import { validateRegistration } from './connect/control-contract.js';
 import { createHash, randomBytes } from 'node:crypto';
 import { existsSync, lstatSync, mkdirSync, readFileSync, readdirSync, realpathSync, writeFileSync, unlinkSync } from 'node:fs';
@@ -1229,7 +1230,8 @@ export async function run(argv, root = process.cwd()) {
       console.log(JSON.stringify(result,null,2));return result;
     }
     const result=await localAcceptance(root,options);
-    const deployment=options.deployment || (existsSync(join(root,'auteric/deployment.json')) ? 'auteric/deployment.json' : null);
+    const deploymentPlan=await prepareDeployment(root,options);
+    const deployment=deploymentPlan.deployment;
     if(deployment) {
       const base=apiUrl(options),domain=options.domain;
       if(!domain)throw Error('domain_required: model must preserve the requested merchant domain');
@@ -1239,8 +1241,9 @@ export async function run(argv, root = process.cwd()) {
         authenticate:()=>authenticatedStore(base,root,domain,inspect(root),layout,options,false)});
       console.log(JSON.stringify(prepared,null,2));return prepared;
     }
-    console.log(JSON.stringify({status:result.status,operations:result.operations,scenarios:result.scenarios.length,
-      runtime_image_id:result.runtime_image_id,local_only:true,production_ready:false,report:'auteric/.state/acceptance.json'},null,2));return result;
+    console.log(JSON.stringify({status:'deployment_preparation_required',local_acceptance:result.status,operations:result.operations,scenarios:result.scenarios.length,
+      runtime_image_id:result.runtime_image_id,local_only:true,production_ready:false,report:'auteric/.state/acceptance.json',
+      deployment_plan:'auteric/deployment-plan.json',blockers:deploymentPlan.blockers,continuation:deploymentPlan.continuation},null,2));return {...result,deployment_plan:deploymentPlan};
     } finally {release();}
   }
   if (command === 'inventory') {

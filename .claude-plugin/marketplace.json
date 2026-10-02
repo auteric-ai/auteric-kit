@@ -14,7 +14,7 @@
     {
       "name": "auteric-kit",
       "source": "./plugins/auteric-kit",
-      "version": "0.7.5",
+      "version": "0.7.6",
       "description": "Prepare a storefront for shopping agents through a reviewable Auteric workflow.",
       "author": {
         "name": "Auteric",
