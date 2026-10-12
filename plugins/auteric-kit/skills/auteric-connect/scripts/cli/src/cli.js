@@ -20,6 +20,7 @@ import { localAcceptance } from './connect/local-acceptance.js';
 import { ownerSession } from './connect/auth.js';
 import { prepareDeployment } from './deploy/prepare.js';
 import { validateRegistration } from './connect/control-contract.js';
+import { connectPSP } from './connect/psp.js';
 import { createHash, randomBytes } from 'node:crypto';
 import { existsSync, lstatSync, mkdirSync, readFileSync, readdirSync, realpathSync, writeFileSync, unlinkSync } from 'node:fs';
 import { join, relative, resolve } from 'node:path';
@@ -65,6 +66,7 @@ function parse(argv) {
   for (let i = 0; i < tail.length; i++) {
     const arg = tail[i];
     if (!arg.startsWith('--')) {
+      if (command === 'connect' && arg === 'psp' && !options.psp) { options.psp = true; continue; }
       if (['inventory', 'bind', 'validate', 'verify'].includes(command) && options._path === undefined) { options._path = arg; continue; }
       throw Error(`Unknown argument: ${arg}`);
     }
@@ -1194,6 +1196,17 @@ export async function run(argv, root = process.cwd()) {
   const { command, options } = parse(argv);
   const progress = cliProgress(options);
   if(command==='connect')validateConnectOptions(options);
+  if (command === 'connect' && options.psp) {
+    const base = apiUrl(options);
+    const result = await connectPSP(root,options,{base,request,
+      authorize:()=>ownerSession(root,base,options.domain || 'psp',options,{request,openBrowser}),
+      token:async()=> {
+        const auth = cachedSession(sessionPath(root,base,options.domain || 'psp'));
+        if (!auth?.access_token) throw Error('PSP owner session is unavailable');
+        return auth.access_token;
+      }});
+    console.log(JSON.stringify(result,null,2)); return result;
+  }
   const moduleConfig = readJSON(join(root,'auteric/connection.json'))?.schema === 'auteric-module-connection/v1';
   const httpConfig = readJSON(join(root,'auteric/connection.json'))?.schema === 'auteric-connection/v1'
     || existsSync(join(root,'auteric/mapping.json'));
@@ -1425,6 +1438,7 @@ export async function run(argv, root = process.cwd()) {
     if (localStop && existsSync(localStop)) console.log(`Stop the local containers with: ${localStop}`);
     return state;
   }
+  console.log('PSP Connect: auteric connect psp [--domain PSP_BACKEND_DOMAIN] [--environment production|staging|sandbox]. Current model prepares PSP mappings; Control approves each Store separately.');
   console.log('Custom Connect: one model-led request; current coding model scans, writes auteric/.state/adapter-plan.json, resumes the same command, and runs local acceptance.');
   console.log('Local acceptance: connect --local-acceptance --runtime-source PATH [--runtime-commit SHA] [--python PATH]. Uses one generic Docker image; no merchant SDK.');
   console.log('HTTP mapping: --mapping openapi.json --deployment deployment.json --environment staging --test-origin http://127.0.0.1:PORT --test-query QUERY --test-currency USD. Existing outbound connector setup: --legacy-connector.');

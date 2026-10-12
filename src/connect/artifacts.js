@@ -6,7 +6,7 @@ import { atomicJSON, readJSON, safePath } from '../workflow.js';
 import { managedPath } from './layout.js';
 
 const ARTIFACTS = new Set(['auteric/connection.json','auteric/runtime-connection.json','auteric/deployment.json','auteric/deploy.json','auteric/task-definition.json','auteric/compose.yaml','auteric/deployment-plan.json','auteric/infrastructure.json','auteric/ingress.json']);
-const allowedArtifact = relative => ARTIFACTS.has(relative) || relative === 'auteric/.gitignore'
+const allowedArtifact = relative => ARTIFACTS.has(relative) || relative === 'auteric/psp.json' || relative === 'auteric/.gitignore'
   || /^auteric\/(?:adapter|private-hook)\.mjs$/.test(relative)
   || /^auteric\/tests\/[a-zA-Z0-9_-]+\.mjs$/.test(relative);
 const fingerprint = content => 'sha256:' + createHash('sha256').update(content).digest('hex');

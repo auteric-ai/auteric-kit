@@ -1,9 +1,14 @@
 ---
 name: auteric-connect
-description: Prepare an ecommerce or storefront project for shopping agents with Auteric. Use when asked to make a store agent-ready, integrate agent commerce, expose catalog/cart/checkout to commerce agents, prepare shopping access, set up Auteric, or connect a storefront to AI shopping. Do not use for unrelated work in an ecommerce repository.
+description: Prepare an ecommerce or storefront project for shopping agents with Auteric. Use when asked to make a store agent-ready, integrate agent commerce, expose catalog/cart/checkout to commerce agents, connect a PSP or shared multi-merchant backend, prepare shopping access, set up Auteric, or connect a storefront to AI shopping. Do not use for unrelated work in an ecommerce repository.
 ---
 
 # Prepare a storefront for shopping agents
+
+For a PSP or platform with a shared backend and multiple merchant accounts, use
+`auteric connect psp` and read [PSP Connect](references/psp.md). Reuse one adapter
+implementation and preserve separate Store membership, permissions and execution
+evidence. PSP membership does not grant access or activate payments.
 
 Custom Connect defaults to a model-generated adapter and one generic, versioned
 Auteric runtime container. Read [model-driven Connect](references/model-connect.md)
